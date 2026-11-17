@@ -35,6 +35,7 @@ import {
   CaretRight,
 } from "@phosphor-icons/react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { useNavigate } from "@tanstack/react-router";
 import { Switch } from "@/components/ui/switch";
 import { WhatsAppToast } from "@/components/ui/ToastProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -267,16 +268,34 @@ function parseCurrencyValue(val: string): number {
   return Number.isFinite(num) ? Math.max(0, Math.round(num * 100)) : 0;
 }
 
-export function DashboardView({ isDarkMode }: Props) {
+const NUMBER_FORMAT = new Intl.NumberFormat("pt-BR");
+
+type DashboardTarget = "inbox" | "follow-up" | "conexoes" | "agentes";
+type AttentionItem = {
+  id: string;
+  tone: "danger" | "warning" | undefined;
+  title: string;
+  description: string;
+  action: string;
+  view: DashboardTarget;
+};
+
+export function DashboardView(_props: Props) {
   const [data, setData] = useState<DashboardMetrics | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const navigate = useNavigate();
+  const go = (view: DashboardTarget) => void navigate({ to: "/", search: { view } });
 
   const refresh = useCallback(() => {
     setError("");
     setIsLoading(true);
     void loadDashboard()
-      .then((x) => setData(x.metrics))
+      .then((x) => {
+        setData(x.metrics);
+        setUpdatedAt(new Date());
+      })
       .catch((e) => {
         const message = errorMessage(e);
         setError(message);
@@ -301,20 +320,6 @@ export function DashboardView({ isDarkMode }: Props) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(0);
   }, [data]);
 
-  const metrics = data
-    ? [
-        ["Conexões", `${data.connectedInstances}/${data.totalInstances}`],
-        ["Conversas ativas", data.activeChats],
-        ["Não lidas", data.unread],
-        ["Mensagens 24h", data.messages24h],
-        ["Leads CRM", data.crmLeads],
-        ["Pipeline", money],
-        ["Follow-ups", data.pendingFollowUps],
-        ["Atrasados", data.overdueFollowUps],
-        ["Agentes ativos", data.enabledAgents],
-        ["Automáticos", data.automaticAgents],
-      ]
-    : [];
   const viewState = deriveViewDataState({
     hasData: Boolean(data),
     isLoading,
@@ -322,35 +327,234 @@ export function DashboardView({ isDarkMode }: Props) {
     isEmpty: false,
   });
 
+  const attention: AttentionItem[] = [];
+  if (data) {
+    const disconnected = data.totalInstances - data.connectedInstances;
+    if (data.totalInstances === 0) {
+      attention.push({
+        id: "no-number",
+        tone: "warning",
+        title: "Nenhum número do WhatsApp conectado",
+        description: "Conecte um número para receber e responder conversas.",
+        action: "Conectar número",
+        view: "conexoes",
+      });
+    } else if (disconnected > 0) {
+      attention.push({
+        id: "disconnected",
+        tone: "danger",
+        title: `${disconnected} ${disconnected === 1 ? "número desconectado" : "números desconectados"}`,
+        description: "Mensagens desses números não chegam até reconectar.",
+        action: "Ver conexões",
+        view: "conexoes",
+      });
+    }
+    if (data.unread > 0) {
+      attention.push({
+        id: "unread",
+        tone: "warning",
+        title: `${NUMBER_FORMAT.format(data.unread)} ${data.unread === 1 ? "mensagem não lida" : "mensagens não lidas"}`,
+        description: "Clientes aguardando resposta no Inbox.",
+        action: "Abrir Inbox",
+        view: "inbox",
+      });
+    }
+    if (data.overdueFollowUps > 0) {
+      attention.push({
+        id: "overdue",
+        tone: "danger",
+        title: `${data.overdueFollowUps} ${data.overdueFollowUps === 1 ? "follow-up atrasado" : "follow-ups atrasados"}`,
+        description: "Tarefas que passaram do prazo combinado.",
+        action: "Ver follow-ups",
+        view: "follow-up",
+      });
+    }
+    if (data.enabledAgents === 0) {
+      attention.push({
+        id: "agents",
+        tone: undefined,
+        title: "Nenhum agente de IA ativo",
+        description: "Um agente pode responder dúvidas comuns fora do horário.",
+        action: "Ver agentes",
+        view: "agentes",
+      });
+    }
+  }
+
   return (
-    <main className="inboxos-page inboxos-product-surface inboxos-dashboard-surface flex-1 overflow-auto p-4 sm:p-6">
-      <Heading
-        title="Dashboard"
-        description="Indicadores reais do workspace ativo."
-        isDarkMode={isDarkMode}
-        onRefresh={refresh}
-      />
-      {error && <ErrorBox text={error} />}
-      {viewState === "initial" && (
-        <DataSkeleton label="Preparando indicadores do workspace" columns={5} />
-      )}
-      {viewState === "refreshing" && (
-        <p data-state="refreshing" role="status" className="mb-3 text-xs text-zinc-500">
-          Atualizando indicadores...
-        </p>
-      )}
-      {viewState !== "error" && viewState !== "initial" && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          {metrics.map(([label, value]) => (
-            <div key={String(label)} className={`${card(isDarkMode)} p-4`}>
-              <p className="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-500">
-                {label}
-              </p>
-              <p className="mt-2 text-xl font-semibold tracking-[-.04em]">{String(value)}</p>
+    <main className="inboxos-page inboxos-product-surface inboxos-dashboard-surface ux-page flex-1 overflow-auto">
+      <div className="ux-container">
+        <header className="ux-page-header">
+          <div className="min-w-0">
+            <h1 className="ux-h1">Dashboard</h1>
+            <p className="ux-lead">Como está a operação do workspace agora.</p>
+          </div>
+          <div className="ux-actions">
+            {updatedAt && (
+              <span className="ux-meta">
+                Atualizado às{" "}
+                {updatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+            <button
+              type="button"
+              className="ux-icon-btn"
+              onClick={refresh}
+              aria-label="Atualizar dados de Dashboard"
+              title="Atualizar"
+            >
+              <ArrowClockwise size={18} aria-hidden="true" />
+            </button>
+          </div>
+        </header>
+        {error && <ErrorBox text={error} />}
+        {viewState === "initial" && (
+          <DataSkeleton label="Preparando indicadores do workspace" columns={5} />
+        )}
+        {viewState === "refreshing" && (
+          <p data-state="refreshing" role="status" className="ux-meta">
+            Atualizando indicadores...
+          </p>
+        )}
+        {data && (
+          <section className="ux-panel ux-kpis" aria-label="Indicadores principais">
+            <div className="ux-kpi">
+              <span className="ux-meta">Mensagens em 24h</span>
+              <strong className="ux-kpi-value">{NUMBER_FORMAT.format(data.messages24h)}</strong>
+              <span className="ux-meta">enviadas e recebidas</span>
             </div>
-          ))}
-        </div>
-      )}
+            <div className="ux-kpi">
+              <span className="ux-meta">Conversas ativas</span>
+              <strong className="ux-kpi-value">{NUMBER_FORMAT.format(data.activeChats)}</strong>
+              <span className="ux-meta">{NUMBER_FORMAT.format(data.unread)} não lidas</span>
+            </div>
+            <div className="ux-kpi">
+              <span className="ux-meta">Leads no CRM</span>
+              <strong className="ux-kpi-value">{NUMBER_FORMAT.format(data.crmLeads)}</strong>
+              <span className="ux-meta">{data.pendingFollowUps} follow-ups pendentes</span>
+            </div>
+            <div className="ux-kpi">
+              <span className="ux-meta">Pipeline aberto</span>
+              <strong className="ux-kpi-value ux-kpi-value--money" title={money}>
+                {money}
+              </strong>
+              <span className="ux-meta">em negociação</span>
+            </div>
+          </section>
+        )}
+        {data && (
+          <div className="ux-layout-rail">
+            <section className="ux-panel" aria-labelledby="dashboard-attention-title">
+              <div className="ux-panel-head">
+                <div className="flex min-w-0 items-baseline gap-3">
+                  <h2 id="dashboard-attention-title" className="ux-h2">
+                    Precisa de atenção
+                  </h2>
+                  {attention.length > 0 && <span className="ux-meta">{attention.length}</span>}
+                </div>
+              </div>
+              {attention.length === 0 ? (
+                <div className="ux-empty">
+                  <p className="ux-h3">Tudo em dia</p>
+                  <p>Nenhuma conversa esperando, nenhum prazo vencido e todos os números online.</p>
+                </div>
+              ) : (
+                <ul className="ux-list">
+                  {attention.map((item) => (
+                    <li key={item.id} className="ux-row">
+                      <span className="ux-dot" data-tone={item.tone} aria-hidden="true" />
+                      <div className="ux-row-main">
+                        <p className="ux-strong">{item.title}</p>
+                        <p className="ux-meta">{item.description}</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="ux-btn ux-btn--ghost"
+                        onClick={() => go(item.view)}
+                      >
+                        {item.action}
+                        <CaretRight size={14} aria-hidden="true" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+            <aside className="ux-rail" aria-label="Resumo do workspace">
+              <section className="ux-panel" aria-labelledby="dashboard-service-title">
+                <div className="ux-panel-head">
+                  <h2 id="dashboard-service-title" className="ux-h2">
+                    Atendimento
+                  </h2>
+                </div>
+                <dl className="ux-stats">
+                  <div>
+                    <dt>Números conectados</dt>
+                    <dd>
+                      <span
+                        className="ux-dot"
+                        data-tone={
+                          data.totalInstances > 0 && data.connectedInstances === data.totalInstances
+                            ? "positive"
+                            : "warning"
+                        }
+                        aria-hidden="true"
+                      />
+                      {data.connectedInstances} de {data.totalInstances}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Conversas ativas</dt>
+                    <dd>{NUMBER_FORMAT.format(data.activeChats)}</dd>
+                  </div>
+                  <div>
+                    <dt>Não lidas</dt>
+                    <dd>{NUMBER_FORMAT.format(data.unread)}</dd>
+                  </div>
+                  <div>
+                    <dt>Mensagens em 24h</dt>
+                    <dd>{NUMBER_FORMAT.format(data.messages24h)}</dd>
+                  </div>
+                </dl>
+              </section>
+              <section className="ux-panel" aria-labelledby="dashboard-sales-title">
+                <div className="ux-panel-head">
+                  <h2 id="dashboard-sales-title" className="ux-h2">
+                    Vendas e automação
+                  </h2>
+                </div>
+                <dl className="ux-stats">
+                  <div>
+                    <dt>Leads no CRM</dt>
+                    <dd>{NUMBER_FORMAT.format(data.crmLeads)}</dd>
+                  </div>
+                  <div>
+                    <dt>Follow-ups pendentes</dt>
+                    <dd>{data.pendingFollowUps}</dd>
+                  </div>
+                  <div>
+                    <dt>Follow-ups atrasados</dt>
+                    <dd>
+                      {data.overdueFollowUps > 0 && (
+                        <span className="ux-dot" data-tone="danger" aria-hidden="true" />
+                      )}
+                      {data.overdueFollowUps}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Agentes ativos</dt>
+                    <dd>{data.enabledAgents}</dd>
+                  </div>
+                  <div>
+                    <dt>Respondendo sozinhos</dt>
+                    <dd>{data.automaticAgents}</dd>
+                  </div>
+                </dl>
+              </section>
+            </aside>
+          </div>
+        )}
+      </div>
     </main>
   );
 }
@@ -636,6 +840,64 @@ export function CrmView({ isDarkMode }: Props) {
   );
 }
 
+type FollowUpFilter = "pending" | "overdue" | "done" | "all";
+
+const FOLLOW_UP_PRIORITY: Record<string, { label: string; tone?: "danger" }> = {
+  high: { label: "Alta", tone: "danger" },
+  normal: { label: "Normal" },
+  low: { label: "Baixa" },
+};
+
+function toLocalInputValue(date: Date) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function followUpBucket(task: FollowUpTask, now: number) {
+  if (task.status !== "pending") return "Concluídas";
+  const due = new Date(task.due_at).getTime();
+  if (due < now) return "Atrasadas";
+  const today = startOfDay(new Date(now));
+  const day = 86400000;
+  if (due < today + day) return "Hoje";
+  if (due < today + 2 * day) return "Amanhã";
+  if (due < today + 7 * day) return "Próximos 7 dias";
+  return "Mais adiante";
+}
+
+function formatDue(task: FollowUpTask, now: number) {
+  const due = new Date(task.due_at);
+  const time = due.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  if (task.status === "pending" && due.getTime() < now) {
+    const days = Math.floor((now - due.getTime()) / 86400000);
+    return days >= 1
+      ? `Atrasada há ${days} ${days === 1 ? "dia" : "dias"}`
+      : `Venceu hoje às ${time}`;
+  }
+  const bucket = followUpBucket(task, now);
+  if (bucket === "Hoje") return `Hoje, ${time}`;
+  if (bucket === "Amanhã") return `Amanhã, ${time}`;
+  return due.toLocaleString("pt-BR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const FOLLOW_UP_BUCKET_ORDER = [
+  "Atrasadas",
+  "Hoje",
+  "Amanhã",
+  "Próximos 7 dias",
+  "Mais adiante",
+  "Concluídas",
+];
+
 export function FollowUpView({ isDarkMode }: Props) {
   const [tasks, setTasks] = useState<FollowUpTask[]>([]);
   const [leads, setLeads] = useState<CrmLead[]>([]);
@@ -645,10 +907,9 @@ export function FollowUpView({ isDarkMode }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [pendingFollowUpDelete, setPendingFollowUpDelete] = useState<FollowUpTask | null>(null);
-  const tomorrow = new Date(Date.now() + 86400000);
-  const local = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
+  const [filter, setFilter] = useState<FollowUpFilter>("pending");
+  const [creatorOpen, setCreatorOpen] = useState(false);
+  const local = toLocalInputValue(new Date(Date.now() + 86400000));
   const [form, setForm] = useState({
     title: "",
     dueAt: local,
@@ -705,220 +966,374 @@ export function FollowUpView({ isDarkMode }: Props) {
     isEmpty: hasLoaded && tasks.length === 0,
   });
 
+  const now = Date.now();
+  const counts = {
+    pending: tasks.filter((task) => task.status === "pending").length,
+    overdue: tasks.filter(
+      (task) => task.status === "pending" && new Date(task.due_at).getTime() < now,
+    ).length,
+    done: tasks.filter((task) => task.status === "done").length,
+    all: tasks.length,
+  };
+  const visible = tasks
+    .filter((task) => {
+      if (filter === "pending") return task.status === "pending";
+      if (filter === "overdue")
+        return task.status === "pending" && new Date(task.due_at).getTime() < now;
+      if (filter === "done") return task.status === "done";
+      return true;
+    })
+    .sort((a, b) => new Date(a.due_at).getTime() - new Date(b.due_at).getTime());
+  const groups = FOLLOW_UP_BUCKET_ORDER.map((bucket) => ({
+    bucket,
+    items: visible.filter((task) => followUpBucket(task, now) === bucket),
+  })).filter((group) => group.items.length > 0);
+
+  const canCreate =
+    !busy && Boolean(form.title.trim()) && !Number.isNaN(new Date(form.dueAt).getTime());
+  const createTask = () =>
+    void run(async () => {
+      await createFollowUp({
+        title: form.title.trim(),
+        dueAt: new Date(form.dueAt).toISOString(),
+        priority: form.priority,
+        leadId: form.leadId || null,
+        note: form.note.trim() || null,
+      });
+      setForm({ ...form, title: "", leadId: "", note: "" });
+      setCreatorOpen(false);
+    }, "Follow-up registrado com sucesso.");
+
+  const filters: Array<{ id: FollowUpFilter; label: string }> = [
+    { id: "pending", label: "Pendentes" },
+    { id: "overdue", label: "Atrasadas" },
+    { id: "done", label: "Concluídas" },
+    { id: "all", label: "Todas" },
+  ];
+
   return (
-    <main className="inboxos-page inboxos-product-surface inboxos-follow-up-surface flex-1 overflow-auto p-4 sm:p-6">
-      <Heading
-        title="Follow-up"
-        description="Tarefas comerciais com prazo, prioridade e conclusão auditável."
-        isDarkMode={isDarkMode}
-        onRefresh={() => void refresh()}
-      />
-      {error && <ErrorBox text={error} />}
-      {viewState === "initial" && <DataSkeleton label="Preparando follow-ups" columns={2} />}
-      {viewState === "refreshing" && (
-        <p data-state="refreshing" role="status" className="mb-3 text-xs text-zinc-500">
-          Atualizando follow-ups...
-        </p>
-      )}
-      {viewState !== "initial" && canManage && (
-        <div
-          className={`${card(isDarkMode)} inboxos-responsive-actions mb-4 grid gap-2 p-3 md:grid-cols-[1fr_190px_120px_auto]`}
-        >
-          <input
-            className={inputClass(isDarkMode)}
-            placeholder="Ação de acompanhamento"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-          />
-          <input
-            className={inputClass(isDarkMode)}
-            type="datetime-local"
-            value={form.dueAt}
-            onChange={(e) => setForm({ ...form, dueAt: e.target.value })}
-          />
-          <SurfaceSelect
-            isDarkMode={isDarkMode}
-            value={form.priority}
-            onValueChange={(priority) => setForm({ ...form, priority })}
-            placeholder="Prioridade"
-            ariaLabel="Prioridade do follow-up"
-          >
-            <SelectItem value="low">Baixa</SelectItem>
-            <SelectItem value="normal">Normal</SelectItem>
-            <SelectItem value="high">Alta</SelectItem>
-          </SurfaceSelect>
-          <SurfaceSelect
-            isDarkMode={isDarkMode}
-            value={form.leadId || "__none__"}
-            onValueChange={(leadId) =>
-              setForm({ ...form, leadId: leadId === "__none__" ? "" : leadId })
-            }
-            placeholder="Vincular cliente (opcional)"
-            ariaLabel="Cliente do follow-up"
-          >
-            <SelectItem value="__none__">Vincular cliente (opcional)</SelectItem>
-            {leads.map((lead) => (
-              <SelectItem key={lead.id} value={lead.id}>
-                {lead.name || lead.phone_e164 || "Cliente"}
-              </SelectItem>
-            ))}
-          </SurfaceSelect>
-          <textarea
-            className={`${inputClass(isDarkMode)} min-h-10 py-2 md:col-span-2`}
-            placeholder="Observação interna (opcional)"
-            value={form.note}
-            onChange={(e) => setForm({ ...form, note: e.target.value })}
-            rows={1}
-          />
-          <button
-            className={buttonClass(isDarkMode)}
-            disabled={
-              busy ||
-              !form.title.trim() ||
-              !form.dueAt ||
-              Number.isNaN(new Date(form.dueAt).getTime())
-            }
-            onClick={() =>
-              void run(async () => {
-                await createFollowUp({
-                  title: form.title.trim(),
-                  dueAt: new Date(form.dueAt).toISOString(),
-                  priority: form.priority,
-                  leadId: form.leadId || null,
-                  note: form.note.trim() || null,
-                });
-                setForm({ ...form, title: "", leadId: "", note: "" });
-              }, "Follow-up registrado com sucesso.")
-            }
-          >
-            <Plus size={13} />
-            Criar
-          </button>
-        </div>
-      )}
-      {viewState !== "initial" && (
-        <div className="grid gap-2">
-          {tasks.map((task) => {
-            const overdue =
-              task.status === "pending" && new Date(task.due_at).getTime() < Date.now();
-            return (
-              <article
-                key={task.id}
-                className={`${card(
-                  isDarkMode,
-                )} flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between`}
+    <main className="inboxos-page inboxos-product-surface inboxos-follow-up-surface ux-page flex-1 overflow-auto">
+      <div className="ux-container">
+        <header className="ux-page-header">
+          <div className="min-w-0">
+            <h1 className="ux-h1">Follow-up</h1>
+            <p className="ux-lead">
+              Tarefas de acompanhamento com prazo e prioridade. Conclua com um clique.
+            </p>
+          </div>
+          <div className="ux-actions">
+            <button
+              type="button"
+              className="ux-icon-btn"
+              onClick={() => void refresh()}
+              aria-label="Atualizar dados de Follow-up"
+              title="Atualizar"
+            >
+              <ArrowClockwise size={18} aria-hidden="true" />
+            </button>
+            {canManage && (
+              <button
+                type="button"
+                className="ux-btn ux-btn--primary"
+                onClick={() => {
+                  setForm({ ...form, dueAt: toLocalInputValue(new Date(Date.now() + 86400000)) });
+                  setCreatorOpen(true);
+                }}
               >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p
-                      title={task.title}
-                      className={`truncate text-xs font-semibold ${
-                        task.status === "done" ? "line-through opacity-50" : ""
-                      }`}
-                    >
-                      {task.title}
-                    </p>
-                    {overdue && (
-                      <span title="Atrasado" className="inline-flex items-center text-red-500">
-                        <WarningCircle size={14} />
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-[10px] text-zinc-500">
-                    {new Date(task.due_at).toLocaleString("pt-BR")} · {task.priority}
-                  </p>
-                  {task.lead_id && (
-                    <p className="mt-1 text-[10px] text-zinc-500">
-                      Cliente: {leads.find((lead) => lead.id === task.lead_id)?.name ?? "vinculado"}
-                    </p>
-                  )}
-                  {task.note && (
-                    <p className="mt-1 line-clamp-2 text-[10px] text-zinc-500">{task.note}</p>
-                  )}
-                </div>
-                {canManage && (
-                  <div className="inboxos-responsive-actions flex gap-2">
-                    {editingTask === task.id ? (
-                      <>
-                        <input
-                          className={inputClass(isDarkMode)}
-                          type="datetime-local"
-                          value={editingDueAt}
-                          onChange={(e) => setEditingDueAt(e.target.value)}
-                          aria-label={`Nova data da tarefa ${task.title}`}
-                        />
-                        <button
-                          className={buttonClass(isDarkMode)}
-                          disabled={busy || !editingDueAt}
-                          onClick={() =>
-                            void run(async () => {
-                              await updateFollowUp({
-                                id: task.id,
-                                dueAt: new Date(editingDueAt).toISOString(),
-                              });
-                              setEditingTask(null);
-                            }, "Follow-up reagendado.")
-                          }
-                        >
-                          Salvar
-                        </button>
-                        <button
-                          className={buttonClass(isDarkMode)}
-                          onClick={() => setEditingTask(null)}
-                        >
-                          Cancelar
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        className={buttonClass(isDarkMode)}
-                        onClick={() => {
-                          setEditingTask(task.id);
-                          setEditingDueAt(
-                            new Date(
-                              new Date(task.due_at).getTime() -
-                                new Date(task.due_at).getTimezoneOffset() * 60000,
-                            )
-                              .toISOString()
-                              .slice(0, 16),
-                          );
-                        }}
-                        aria-label={`Reagendar tarefa ${task.title}`}
-                      >
-                        <PencilSimple size={13} /> Reagendar
-                      </button>
-                    )}
-                    {task.status === "pending" && (
-                      <button
-                        className={buttonClass(isDarkMode)}
-                        onClick={() =>
-                          void run(
-                            () => updateFollowUp({ id: task.id, status: "done" }),
-                            "Follow-up concluído com sucesso.",
-                          )
-                        }
-                        aria-label={`Concluir tarefa ${task.title}`}
-                      >
-                        <Check size={13} />
-                        Concluir
-                      </button>
-                    )}
-                    <button
-                      className={`${buttonClass(isDarkMode)} text-red-500 hover:text-red-600`}
-                      onClick={() => handleDeleteFollowUp(task)}
-                      title="Excluir follow-up"
-                      aria-label={`Excluir tarefa ${task.title}`}
-                    >
-                      <Trash size={13} />
-                    </button>
-                  </div>
+                <Plus size={16} aria-hidden="true" /> Nova tarefa
+              </button>
+            )}
+          </div>
+        </header>
+        {error && <ErrorBox text={error} />}
+        {viewState === "initial" && <DataSkeleton label="Preparando follow-ups" columns={2} />}
+        {viewState === "refreshing" && (
+          <p data-state="refreshing" role="status" className="ux-meta">
+            Atualizando follow-ups...
+          </p>
+        )}
+        {hasLoaded && (
+          <section className="ux-panel" aria-label="Tarefas de follow-up">
+            <div className="ux-panel-head">
+              <div className="ux-segmented" role="tablist" aria-label="Filtrar tarefas">
+                {filters.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={filter === item.id}
+                    className="ux-segment"
+                    onClick={() => setFilter(item.id)}
+                  >
+                    {item.label}
+                    <span className="ux-segment-count">{counts[item.id]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {groups.length === 0 ? (
+              <div className="ux-empty">
+                <p className="ux-h3">
+                  {tasks.length === 0
+                    ? "Nenhuma tarefa ainda"
+                    : filter === "overdue"
+                      ? "Nada atrasado"
+                      : "Nada por aqui"}
+                </p>
+                <p>
+                  {tasks.length === 0
+                    ? "Crie tarefas para lembrar de retornar clientes, enviar propostas ou confirmar pagamentos."
+                    : "Nenhuma tarefa neste filtro."}
+                </p>
+                {viewState === "empty" && canManage && (
+                  <button
+                    type="button"
+                    className="ux-btn ux-btn--primary mt-2"
+                    onClick={() => setCreatorOpen(true)}
+                  >
+                    <Plus size={16} aria-hidden="true" /> Criar primeira tarefa
+                  </button>
                 )}
-              </article>
-            );
-          })}
-          {viewState === "empty" && <Empty>Nenhum follow-up criado.</Empty>}
-        </div>
-      )}
+              </div>
+            ) : (
+              groups.map((group) => (
+                <div key={group.bucket} className="ux-group">
+                  <p
+                    className="ux-group-title"
+                    data-tone={group.bucket === "Atrasadas" ? "danger" : undefined}
+                  >
+                    {group.bucket}
+                    <span>{group.items.length}</span>
+                  </p>
+                  <ul className="ux-list">
+                    {group.items.map((task) => {
+                      const overdue =
+                        task.status === "pending" && new Date(task.due_at).getTime() < now;
+                      const done = task.status === "done";
+                      const priority = FOLLOW_UP_PRIORITY[task.priority] || {
+                        label: task.priority,
+                      };
+                      const lead = leads.find((item) => item.id === task.lead_id);
+                      return (
+                        <li key={task.id} className="ux-row ux-task" data-done={done}>
+                          <button
+                            type="button"
+                            className="ux-task-check"
+                            data-checked={done}
+                            disabled={!canManage || busy || done}
+                            onClick={() =>
+                              void run(
+                                () => updateFollowUp({ id: task.id, status: "done" }),
+                                "Follow-up concluído com sucesso.",
+                              )
+                            }
+                            aria-label={
+                              done
+                                ? `Tarefa ${task.title} concluída`
+                                : `Concluir tarefa ${task.title}`
+                            }
+                          >
+                            <Check size={12} weight="bold" aria-hidden="true" />
+                          </button>
+                          <div className="ux-row-main">
+                            <p title={task.title} className="ux-task-title truncate">
+                              {task.title}
+                            </p>
+                            <p className="ux-meta flex flex-wrap items-center gap-x-2">
+                              <span className={overdue ? "text-[var(--ux-danger)]" : undefined}>
+                                {formatDue(task, now)}
+                              </span>
+                              {lead && <span>· {lead.name || lead.phone_e164 || "Cliente"}</span>}
+                            </p>
+                            {task.note && <p className="ux-row-detail line-clamp-1">{task.note}</p>}
+                          </div>
+                          {task.priority !== "normal" && (
+                            <span className="ux-pill" data-tone={priority.tone}>
+                              {priority.label}
+                            </span>
+                          )}
+                          {canManage && editingTask === task.id ? (
+                            <div className="flex shrink-0 items-center gap-2">
+                              <input
+                                className="ux-input w-auto"
+                                type="datetime-local"
+                                value={editingDueAt}
+                                onChange={(e) => setEditingDueAt(e.target.value)}
+                                aria-label={`Nova data da tarefa ${task.title}`}
+                              />
+                              <button
+                                type="button"
+                                className="ux-btn ux-btn--primary"
+                                disabled={busy || !editingDueAt}
+                                onClick={() =>
+                                  void run(async () => {
+                                    await updateFollowUp({
+                                      id: task.id,
+                                      dueAt: new Date(editingDueAt).toISOString(),
+                                    });
+                                    setEditingTask(null);
+                                  }, "Follow-up reagendado.")
+                                }
+                              >
+                                Salvar
+                              </button>
+                              <button
+                                type="button"
+                                className="ux-btn ux-btn--ghost"
+                                onClick={() => setEditingTask(null)}
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            canManage && (
+                              <div className="flex shrink-0 items-center gap-1">
+                                {!done && (
+                                  <button
+                                    type="button"
+                                    className="ux-icon-btn"
+                                    onClick={() => {
+                                      setEditingTask(task.id);
+                                      setEditingDueAt(toLocalInputValue(new Date(task.due_at)));
+                                    }}
+                                    aria-label={`Reagendar tarefa ${task.title}`}
+                                    title="Reagendar"
+                                  >
+                                    <CalendarDots size={18} aria-hidden="true" />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  className="ux-icon-btn ux-icon-btn--danger"
+                                  onClick={() => handleDeleteFollowUp(task)}
+                                  aria-label={`Excluir tarefa ${task.title}`}
+                                  title="Excluir"
+                                >
+                                  <Trash size={18} aria-hidden="true" />
+                                </button>
+                              </div>
+                            )
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))
+            )}
+          </section>
+        )}
+      </div>
+
+      <DialogPrimitive.Root open={creatorOpen} onOpenChange={setCreatorOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content
+            className="ux-drawer ux-drawer--narrow"
+            aria-describedby="follow-up-creator-description"
+          >
+            <div className="ux-drawer-head">
+              <div className="min-w-0">
+                <DialogPrimitive.Title className="ux-h2">Nova tarefa</DialogPrimitive.Title>
+                <DialogPrimitive.Description id="follow-up-creator-description" className="ux-meta">
+                  Você será lembrado no prazo definido.
+                </DialogPrimitive.Description>
+              </div>
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar nova tarefa">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+            <form
+              className="ux-drawer-body"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (canCreate) createTask();
+              }}
+            >
+              <div className="ux-section">
+                <UxField label="O que fazer" htmlFor="follow-up-title">
+                  <input
+                    id="follow-up-title"
+                    className="ux-input"
+                    placeholder="Ex.: Enviar proposta revisada"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  />
+                </UxField>
+                <div className="ux-form-grid">
+                  <UxField label="Prazo" htmlFor="follow-up-due">
+                    <input
+                      id="follow-up-due"
+                      className="ux-input"
+                      type="datetime-local"
+                      value={form.dueAt}
+                      onChange={(e) => setForm({ ...form, dueAt: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField label="Prioridade">
+                    <SurfaceSelect
+                      isDarkMode={isDarkMode}
+                      className="ux-input"
+                      value={form.priority}
+                      onValueChange={(priority) => setForm({ ...form, priority })}
+                      placeholder="Prioridade"
+                      ariaLabel="Prioridade do follow-up"
+                    >
+                      <SelectItem value="low">Baixa</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">Alta</SelectItem>
+                    </SurfaceSelect>
+                  </UxField>
+                </div>
+                <UxField label="Cliente" hint="Opcional.">
+                  <SurfaceSelect
+                    isDarkMode={isDarkMode}
+                    className="ux-input"
+                    value={form.leadId || "__none__"}
+                    onValueChange={(leadId) =>
+                      setForm({ ...form, leadId: leadId === "__none__" ? "" : leadId })
+                    }
+                    placeholder="Sem cliente"
+                    ariaLabel="Cliente do follow-up"
+                  >
+                    <SelectItem value="__none__">Sem cliente</SelectItem>
+                    {leads.map((lead) => (
+                      <SelectItem key={lead.id} value={lead.id}>
+                        {lead.name || lead.phone_e164 || "Cliente"}
+                      </SelectItem>
+                    ))}
+                  </SurfaceSelect>
+                </UxField>
+                <UxField label="Observação interna" htmlFor="follow-up-note" hint="Opcional.">
+                  <textarea
+                    id="follow-up-note"
+                    className="ux-input"
+                    value={form.note}
+                    onChange={(e) => setForm({ ...form, note: e.target.value })}
+                  />
+                </UxField>
+              </div>
+            </form>
+            <div className="ux-drawer-foot">
+              <span />
+              <div className="flex gap-2">
+                <DialogPrimitive.Close className="ux-btn ux-btn--ghost">
+                  Cancelar
+                </DialogPrimitive.Close>
+                <button
+                  type="button"
+                  className="ux-btn ux-btn--primary"
+                  disabled={!canCreate}
+                  onClick={createTask}
+                >
+                  Criar tarefa
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
       <ConfirmDialog
         open={Boolean(pendingFollowUpDelete)}
         title="Excluir follow-up?"
