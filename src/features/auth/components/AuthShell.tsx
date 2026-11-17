@@ -4,6 +4,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { useTheme } from "@/components/theme-context";
 import { PLATFORM_BRAND_NAME } from "@/lib/platform-brand";
 import { evaluatePassword } from "../auth-validation";
+import { AsciiBackdrop } from "./AsciiBackdrop";
 export function AuthShell({
   eyebrow,
   title,
@@ -20,6 +21,7 @@ export function AuthShell({
   const { isDarkMode, toggleTheme } = useTheme();
   return (
     <main className="auth-page">
+      <AsciiBackdrop />
       <button
         type="button"
         className="auth-theme-toggle"

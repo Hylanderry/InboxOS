@@ -3244,3 +3244,58 @@ input[type="checkbox"]:not(.auth-check-input):not(.auth-legal-check):active {
     transform: none !important;
   }
 }
+
+/* =========================================================================
+   Fundo ASCII das telas de autenticação + transições entre telas (2026-11-17)
+   ========================================================================= */
+.auth-ascii-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  color: rgba(250, 250, 250, 0.22);
+  animation: auth-ascii-in 900ms var(--motion-ease-soft) both;
+}
+:root:not(.dark) .auth-ascii-backdrop {
+  color: rgba(24, 24, 27, 0.3);
+}
+.auth-page > .auth-card {
+  position: relative;
+  z-index: 1;
+}
+@keyframes auth-ascii-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Troca de rota um pouco mais longa e macia que a original (180ms/4px). */
+.route-transition-shell {
+  animation: inboxos-route-enter 260ms var(--motion-ease) both;
+}
+
+/* Troca de tela dentro do workspace (?view=): cada tela monta de novo ao ser
+   escolhida, então a animação de entrada roda a cada troca. Topbar e dock
+   permanecem estáticos. */
+.inboxos-workspace-frame > :not(.app-topbar):not(.mobile-dock) {
+  animation: inboxos-view-in 260ms var(--motion-ease) both;
+}
+/* Abas (ADM e demais painéis com role="tabpanel"). */
+[role="tabpanel"] {
+  animation: inboxos-view-in 220ms var(--motion-ease) both;
+}
+@keyframes inboxos-view-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
