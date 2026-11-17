@@ -33,10 +33,20 @@ import {
   CalendarCheck,
   PencilSimpleLine,
   CaretRight,
+  DotsThree,
+  ArrowLeft,
+  ArrowRight,
 } from "@phosphor-icons/react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useNavigate } from "@tanstack/react-router";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { WhatsAppToast } from "@/components/ui/ToastProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -57,6 +67,8 @@ import {
   createFollowUp,
   createLead,
   createStage,
+  updateStage,
+  deleteStage,
   deleteAgent,
   deleteFollowUp,
   deleteLead,
@@ -559,6 +571,46 @@ export function DashboardView(_props: Props) {
   );
 }
 
+function formatMoney(cents: number, currency = "BRL") {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format((cents || 0) / 100);
+}
+
+function sumLeadValues(items: CrmLead[]) {
+  const byCurrency = new Map<string, number>();
+  for (const lead of items) {
+    const currency = lead.currency || "BRL";
+    byCurrency.set(currency, (byCurrency.get(currency) || 0) + (lead.value_cents || 0));
+  }
+  if (!byCurrency.size) return formatMoney(0);
+  return Array.from(byCurrency.entries())
+    .map(([currency, cents]) => formatMoney(cents, currency))
+    .join(" · ");
+}
+
+const STAGE_COLORS = [
+  "#71717a",
+  "#3b82f6",
+  "#8b5cf6",
+  "#f59e0b",
+  "#10b981",
+  "#ef4444",
+  "#ec4899",
+  "#14b8a6",
+];
+
+const STAGE_KIND_LABEL: Record<string, string> = {
+  open: "Em andamento",
+  won: "Ganho",
+  lost: "Perdido",
+};
+
+function centsToInput(cents: number) {
+  return ((cents || 0) / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export function CrmView({ isDarkMode }: Props) {
   const viewport = useResponsiveViewport();
   const [stages, setStages] = useState<CrmStage[]>([]);
@@ -572,6 +624,28 @@ export function CrmView({ isDarkMode }: Props) {
   const [newStage, setNewStage] = useState("");
   const [pendingLeadDelete, setPendingLeadDelete] = useState<CrmLead | null>(null);
   const [visibleLeadCounts, setVisibleLeadCounts] = useState<Record<string, number>>({});
+  const [layout, setLayout] = useState<"board" | "list">("board");
+  const [leadDrawerOpen, setLeadDrawerOpen] = useState(false);
+  const [dragLeadId, setDragLeadId] = useState<string | null>(null);
+  const [dropStageId, setDropStageId] = useState<string | null>(null);
+  const [crmQuery, setCrmQuery] = useState("");
+  const [detailLead, setDetailLead] = useState<CrmLead | null>(null);
+  const [detailForm, setDetailForm] = useState({
+    name: "",
+    value: "",
+    company: "",
+    email: "",
+    phone: "",
+    notes: "",
+    stageId: "",
+  });
+  const [stageEdit, setStageEdit] = useState<{
+    id: string;
+    name: string;
+    color: string;
+    kind: "open" | "won" | "lost";
+  } | null>(null);
+  const [pendingStageDelete, setPendingStageDelete] = useState<CrmStage | null>(null);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -618,7 +692,76 @@ export function CrmView({ isDarkMode }: Props) {
         valueCents: parseCurrencyValue(form.value),
       });
       setForm({ name: "", value: "" });
+      setLeadDrawerOpen(false);
     }, "Lead criado com sucesso.");
+
+  const moveLead = (lead: CrmLead, stageId: string) => {
+    if (lead.stage_id === stageId) return;
+    // Movimento otimista: o card muda de coluna na hora; o refresh confirma.
+    setLeads((current) =>
+      current.map((item) => (item.id === lead.id ? { ...item, stage_id: stageId } : item)),
+    );
+    void run(() => updateLead({ id: lead.id, stageId }), "Lead movido de etapa.");
+  };
+
+  const openLead = (lead: CrmLead) => {
+    setDetailLead(lead);
+    setDetailForm({
+      name: lead.name || "",
+      value: centsToInput(lead.value_cents),
+      company: lead.company || "",
+      email: lead.email || "",
+      phone: lead.phone_e164 || "",
+      notes: lead.notes || "",
+      stageId: lead.stage_id,
+    });
+  };
+
+  const saveLeadDetail = () => {
+    const lead = detailLead;
+    if (!lead || !detailForm.name.trim()) return;
+    const patch: Record<string, unknown> = { id: lead.id };
+    if (detailForm.name.trim() !== lead.name) patch["name"] = detailForm.name.trim();
+    const cents = parseCurrencyValue(detailForm.value);
+    if (cents !== (lead.value_cents || 0)) patch["valueCents"] = cents;
+    if ((detailForm.company.trim() || null) !== (lead.company || null))
+      patch["company"] = detailForm.company.trim() || null;
+    if ((detailForm.email.trim() || null) !== (lead.email || null))
+      patch["email"] = detailForm.email.trim() || null;
+    if ((detailForm.phone.trim() || null) !== (lead.phone_e164 || null))
+      patch["phoneE164"] = detailForm.phone.trim() || null;
+    if ((detailForm.notes || null) !== (lead.notes || null))
+      patch["notes"] = detailForm.notes || null;
+    if (detailForm.stageId !== lead.stage_id) patch["stageId"] = detailForm.stageId;
+    if (Object.keys(patch).length === 1) {
+      setDetailLead(null);
+      return;
+    }
+    void run(async () => {
+      await updateLead(patch);
+      setDetailLead(null);
+    }, "Lead atualizado.");
+  };
+
+  const shiftStage = (stage: CrmStage, direction: -1 | 1) => {
+    const ordered = [...stages].sort((a, b) => a.position - b.position);
+    const index = ordered.findIndex((item) => item.id === stage.id);
+    const neighbor = ordered[index + direction];
+    if (!neighbor) return;
+    setStages((current) =>
+      current.map((item) =>
+        item.id === stage.id
+          ? { ...item, position: neighbor.position }
+          : item.id === neighbor.id
+            ? { ...item, position: stage.position }
+            : item,
+      ),
+    );
+    void run(async () => {
+      await updateStage({ id: stage.id, position: neighbor.position });
+      await updateStage({ id: neighbor.id, position: stage.position });
+    }, "Etapa reordenada.");
+  };
 
   const handleDeleteLead = (lead: CrmLead) => setPendingLeadDelete(lead);
   const viewState = deriveViewDataState({
@@ -628,198 +771,783 @@ export function CrmView({ isDarkMode }: Props) {
     isEmpty: hasLoaded && stages.length === 0 && leads.length === 0,
   });
 
+  const normalizedQuery = crmQuery.trim().toLowerCase();
+  const filteredLeads = normalizedQuery
+    ? leads.filter((lead) =>
+        `${lead.name} ${lead.company || ""} ${lead.phone_e164 || ""} ${lead.email || ""}`
+          .toLowerCase()
+          .includes(normalizedQuery),
+      )
+    : leads;
+  const openStageIds = new Set(stages.filter((s) => s.kind === "open").map((s) => s.id));
+  const openValue = sumLeadValues(leads.filter((lead) => openStageIds.has(lead.stage_id)));
+
+  const leadContact = (lead: CrmLead) =>
+    lead.company || lead.phone_e164 || lead.email || "Sem contato";
+
   return (
-    <main className="inboxos-page inboxos-product-surface inboxos-crm-surface flex-1 overflow-auto p-4 sm:p-6">
-      <Heading
-        title="CRM"
-        description="Pipeline comercial persistente e isolado por workspace."
-        isDarkMode={isDarkMode}
-        onRefresh={() => void refresh()}
-      />
-      {error && <ErrorBox text={error} />}
-      {viewState === "initial" && (
-        <DataSkeleton label="Preparando pipeline comercial" columns={3} />
-      )}
-      {viewState === "refreshing" && (
-        <p data-state="refreshing" role="status" className="mb-3 text-xs text-zinc-500">
-          Atualizando pipeline...
-        </p>
-      )}
-      {viewState === "empty" && (
-        <Empty>Nenhuma etapa ou lead foi encontrado neste workspace.</Empty>
-      )}
-      {viewState !== "initial" && viewState !== "error" && canManage && (
-        <div
-          className={`${card(isDarkMode)} inboxos-responsive-actions mb-4 grid gap-2 p-3 md:grid-cols-[1fr_160px_auto]`}
-        >
-          <input
-            className={inputClass(isDarkMode)}
-            placeholder="Nome do lead"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <input
-            className={inputClass(isDarkMode)}
-            inputMode="decimal"
-            placeholder="Valor (R$)"
-            value={form.value}
-            onChange={(e) => setForm({ ...form, value: e.target.value })}
-          />
-          <button
-            className={buttonClass(isDarkMode)}
-            disabled={busy || !form.name.trim()}
-            onClick={add}
-          >
-            <Plus size={13} />
-            Lead
-          </button>
-        </div>
-      )}
-      {viewState !== "initial" && viewState !== "error" && (
-        <div className="grid min-w-0 gap-3 xl:grid-cols-5">
-          {stages.map((stage) => {
-            const stageLeads = leads.filter((lead) => lead.stage_id === stage.id);
-            const visibleLeadLimit =
-              visibleLeadCounts[stage.id] ?? progressiveRenderLimit(viewport.horizontal);
-            const visibleLeads = stageLeads.slice(0, visibleLeadLimit);
-            return (
-              <section key={stage.id} className={`${card(isDarkMode)} min-w-0 p-3`}>
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ background: stage.color }}
-                    />
-                    <h2 title={stage.name} className="truncate text-xs font-semibold">
-                      {stage.name}
-                    </h2>
-                  </div>
-                  <span className="text-[10px] text-zinc-500">{stageLeads.length}</span>
-                </div>
-                <div className="grid gap-2">
-                  {visibleLeads.map((lead) => (
-                    <article key={lead.id} className="rounded-xl border border-current/5 p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-current/10">
-                          <UserCircle className="h-full w-full text-zinc-500" weight="duotone" />
-                          {lead.profilePicUrl && (
-                            <img
-                              src={lead.profilePicUrl}
-                              alt=""
-                              className="absolute inset-0 h-full w-full object-cover"
-                              loading="lazy"
-                              onError={(event) => {
-                                event.currentTarget.style.display = "none";
-                              }}
-                            />
-                          )}
+    <main className="inboxos-page inboxos-product-surface inboxos-crm-surface ux-page flex-1 overflow-auto">
+      <div className="ux-container ux-container--wide">
+        <header className="ux-page-header">
+          <div className="min-w-0">
+            <h1 className="ux-h1">CRM</h1>
+            <p className="ux-lead">
+              {hasLoaded
+                ? `${leads.length} ${leads.length === 1 ? "lead" : "leads"} · ${openValue} em negociação`
+                : "Pipeline de vendas do workspace."}
+            </p>
+          </div>
+          <div className="ux-actions">
+            <button
+              type="button"
+              className="ux-icon-btn"
+              onClick={() => void refresh()}
+              aria-label="Atualizar dados de CRM"
+              title="Atualizar"
+            >
+              <ArrowClockwise size={18} aria-hidden="true" />
+            </button>
+            {canManage && (
+              <button
+                type="button"
+                className="ux-btn ux-btn--primary"
+                onClick={() => setLeadDrawerOpen(true)}
+              >
+                <Plus size={16} aria-hidden="true" /> Novo lead
+              </button>
+            )}
+          </div>
+        </header>
+        {error && <ErrorBox text={error} />}
+        {viewState === "initial" && (
+          <DataSkeleton label="Preparando pipeline comercial" columns={3} />
+        )}
+        {viewState === "refreshing" && (
+          <p data-state="refreshing" role="status" className="ux-meta">
+            Atualizando pipeline...
+          </p>
+        )}
+        {viewState === "empty" && (
+          <section className="ux-panel">
+            <div className="ux-empty">
+              <p className="ux-h3">Pipeline vazio</p>
+              <p>Crie as etapas do seu processo de venda e adicione o primeiro lead.</p>
+            </div>
+          </section>
+        )}
+        {hasLoaded && viewState !== "empty" && (
+          <div className="ux-toolbar ux-toolbar--bare">
+            <div className="ux-search">
+              <MagnifyingGlass size={16} aria-hidden="true" />
+              <input
+                className="ux-input"
+                aria-label="Buscar leads"
+                placeholder="Buscar lead, empresa ou telefone"
+                value={crmQuery}
+                onChange={(event) => setCrmQuery(event.target.value)}
+              />
+            </div>
+            <div className="ux-segmented ml-auto" role="tablist" aria-label="Modo de exibição">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={layout === "board"}
+                className="ux-segment"
+                onClick={() => setLayout("board")}
+              >
+                Quadro
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={layout === "list"}
+                className="ux-segment"
+                onClick={() => setLayout("list")}
+              >
+                Lista
+              </button>
+            </div>
+          </div>
+        )}
+
+        {hasLoaded && viewState !== "empty" && layout === "board" && (
+          <div className="ux-board" aria-label="Quadro do pipeline">
+            {[...stages]
+              .sort((a, b) => a.position - b.position)
+              .map((stage, stageIndex, orderedStages) => {
+                const stageLeads = filteredLeads.filter((lead) => lead.stage_id === stage.id);
+                const visibleLeadLimit =
+                  visibleLeadCounts[stage.id] ?? progressiveRenderLimit(viewport.horizontal);
+                const visibleLeads = stageLeads.slice(0, visibleLeadLimit);
+                return (
+                  <section
+                    key={stage.id}
+                    className="ux-col"
+                    data-drop={dropStageId === stage.id}
+                    aria-label={`Etapa ${stage.name}`}
+                    onDragOver={(event) => {
+                      if (!dragLeadId) return;
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "move";
+                      if (dropStageId !== stage.id) setDropStageId(stage.id);
+                    }}
+                    onDragLeave={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+                        setDropStageId(null);
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      const lead = leads.find((item) => item.id === dragLeadId);
+                      setDropStageId(null);
+                      setDragLeadId(null);
+                      if (lead) moveLead(lead, stage.id);
+                    }}
+                  >
+                    <div className="ux-col-head" style={{ borderTopColor: stage.color }}>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <h2 title={stage.name} className="truncate ux-h3">
+                            {stage.name}
+                          </h2>
+                          <span className="ux-col-count">{stageLeads.length}</span>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <p title={lead.name} className="truncate text-xs font-semibold">
-                              {lead.name}
-                            </p>
-                            {lead.contactCategory === "saved_contact" && (
-                              <span className="shrink-0 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-500">
-                                Contato salvo
-                              </span>
-                            )}
-                            {lead.contactCategory === "potential_lead" && (
-                              <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-500">
-                                Possível lead
-                              </span>
+                        <p className="ux-meta truncate">{sumLeadValues(stageLeads)}</p>
+                      </div>
+                      {canManage && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            className="ux-icon-btn ux-col-menu"
+                            aria-label={`Opções da etapa ${stage.name}`}
+                          >
+                            <DotsThree size={18} weight="bold" aria-hidden="true" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[200px]">
+                            <DropdownMenuItem
+                              onSelect={() =>
+                                setStageEdit({
+                                  id: stage.id,
+                                  name: stage.name,
+                                  color: stage.color,
+                                  kind: stage.kind,
+                                })
+                              }
+                            >
+                              <PencilSimple size={16} aria-hidden="true" /> Editar etapa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={stageIndex === 0}
+                              onSelect={() => shiftStage(stage, -1)}
+                            >
+                              <ArrowLeft size={16} aria-hidden="true" /> Mover para a esquerda
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={stageIndex === orderedStages.length - 1}
+                              onSelect={() => shiftStage(stage, 1)}
+                            >
+                              <ArrowRight size={16} aria-hidden="true" /> Mover para a direita
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-[var(--ux-danger)] focus:text-[var(--ux-danger)]"
+                              onSelect={() => setPendingStageDelete(stage)}
+                            >
+                              <Trash size={16} aria-hidden="true" /> Excluir etapa
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                    <div className="ux-col-body">
+                      {visibleLeads.map((lead) => (
+                        <article
+                          key={lead.id}
+                          className="ux-card"
+                          draggable={canManage}
+                          data-dragging={dragLeadId === lead.id}
+                          onDragStart={(event) => {
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData("text/plain", lead.id);
+                            setDragLeadId(lead.id);
+                          }}
+                          onDragEnd={() => {
+                            setDragLeadId(null);
+                            setDropStageId(null);
+                          }}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                              <button
+                                type="button"
+                                className="ux-card-open"
+                                onClick={() => openLead(lead)}
+                                aria-label={`Abrir detalhes de ${lead.name}`}
+                              >
+                                <p title={lead.name} className="truncate ux-strong">
+                                  {lead.name}
+                                </p>
+                              </button>
+                              <p title={leadContact(lead)} className="truncate ux-meta">
+                                {leadContact(lead)}
+                              </p>
+                            </div>
+                            {canManage && (
+                              <button
+                                type="button"
+                                className="ux-icon-btn ux-icon-btn--danger ux-card-action"
+                                onClick={() => handleDeleteLead(lead)}
+                                aria-label={`Excluir lead ${lead.name}`}
+                                title="Excluir"
+                              >
+                                <Trash size={16} aria-hidden="true" />
+                              </button>
                             )}
                           </div>
-                        </div>
-                      </div>
-                      <p className="mt-1 text-[10px] text-zinc-500">
-                        {lead.company || lead.phone_e164 || lead.email || "Sem contato"}
-                      </p>
-                      <p className="mt-2 text-xs">
-                        {new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: lead.currency || "BRL",
-                        }).format((lead.value_cents || 0) / 100)}
-                      </p>
-                      {canManage && (
-                        <div className="mt-3 flex gap-1">
-                          <SurfaceSelect
-                            isDarkMode={isDarkMode}
-                            value={lead.stage_id}
-                            onValueChange={(stageId) =>
-                              void run(
-                                () => updateLead({ id: lead.id, stageId }),
-                                "Lead movido de etapa.",
-                              )
-                            }
-                            placeholder="Etapa do lead"
-                            ariaLabel={`Mover etapa do lead ${lead.name}`}
-                          >
-                            {stages.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.name}
-                              </SelectItem>
-                            ))}
-                          </SurfaceSelect>
-                          <button
-                            className={`${buttonClass(isDarkMode)} h-8 px-2 text-red-500 hover:text-red-600`}
-                            onClick={() => handleDeleteLead(lead)}
-                            title="Excluir lead"
-                            aria-label={`Excluir lead ${lead.name}`}
-                          >
-                            <Trash size={13} />
-                          </button>
-                        </div>
+                          <div className="ux-card-foot">
+                            <span className="ux-card-value" data-empty={!lead.value_cents}>
+                              {lead.value_cents
+                                ? formatMoney(lead.value_cents, lead.currency || "BRL")
+                                : "Sem valor"}
+                            </span>
+                            {lead.contactCategory === "saved_contact" && (
+                              <span className="ux-card-tag">Contato salvo</span>
+                            )}
+                            {lead.contactCategory === "potential_lead" && (
+                              <span className="ux-card-tag">Possível lead</span>
+                            )}
+                          </div>
+                          {canManage && (
+                            <div className="ux-card-stage">
+                              <SurfaceSelect
+                                isDarkMode={isDarkMode}
+                                className="ux-input ux-input--sm"
+                                value={lead.stage_id}
+                                onValueChange={(stageId) => moveLead(lead, stageId)}
+                                placeholder="Etapa do lead"
+                                ariaLabel={`Mover etapa do lead ${lead.name}`}
+                              >
+                                {stages.map((s) => (
+                                  <SelectItem key={s.id} value={s.id}>
+                                    {s.name}
+                                  </SelectItem>
+                                ))}
+                              </SurfaceSelect>
+                            </div>
+                          )}
+                        </article>
+                      ))}
+                      {!stageLeads.length && (
+                        <p className="ux-col-empty">
+                          {dragLeadId
+                            ? "Solte aqui"
+                            : normalizedQuery
+                              ? "Nenhum resultado"
+                              : "Sem leads"}
+                        </p>
                       )}
-                    </article>
-                  ))}
-                  {!stageLeads.length && (
-                    <p className="py-3 text-center text-[10px] text-zinc-500">Sem leads</p>
-                  )}
-                  {stageLeads.length > visibleLeads.length && (
-                    <button
-                      type="button"
-                      className={`${buttonClass(isDarkMode)} mt-1 w-full`}
-                      onClick={() =>
-                        setVisibleLeadCounts((current) => ({
-                          ...current,
-                          [stage.id]:
-                            visibleLeadLimit + progressiveRenderLimit(viewport.horizontal),
-                        }))
-                      }
-                    >
-                      Mostrar mais ({stageLeads.length - visibleLeads.length})
-                    </button>
-                  )}
+                      {stageLeads.length > visibleLeads.length && (
+                        <button
+                          type="button"
+                          className="ux-btn ux-btn--ghost w-full"
+                          onClick={() =>
+                            setVisibleLeadCounts((current) => ({
+                              ...current,
+                              [stage.id]:
+                                visibleLeadLimit + progressiveRenderLimit(viewport.horizontal),
+                            }))
+                          }
+                        >
+                          Mostrar mais ({stageLeads.length - visibleLeads.length})
+                        </button>
+                      )}
+                    </div>
+                  </section>
+                );
+              })}
+            {canManage && (
+              <form
+                className="ux-col ux-col--new"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!newStage.trim() || busy) return;
+                  void run(async () => {
+                    await createStage({ name: newStage.trim(), position: stages.length });
+                    setNewStage("");
+                  }, "Etapa criada com sucesso.");
+                }}
+              >
+                <p className="ux-h3">Nova etapa</p>
+                <input
+                  className="ux-input"
+                  aria-label="Nome da nova etapa"
+                  placeholder="Ex.: Proposta enviada"
+                  value={newStage}
+                  onChange={(e) => setNewStage(e.target.value)}
+                />
+                <button type="submit" className="ux-btn" disabled={!newStage.trim() || busy}>
+                  <Plus size={16} aria-hidden="true" /> Adicionar etapa
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+
+        {hasLoaded && viewState !== "empty" && layout === "list" && (
+          <section className="ux-panel" aria-label="Lista de leads">
+            {filteredLeads.length ? (
+              <div className="ux-table ux-table--crm" role="table" aria-label="Leads">
+                <div className="ux-table-head" role="row">
+                  <span role="columnheader">Lead</span>
+                  <span role="columnheader">Etapa</span>
+                  <span role="columnheader" className="ux-col-company">
+                    Valor
+                  </span>
+                  <span role="columnheader" className="ux-col-tags">
+                    Origem
+                  </span>
+                  <span role="columnheader" aria-label="Ações" />
                 </div>
-              </section>
-            );
-          })}
-        </div>
-      )}
-      {viewState !== "initial" && viewState !== "error" && canManage && (
-        <div className={`${card(isDarkMode)} mt-4 flex gap-2 p-3`}>
-          <input
-            className={`${inputClass(isDarkMode)} flex-1`}
-            placeholder="Nova etapa"
-            value={newStage}
-            onChange={(e) => setNewStage(e.target.value)}
-          />
-          <button
-            className={buttonClass(isDarkMode)}
-            disabled={!newStage.trim() || busy}
-            onClick={() =>
-              void run(async () => {
-                await createStage({ name: newStage.trim(), position: stages.length });
-                setNewStage("");
-              }, "Etapa criada com sucesso.")
-            }
+                {filteredLeads.slice(0, 300).map((lead) => {
+                  const stage = stages.find((item) => item.id === lead.stage_id);
+                  return (
+                    <div key={lead.id} className="ux-table-row" role="row">
+                      <span role="cell" className="ux-client">
+                        <span className="ux-avatar" aria-hidden="true">
+                          {lead.profilePicUrl ? (
+                            <img src={lead.profilePicUrl} alt="" loading="lazy" />
+                          ) : (
+                            <span>{(lead.name || "?").trim().charAt(0).toUpperCase()}</span>
+                          )}
+                        </span>
+                        <span className="min-w-0">
+                          <button
+                            type="button"
+                            className="block max-w-full truncate text-left ux-strong hover:underline"
+                            onClick={() => openLead(lead)}
+                          >
+                            {lead.name}
+                          </button>
+                          <span className="block truncate ux-meta">{leadContact(lead)}</span>
+                        </span>
+                      </span>
+                      <span role="cell" className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="ux-chip-dot"
+                          style={{ background: stage?.color || "var(--ux-subtle)" }}
+                          aria-hidden="true"
+                        />
+                        <span className="truncate">{stage?.name || "—"}</span>
+                      </span>
+                      <span role="cell" className="ux-col-company tabular-nums">
+                        {formatMoney(lead.value_cents, lead.currency || "BRL")}
+                      </span>
+                      <span role="cell" className="ux-col-tags ux-meta">
+                        {lead.contactCategory === "saved_contact"
+                          ? "Contato salvo"
+                          : lead.contactCategory === "potential_lead"
+                            ? "Possível lead"
+                            : "Manual"}
+                      </span>
+                      <span role="cell" className="flex justify-end">
+                        {canManage && (
+                          <button
+                            type="button"
+                            className="ux-icon-btn ux-icon-btn--danger"
+                            onClick={() => handleDeleteLead(lead)}
+                            aria-label={`Excluir lead ${lead.name} da lista`}
+                          >
+                            <Trash size={16} aria-hidden="true" />
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="ux-empty">
+                <p className="ux-h3">Nenhum resultado</p>
+                <p>Ajuste a busca para ver outros leads.</p>
+              </div>
+            )}
+            {filteredLeads.length > 300 && (
+              <p className="ux-meta border-t border-[var(--ux-line)] px-[18px] py-3">
+                Mostrando 300 de {filteredLeads.length}. Use a busca para refinar.
+              </p>
+            )}
+          </section>
+        )}
+      </div>
+
+      <DialogPrimitive.Root open={leadDrawerOpen} onOpenChange={setLeadDrawerOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content
+            className="ux-drawer ux-drawer--narrow"
+            aria-describedby="crm-lead-description"
           >
-            <Plus size={13} />
-            Etapa
-          </button>
-        </div>
-      )}
+            <div className="ux-drawer-head">
+              <div className="min-w-0">
+                <DialogPrimitive.Title className="ux-h2">Novo lead</DialogPrimitive.Title>
+                <DialogPrimitive.Description id="crm-lead-description" className="ux-meta">
+                  O lead entra na primeira etapa do pipeline.
+                </DialogPrimitive.Description>
+              </div>
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar novo lead">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+            <form
+              id="crm-lead-form"
+              className="ux-drawer-body"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!busy && form.name.trim()) void add();
+              }}
+            >
+              <div className="ux-section">
+                <UxField label="Nome" htmlFor="crm-lead-name">
+                  <input
+                    id="crm-lead-name"
+                    className="ux-input"
+                    placeholder="Nome do lead ou da empresa"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  />
+                </UxField>
+                <UxField
+                  label="Valor estimado"
+                  htmlFor="crm-lead-value"
+                  hint="Em reais. Ex.: 1.500,00"
+                >
+                  <input
+                    id="crm-lead-value"
+                    className="ux-input"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={form.value}
+                    onChange={(e) => setForm({ ...form, value: e.target.value })}
+                  />
+                </UxField>
+              </div>
+            </form>
+            <div className="ux-drawer-foot">
+              <span />
+              <div className="flex gap-2">
+                <DialogPrimitive.Close className="ux-btn ux-btn--ghost">
+                  Cancelar
+                </DialogPrimitive.Close>
+                <button
+                  type="submit"
+                  form="crm-lead-form"
+                  className="ux-btn ux-btn--primary"
+                  disabled={busy || !form.name.trim()}
+                >
+                  Criar lead
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      <DialogPrimitive.Root
+        open={Boolean(detailLead)}
+        onOpenChange={(open) => {
+          if (!open) setDetailLead(null);
+        }}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content
+            className="ux-drawer ux-drawer--narrow"
+            aria-describedby="crm-detail-description"
+          >
+            <div className="ux-drawer-head">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="ux-avatar" aria-hidden="true">
+                  {detailLead?.profilePicUrl ? (
+                    <img src={detailLead.profilePicUrl} alt="" />
+                  ) : (
+                    <span>{(detailLead?.name || "?").trim().charAt(0).toUpperCase()}</span>
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <DialogPrimitive.Title className="ux-h2 truncate">
+                    {detailLead?.name}
+                  </DialogPrimitive.Title>
+                  <DialogPrimitive.Description id="crm-detail-description" className="ux-meta">
+                    Atualizado em{" "}
+                    {detailLead
+                      ? new Date(detailLead.updated_at).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : ""}
+                  </DialogPrimitive.Description>
+                </div>
+              </div>
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar detalhes do lead">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+            <form
+              id="crm-detail-form"
+              className="ux-drawer-body"
+              onSubmit={(event) => {
+                event.preventDefault();
+                saveLeadDetail();
+              }}
+            >
+              <div className="ux-section">
+                <div className="ux-form-grid">
+                  <UxField label="Etapa">
+                    <SurfaceSelect
+                      isDarkMode={isDarkMode}
+                      className="ux-input"
+                      value={detailForm.stageId}
+                      disabled={!canManage}
+                      onValueChange={(stageId) => setDetailForm({ ...detailForm, stageId })}
+                      placeholder="Etapa"
+                      ariaLabel="Etapa do lead"
+                    >
+                      {stages.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SurfaceSelect>
+                  </UxField>
+                  <UxField label="Valor estimado" htmlFor="crm-detail-value">
+                    <input
+                      id="crm-detail-value"
+                      className="ux-input"
+                      inputMode="decimal"
+                      disabled={!canManage}
+                      value={detailForm.value}
+                      onChange={(e) => setDetailForm({ ...detailForm, value: e.target.value })}
+                    />
+                  </UxField>
+                </div>
+              </div>
+              <div className="ux-section">
+                <h3 className="ux-h3">Contato</h3>
+                <UxField label="Nome" htmlFor="crm-detail-name">
+                  <input
+                    id="crm-detail-name"
+                    className="ux-input"
+                    disabled={!canManage}
+                    value={detailForm.name}
+                    onChange={(e) => setDetailForm({ ...detailForm, name: e.target.value })}
+                  />
+                </UxField>
+                <UxField label="Empresa" htmlFor="crm-detail-company">
+                  <input
+                    id="crm-detail-company"
+                    className="ux-input"
+                    disabled={!canManage}
+                    value={detailForm.company}
+                    onChange={(e) => setDetailForm({ ...detailForm, company: e.target.value })}
+                  />
+                </UxField>
+                <div className="ux-form-grid">
+                  <UxField label="Telefone" htmlFor="crm-detail-phone" hint="Ex.: +5511999999999">
+                    <input
+                      id="crm-detail-phone"
+                      className="ux-input"
+                      inputMode="tel"
+                      disabled={!canManage}
+                      value={detailForm.phone}
+                      onChange={(e) => setDetailForm({ ...detailForm, phone: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField label="E-mail" htmlFor="crm-detail-email">
+                    <input
+                      id="crm-detail-email"
+                      className="ux-input"
+                      type="email"
+                      disabled={!canManage}
+                      value={detailForm.email}
+                      onChange={(e) => setDetailForm({ ...detailForm, email: e.target.value })}
+                    />
+                  </UxField>
+                </div>
+              </div>
+              <div className="ux-section">
+                <UxField label="Notas" htmlFor="crm-detail-notes" hint="Visível só para a equipe.">
+                  <textarea
+                    id="crm-detail-notes"
+                    className="ux-input"
+                    rows={5}
+                    disabled={!canManage}
+                    value={detailForm.notes}
+                    onChange={(e) => setDetailForm({ ...detailForm, notes: e.target.value })}
+                  />
+                </UxField>
+              </div>
+            </form>
+            <div className="ux-drawer-foot">
+              {canManage && detailLead ? (
+                <button
+                  type="button"
+                  className="ux-btn ux-btn--ghost ux-btn--danger"
+                  onClick={() => {
+                    const lead = detailLead;
+                    setDetailLead(null);
+                    handleDeleteLead(lead);
+                  }}
+                >
+                  <Trash size={16} aria-hidden="true" /> Excluir
+                </button>
+              ) : (
+                <span />
+              )}
+              <div className="flex gap-2">
+                <DialogPrimitive.Close className="ux-btn ux-btn--ghost">
+                  Fechar
+                </DialogPrimitive.Close>
+                {canManage && (
+                  <button
+                    type="submit"
+                    form="crm-detail-form"
+                    className="ux-btn ux-btn--primary"
+                    disabled={busy || !detailForm.name.trim()}
+                  >
+                    Salvar alterações
+                  </button>
+                )}
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      <DialogPrimitive.Root
+        open={Boolean(stageEdit)}
+        onOpenChange={(open) => {
+          if (!open) setStageEdit(null);
+        }}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content className="ux-modal" aria-describedby="crm-stage-description">
+            <div className="ux-drawer-head">
+              <div className="min-w-0">
+                <DialogPrimitive.Title className="ux-h2">Editar etapa</DialogPrimitive.Title>
+                <DialogPrimitive.Description id="crm-stage-description" className="ux-meta">
+                  Nome, cor e tipo da etapa no pipeline.
+                </DialogPrimitive.Description>
+              </div>
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar edição da etapa">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+            {stageEdit && (
+              <form
+                className="ux-section"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!stageEdit.name.trim()) return;
+                  const edit = stageEdit;
+                  void run(async () => {
+                    await updateStage({
+                      id: edit.id,
+                      name: edit.name.trim(),
+                      color: edit.color,
+                      kind: edit.kind,
+                    });
+                    setStageEdit(null);
+                  }, "Etapa atualizada.");
+                }}
+              >
+                <UxField label="Nome" htmlFor="crm-stage-name">
+                  <input
+                    id="crm-stage-name"
+                    className="ux-input"
+                    value={stageEdit.name}
+                    onChange={(e) => setStageEdit({ ...stageEdit, name: e.target.value })}
+                  />
+                </UxField>
+                <div className="ux-field">
+                  <span className="ux-label">Cor</span>
+                  <div className="ux-swatches" role="radiogroup" aria-label="Cor da etapa">
+                    {Array.from(
+                      new Set([
+                        (
+                          stages.find((item) => item.id === stageEdit.id)?.color || ""
+                        ).toLowerCase(),
+                        ...STAGE_COLORS,
+                      ]),
+                    )
+                      .filter((color) => /^#[0-9a-f]{6}$/.test(color))
+                      .map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          role="radio"
+                          aria-checked={stageEdit.color.toLowerCase() === color}
+                          aria-label={`Cor ${color}`}
+                          className="ux-swatch"
+                          style={{ background: color }}
+                          onClick={() => setStageEdit({ ...stageEdit, color })}
+                        />
+                      ))}
+                  </div>
+                </div>
+                <UxField label="Tipo" hint="Ganho e Perdido não somam no valor em negociação.">
+                  <SurfaceSelect
+                    isDarkMode={isDarkMode}
+                    className="ux-input"
+                    value={stageEdit.kind}
+                    onValueChange={(kind) =>
+                      setStageEdit({ ...stageEdit, kind: kind as "open" | "won" | "lost" })
+                    }
+                    placeholder="Tipo"
+                    ariaLabel="Tipo da etapa"
+                  >
+                    {Object.entries(STAGE_KIND_LABEL).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SurfaceSelect>
+                </UxField>
+                <div className="flex justify-end gap-2">
+                  <DialogPrimitive.Close className="ux-btn ux-btn--ghost">
+                    Cancelar
+                  </DialogPrimitive.Close>
+                  <button
+                    type="submit"
+                    className="ux-btn ux-btn--primary"
+                    disabled={busy || !stageEdit.name.trim()}
+                  >
+                    Salvar etapa
+                  </button>
+                </div>
+              </form>
+            )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      <ConfirmDialog
+        open={Boolean(pendingStageDelete)}
+        title="Excluir etapa?"
+        description={`A etapa ${pendingStageDelete?.name || "selecionada"} será removida. Etapas com leads não podem ser excluídas: mova os leads antes.`}
+        confirmLabel="Excluir etapa"
+        destructive
+        busy={busy}
+        dark={isDarkMode}
+        onCancel={() => setPendingStageDelete(null)}
+        onConfirm={() => {
+          if (!pendingStageDelete) return;
+          const stage = pendingStageDelete;
+          setPendingStageDelete(null);
+          void run(() => deleteStage(stage.id), "Etapa excluída.");
+        }}
+      />
+
       <ConfirmDialog
         open={Boolean(pendingLeadDelete)}
         title="Excluir lead?"

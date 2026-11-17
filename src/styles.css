@@ -4731,3 +4731,327 @@ button.ux-chip:disabled {
   height: 100%;
   object-fit: cover;
 }
+
+/* CRM: página larga, quadro kanban com rolagem horizontal */
+.ux-container--wide {
+  max-width: none;
+}
+.ux-toolbar--bare {
+  padding: 0;
+  border: 0;
+}
+.ux-board {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.ux-col {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 300px;
+  max-height: calc(100dvh - 260px);
+  min-height: 160px;
+  border-radius: var(--ux-radius);
+  background: var(--ux-surface-2);
+  border: 1px solid var(--ux-line);
+  scroll-snap-align: start;
+  transition:
+    border-color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease);
+}
+.ux-col[data-drop="true"] {
+  border-color: var(--ux-ink);
+  background: var(--ux-hover);
+}
+.ux-col-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ux-line);
+}
+.ux-col-body {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ux-col-empty {
+  padding: 18px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ux-subtle);
+  border: 1px dashed var(--ux-line-strong);
+  border-radius: var(--ux-radius-sm);
+}
+.ux-col--new {
+  gap: 10px;
+  padding: 14px;
+  background: transparent;
+  border-style: dashed;
+}
+.ux-card {
+  position: relative;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease),
+    scale var(--motion-fast) var(--motion-ease);
+}
+.ux-card[draggable="true"] {
+  cursor: grab;
+}
+.ux-card:hover {
+  border-color: var(--ux-line-strong);
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.18);
+}
+.ux-card[data-dragging="true"] {
+  opacity: 0.45;
+  scale: 0.98;
+}
+.ux-card-action {
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  opacity: 0;
+}
+.ux-card:hover .ux-card-action,
+.ux-card:focus-within .ux-card-action {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .ux-card-action {
+    opacity: 1;
+  }
+}
+.ux-card-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ux-ink);
+}
+.ux-card-stage {
+  margin-top: 10px;
+}
+.ux-input--sm {
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.ux-avatar--sm {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+
+/* Lista do CRM */
+.ux-table--crm .ux-table-head,
+.ux-table--crm .ux-table-row {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 48px;
+}
+@media (max-width: 899px) {
+  .ux-table--crm .ux-table-head,
+  .ux-table--crm .ux-table-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px;
+  }
+}
+/* Seletor de etapa só aparece com hover/foco (sempre visível no toque) */
+.ux-card-stage {
+  display: none;
+}
+.ux-card:has(.ux-card-stage :focus-visible) .ux-card-stage,
+.ux-card:focus-within:has(:focus-visible) .ux-card-stage {
+  display: block;
+  animation: ux-fade-in 140ms var(--motion-ease) both;
+}
+@media (pointer: coarse) {
+  .ux-card-stage {
+    display: block;
+  }
+}
+
+/* CRM v2: colunas cabem na tela, cabeçalho com faixa de cor, cards densos */
+.ux-board {
+  overflow-x: auto;
+}
+.ux-col {
+  flex: 1 1 0;
+  min-width: 232px;
+  max-width: 380px;
+}
+.ux-col--new {
+  flex: 0 0 220px;
+  min-width: 220px;
+}
+.ux-col-head {
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 56px;
+  padding: 10px 8px 10px 14px;
+  border-top: 3px solid transparent;
+  border-top-left-radius: var(--ux-radius);
+  border-top-right-radius: var(--ux-radius);
+}
+.ux-col-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ux-muted);
+  font-variant-numeric: tabular-nums;
+}
+.ux-col-menu {
+  width: 30px;
+  height: 30px;
+}
+.ux-col-body {
+  gap: 6px;
+  padding: 8px;
+}
+.ux-card {
+  padding: 10px 12px;
+  border-radius: 9px;
+}
+.ux-card-open {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* Área inteira do card abre o detalhe; botões internos ficam por cima */
+.ux-card-open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.ux-card-open:focus-visible {
+  outline: none;
+}
+.ux-card-open:focus-visible::after {
+  box-shadow: var(--ux-focus);
+}
+.ux-card-action,
+.ux-card-stage {
+  position: relative;
+  z-index: 1;
+}
+.ux-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ux-card-value[data-empty="true"] {
+  font-weight: 500;
+  color: var(--ux-subtle);
+}
+.ux-card-tag {
+  font-size: 11px;
+  color: var(--ux-subtle);
+  white-space: nowrap;
+}
+.ux-card-stage {
+  margin-top: 8px;
+}
+
+/* Modal centrado pequeno */
+.ux-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 81;
+  width: min(calc(100vw - 32px), 440px);
+  translate: -50% -50%;
+  border-radius: 14px;
+  background: var(--ux-surface);
+  color: var(--ux-ink);
+  border: 1px solid var(--ux-line);
+  box-shadow: var(--ux-shadow-pop);
+  font-size: 13px;
+  line-height: 20px;
+  outline: none;
+}
+.ux-modal[data-state="open"] {
+  animation: ux-modal-center-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.ux-modal[data-state="closed"] {
+  animation: ux-modal-center-out 130ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes ux-modal-center-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes ux-modal-center-out {
+  to {
+    opacity: 0;
+    scale: 0.98;
+  }
+}
+
+/* Paleta de cores */
+.ux-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ux-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 2px solid var(--ux-surface);
+  box-shadow: 0 0 0 1px var(--ux-line-strong);
+  cursor: pointer;
+  transition:
+    box-shadow var(--motion-fast) var(--motion-ease),
+    scale var(--motion-fast) var(--motion-ease);
+}
+.ux-swatch:hover {
+  scale: 1.08;
+}
+.ux-swatch[aria-checked="true"] {
+  box-shadow: 0 0 0 2px var(--ux-ink);
+}
+.ux-swatch:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--ux-ink),
+    var(--ux-focus);
+}
+/* O botão que abre o card não pode ganhar transform no :active: viraria o
+   containing block do ::after e o clique cairia fora dele. */
+.ux-card-open,
+.ux-card-open:active,
+.ux-card-open:focus {
+  position: static;
+  transform: none !important;
+  scale: none !important;
+}
