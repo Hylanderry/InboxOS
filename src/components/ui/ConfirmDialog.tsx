@@ -72,7 +72,7 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[130] grid min-h-[100dvh] place-items-center bg-black/50 p-3 backdrop-blur-sm sm:p-6"
+      className="ux-backdrop-enter fixed inset-0 z-[130] grid min-h-[100dvh] place-items-center bg-black/50 p-3 backdrop-blur-sm sm:p-6"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !busy) onCancel();
@@ -84,7 +84,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        className={`w-full max-w-md rounded-2xl border p-5 shadow-2xl ${
+        className={`ux-modal-enter w-full max-w-md rounded-2xl border p-5 shadow-2xl ${
           dark
             ? "border-white/10 bg-[#121215] text-white"
             : "border-neutral-200 bg-white text-neutral-950"

@@ -17,26 +17,14 @@ export const Route = createFileRoute("/")({
   }),
   component: Index,
 });
+/**
+ * Abertura do app sem "tela de carregamento": só o fundo do tema. Se a sessão
+ * demorar, uma linha discreta aparece com fade depois de ~0,9s.
+ */
 function Loading() {
   return (
-    <div
-      className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#080809]"
-      aria-busy="true"
-      aria-label="Carregando workspace"
-    >
-      <div
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: "#3f3f46",
-          animation: "inboxos-ping 1.4s ease-in-out infinite",
-        }}
-      />
-      <p style={{ color: "#52525b", fontSize: 12, margin: 0, fontFamily: "inherit" }}>
-        Carregando…
-      </p>
-      <style>{`@keyframes inboxos-ping{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:.9;transform:scale(1.15)}}`}</style>
+    <div className="ux-boot" aria-busy="true" aria-label="Carregando workspace">
+      <span className="ux-loading-bar ux-boot-bar" aria-hidden="true" />
     </div>
   );
 }

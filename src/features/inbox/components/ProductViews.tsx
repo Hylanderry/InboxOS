@@ -26,7 +26,16 @@ import {
   UserPlus,
   CheckCircle,
   BookOpenText,
+  ChatCircleDots,
+  PaperPlaneRight,
+  Handshake,
+  Lifebuoy,
+  CalendarCheck,
+  PencilSimpleLine,
+  CaretRight,
 } from "@phosphor-icons/react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Switch } from "@/components/ui/switch";
 import { WhatsAppToast } from "@/components/ui/ToastProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -133,9 +142,11 @@ function SurfaceSelect({
   placeholder,
   ariaLabel,
   disabled = false,
+  className,
   children,
 }: {
   isDarkMode: boolean;
+  className?: string;
   value: string;
   onValueChange: (value: string) => void;
   placeholder: string;
@@ -145,7 +156,7 @@ function SurfaceSelect({
 }) {
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger className={inputClass(isDarkMode)} aria-label={ariaLabel}>
+      <SelectTrigger className={className ?? inputClass(isDarkMode)} aria-label={ariaLabel}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>{children}</SelectContent>
@@ -187,28 +198,22 @@ function Empty({ children }: { children: string }) {
   );
 }
 
-const skeletonGridColumns = {
-  2: "grid-cols-2",
-  3: "grid-cols-2 md:grid-cols-3",
-  5: "grid-cols-2 lg:grid-cols-5",
-} as const;
-
-function DataSkeleton({ label, columns = 2 }: { label: string; columns?: 2 | 3 | 5 }) {
+/**
+ * Carregamento inicial discreto: uma linha de progresso e o texto do que está
+ * sendo preparado. Substitui a grade de blocos cinzas, que parecia conteúdo
+ * quebrado. A prop `columns` é mantida por compatibilidade com as telas.
+ */
+function DataSkeleton({ label }: { label: string; columns?: 2 | 3 | 5 }) {
   return (
     <div
       data-state="initial"
       role="status"
       aria-label={label}
       aria-busy="true"
-      className={`grid ${skeletonGridColumns[columns]} gap-3`}
+      className="ux-loading"
     >
-      {Array.from({ length: columns * 2 }, (_, index) => (
-        <div
-          key={index}
-          aria-hidden="true"
-          className="h-24 animate-pulse rounded-2xl border border-current/5 bg-current/[0.035]"
-        />
-      ))}
+      <span className="ux-loading-bar" aria-hidden="true" />
+      <span className="ux-meta">{label}...</span>
     </div>
   );
 }
@@ -934,6 +939,179 @@ export function FollowUpView({ isDarkMode }: Props) {
   );
 }
 
+type AgentTemplate = {
+  id: string;
+  label: string;
+  summary: string;
+  icon: typeof Handshake;
+  preview: Array<{ from: "customer" | "agent"; text: string }>;
+  values: Record<string, string | boolean>;
+};
+
+const AGENT_TEMPLATES: AgentTemplate[] = [
+  {
+    id: "sales",
+    label: "Pré-vendas",
+    summary: "Qualifica o contato e leva para uma proposta ou reunião.",
+    icon: Handshake,
+    preview: [
+      { from: "customer", text: "Oi, quanto custa o plano para minha loja?" },
+      {
+        from: "agent",
+        text: "Olá! Depende do tamanho da operação. Quantas pessoas atendem clientes hoje na sua loja?",
+      },
+      { from: "customer", text: "Somos 4." },
+      {
+        from: "agent",
+        text: "Perfeito. Posso marcar 20 minutos com um consultor para montar a proposta certa para vocês?",
+      },
+    ],
+    values: {
+      name: "Pré-vendas",
+      objective:
+        "Entender a necessidade do contato, responder dúvidas sobre produtos e serviços e conduzir para uma proposta ou reunião com a equipe comercial.",
+      audience: "Pessoas interessadas que chegam pelo WhatsApp",
+      personality: "Consultiva, objetiva e cordial",
+      tone: "professional",
+      greeting: "Olá! Obrigado pelo contato. Como posso ajudar?",
+      rules:
+        "Faça uma pergunta por vez\nNunca invente preços ou prazos\nAo identificar interesse real, ofereça falar com um consultor",
+      forbiddenTopics: "Descontos não aprovados\nAssuntos fora do negócio",
+    },
+  },
+  {
+    id: "support",
+    label: "Suporte",
+    summary: "Resolve dúvidas frequentes e chama a equipe quando precisa.",
+    icon: Lifebuoy,
+    preview: [
+      { from: "customer", text: "Não consigo acessar minha conta." },
+      {
+        from: "agent",
+        text: "Sinto muito pelo transtorno. Aparece alguma mensagem de erro quando você tenta entrar?",
+      },
+      { from: "customer", text: "Diz que a senha está errada." },
+      {
+        from: "agent",
+        text: 'Vamos resolver: toque em "Esqueci minha senha" na tela de login e siga o link enviado ao seu e-mail. Funcionou?',
+      },
+    ],
+    values: {
+      name: "Suporte ao cliente",
+      objective:
+        "Resolver dúvidas frequentes de clientes, orientar passo a passo e transferir para a equipe quando o problema exigir análise.",
+      audience: "Clientes atuais",
+      personality: "Paciente e clara",
+      tone: "empathetic",
+      greeting: "Oi! Me conta o que aconteceu que eu te ajudo.",
+      rules:
+        "Confirme se o problema foi resolvido antes de encerrar\nUse a base de conhecimento como fonte\nSe não souber a resposta, transfira para um atendente",
+      forbiddenTopics: "Dados de outros clientes\nPromessas de reembolso",
+      includeKnowledgeBase: true,
+    },
+  },
+  {
+    id: "scheduling",
+    label: "Agendamento",
+    summary: "Marca, remarca e cancela horários na sua agenda.",
+    icon: CalendarCheck,
+    preview: [
+      { from: "customer", text: "Queria marcar um horário essa semana." },
+      {
+        from: "agent",
+        text: "Claro! Tenho quinta às 10h, quinta às 15h ou sexta às 9h. Qual fica melhor?",
+      },
+      { from: "customer", text: "Quinta às 15h." },
+      {
+        from: "agent",
+        text: "Confirmado: quinta-feira, 15h. Te mando um lembrete no dia. Até lá!",
+      },
+    ],
+    values: {
+      name: "Agendamentos",
+      objective:
+        "Ajudar o cliente a marcar, remarcar ou cancelar horários, confirmando data, horário e serviço antes de concluir.",
+      audience: "Clientes que querem marcar um horário",
+      personality: "Organizada e direta",
+      tone: "friendly",
+      greeting: "Olá! Quer marcar um horário? Me diz o melhor dia para você.",
+      rules:
+        "Sempre confirme data e horário antes de agendar\nOfereça no máximo três opções de horário",
+      forbiddenTopics: "Diagnósticos ou orientações técnicas",
+      calendarEnabled: true,
+      calendarPermissions: "read,create,reschedule",
+    },
+  },
+];
+
+type AgentTestMessage = { role: "user" | "agent" | "error"; text: string };
+
+const AGENT_CALENDAR_PERMISSIONS = [
+  { value: "read", label: "Consultar horários" },
+  { value: "create", label: "Criar agendamentos" },
+  { value: "reschedule", label: "Remarcar" },
+  { value: "cancel", label: "Cancelar" },
+] as const;
+
+const AGENT_TONE_LABEL: Record<string, string> = {
+  professional: "Tom profissional",
+  friendly: "Tom amigável",
+  direct: "Tom direto",
+  empathetic: "Tom empático",
+};
+
+const AGENT_EDITOR_SECTIONS = [
+  { id: "agent-sec-identity", label: "Identificação" },
+  { id: "agent-sec-behavior", label: "Comportamento" },
+  { id: "agent-sec-replies", label: "Respostas" },
+  { id: "agent-sec-handoff", label: "Transferência" },
+  { id: "agent-sec-context", label: "Contexto" },
+] as const;
+
+const AGENT_RUN_STATUS: Record<string, string> = {
+  completed: "Respondida",
+  failed: "Falhou",
+  running: "Em andamento",
+  pending: "Na fila",
+  skipped: "Ignorada",
+};
+
+function formatRunTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Campo com rótulo visível e dica opcional (declarado fora dos componentes para não remontar). */
+function UxField({
+  label,
+  hint,
+  htmlFor,
+  className = "",
+  children,
+}: {
+  label: string;
+  hint?: string;
+  htmlFor?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={`ux-field ${className}`}>
+      <label className="ux-label" htmlFor={htmlFor}>
+        {label}
+      </label>
+      {children}
+      {hint && <p className="ux-hint">{hint}</p>}
+    </div>
+  );
+}
+
 export function AgentsView({ isDarkMode }: Props) {
   const [agents, setAgents] = useState<AutomationAgent[]>([]);
   const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>([]);
@@ -953,13 +1131,18 @@ export function AgentsView({ isDarkMode }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [testText, setTestText] = useState<Record<string, string>>({});
-  const [testResult, setTestResult] = useState<Record<string, string>>({});
+  const [testThreads, setTestThreads] = useState<Record<string, AgentTestMessage[]>>({});
+  const [testAgentId, setTestAgentId] = useState<string | null>(null);
+  const [testBusy, setTestBusy] = useState(false);
+  const [knowledgeFormOpen, setKnowledgeFormOpen] = useState(false);
+  const [previewTemplateId, setPreviewTemplateId] = useState("sales");
+  const [editorSection, setEditorSection] = useState("agent-sec-identity");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
   const [pendingAgentDeleteIds, setPendingAgentDeleteIds] = useState<string[] | null>(null);
   const editorTriggerRef = useRef<HTMLElement | null>(null);
-  const editorDialogRef = useRef<HTMLElement | null>(null);
+  const editorDialogRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState({
     name: "",
     objective: "",
@@ -1029,12 +1212,11 @@ export function AgentsView({ isDarkMode }: Props) {
   }, [refresh]);
 
   useEffect(() => {
-    if (!editorOpen || agents.length === 0) return;
-    const first = editorDialogRef.current?.querySelector<HTMLElement>(
-      "input, select, textarea, button:not([disabled])",
+    if (!editorOpen) return;
+    requestAnimationFrame(() =>
+      editorDialogRef.current?.querySelector<HTMLElement>("input, textarea")?.focus(),
     );
-    requestAnimationFrame(() => first?.focus());
-  }, [agents.length, editorOpen]);
+  }, [editorOpen]);
 
   const run = async (fn: () => Promise<unknown>, ok?: string) => {
     setBusy(true);
@@ -1053,6 +1235,7 @@ export function AgentsView({ isDarkMode }: Props) {
   };
 
   const openEditor = (trigger?: HTMLElement | null) => {
+    setEditorSection("agent-sec-identity");
     editorTriggerRef.current = trigger ?? (document.activeElement as HTMLElement | null);
     setEditorOpen(true);
   };
@@ -1061,32 +1244,6 @@ export function AgentsView({ isDarkMode }: Props) {
     resetForm();
     setEditorOpen(false);
     requestAnimationFrame(() => editorTriggerRef.current?.focus());
-  };
-
-  const trapEditorFocus = (event: KeyboardEvent<HTMLElement>) => {
-    if (agents.length === 0) return;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeEditor();
-      return;
-    }
-    if (event.key !== "Tab") return;
-    const controls = Array.from(
-      editorDialogRef.current?.querySelectorAll<HTMLElement>(
-        "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href]",
-      ) || [],
-    ).filter((node) => node.offsetParent !== null);
-    if (!controls.length) return;
-    const first = controls[0];
-    const last = controls[controls.length - 1];
-    if (!first || !last) return;
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
   };
 
   const handleDeleteAgent = (agent: AutomationAgent) => setPendingAgentDeleteIds([agent.id]);
@@ -1192,6 +1349,7 @@ export function AgentsView({ isDarkMode }: Props) {
           await createKnowledgeDocument(knowledgeForm);
         }
         resetKnowledgeDocument();
+        setKnowledgeFormOpen(false);
         const refreshed = await loadKnowledgeDocuments();
         setKnowledgeDocuments(refreshed.documents);
         WhatsAppToast.success(
@@ -1232,365 +1390,1001 @@ export function AgentsView({ isDarkMode }: Props) {
     isEmpty: hasLoaded && agents.length === 0 && knowledgeDocuments.length === 0,
   });
 
+  const enabledCount = agents.filter((agent) => agent.enabled).length;
+  const providerModels =
+    aiOptions.find((option) => option.provider === form.provider)?.models || [];
+  const calendarPermissionSet = new Set(
+    form.calendarPermissions
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
+  const toggleCalendarPermission = (permission: string, on: boolean) => {
+    const next = new Set(calendarPermissionSet);
+    if (on) next.add(permission);
+    else next.delete(permission);
+    setForm({
+      ...form,
+      calendarPermissions: AGENT_CALENDAR_PERMISSIONS.map((item) => item.value)
+        .filter((value) => next.has(value))
+        .join(","),
+    });
+  };
+  const testingAgent = agents.find((agent) => agent.id === testAgentId) ?? null;
+  const testThread = testingAgent ? testThreads[testingAgent.id] || [] : [];
+  const testDraft = testingAgent ? testText[testingAgent.id] || "" : "";
+
+  const sendTest = () => {
+    if (!testingAgent || !testDraft.trim() || testBusy) return;
+    const agentId = testingAgent.id;
+    const prompt = testDraft.trim();
+    setTestText({ ...testText, [agentId]: "" });
+    setTestThreads((current) => ({
+      ...current,
+      [agentId]: [...(current[agentId] || []), { role: "user", text: prompt }],
+    }));
+    setTestBusy(true);
+    void testAgent(agentId, prompt)
+      .then((r) =>
+        setTestThreads((current) => ({
+          ...current,
+          [agentId]: [...(current[agentId] || []), { role: "agent", text: r.text }],
+        })),
+      )
+      .catch((e: unknown) =>
+        setTestThreads((current) => ({
+          ...current,
+          [agentId]: [...(current[agentId] || []), { role: "error", text: errorMessage(e) }],
+        })),
+      )
+      .finally(() => setTestBusy(false));
+  };
+
+  const saveAgent = () =>
+    void run(
+      async () => {
+        const payload = {
+          name: form.name.trim(),
+          runtimeConfig: {
+            objective: form.objective.trim(),
+            audience: form.audience.trim(),
+            personality: form.personality.trim(),
+            tone: form.tone,
+            greeting: form.greeting.trim(),
+            rules: form.rules,
+            forbiddenTopics: form.forbiddenTopics,
+            additionalInstructions: form.additionalInstructions.trim(),
+            handoffEnabled: form.handoffEnabled,
+            handoffTriggers: form.handoffTriggers,
+            calendarEnabled: form.calendarEnabled,
+            calendarId: form.calendarId || null,
+            calendarPermissions: form.calendarPermissions,
+            includeClientTags: form.includeClientTags,
+            includeFollowUps: form.includeFollowUps,
+            includeKnowledgeBase: form.includeKnowledgeBase,
+          },
+          instanceId: form.instanceId || null,
+          ...(aiConfigured ? { provider: form.provider, model: form.model || null } : {}),
+          replyMode: form.replyMode,
+          allowGroups: form.allowGroups,
+          temperature: Number(form.temperature),
+          maxCompletionTokens: Number(form.maxTokens),
+        };
+        if (editingId) await updateAgent({ id: editingId, ...payload });
+        else await createAgent(payload);
+        resetForm();
+        setEditorOpen(false);
+      },
+      editingId ? "Agente atualizado com sucesso." : "Agente criado com sucesso.",
+    );
+
+  const startNewAgent = (trigger: HTMLElement) => {
+    resetForm();
+    openEditor(trigger);
+  };
+
+  const startFromTemplate = (template: AgentTemplate, trigger: HTMLElement) => {
+    resetForm();
+    setForm((current) => ({ ...current, ...template.values }));
+    openEditor(trigger);
+  };
+
+  const closeKnowledgeForm = () => {
+    resetKnowledgeDocument();
+    setKnowledgeFormOpen(false);
+  };
+
+  const canSaveAgent = Boolean(form.name.trim() && form.objective.trim());
+  const connectedInstances = instances.filter((instance) => instance.status === "open").length;
+  const automaticCount = agents.filter(
+    (agent) => agent.enabled && agent.reply_mode === "automatic",
+  ).length;
+
   return (
-    <main className="inboxos-page inboxos-product-surface inboxos-agents-surface flex-1 overflow-auto p-4 sm:p-6">
-      <Heading
-        title="Agentes"
-        description="Personalize objetivo, tom, limites e transferência humana por conexão."
-        isDarkMode={isDarkMode}
-        onRefresh={() => void refresh()}
-      />
-      {viewState === "initial" && <DataSkeleton label="Preparando agentes" columns={2} />}
-      {viewState === "refreshing" && (
-        <p data-state="refreshing" role="status" className="mb-3 text-xs text-zinc-500">
-          Atualizando agentes...
-        </p>
-      )}
-      {agents.length > 0 && (
-        <section
-          className={`${card(isDarkMode)} inboxos-responsive-actions mb-4 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between`}
-          aria-label="Ações dos agentes"
-        >
+    <main className="inboxos-page inboxos-product-surface inboxos-agents-surface ux-page flex-1 overflow-auto">
+      <div className="ux-container">
+        <header className="ux-page-header">
           <div className="min-w-0">
-            <p className="text-sm font-semibold">Agentes do workspace</p>
-            <p className="mt-1 text-xs text-zinc-500">
-              {agents.filter((agent) => agent.enabled).length} ativo(s) · {instances.length}{" "}
-              conexão(ões) disponível(is)
+            <h1 className="ux-h1">Agentes</h1>
+            <p className="ux-lead">
+              Assistentes de IA que respondem no WhatsApp com o objetivo, o tom e os limites que
+              você definir.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="ux-actions">
             <button
-              className={buttonClass(isDarkMode)}
-              disabled={selectedAgentIds.length === 0 || busy}
-              onClick={() => setPendingAgentDeleteIds(selectedAgentIds)}
+              type="button"
+              className="ux-icon-btn"
+              onClick={() => void refresh()}
+              aria-label="Atualizar dados de Agentes"
+              title="Atualizar"
             >
-              <Trash size={15} aria-hidden="true" />
-              Excluir selecionados{selectedAgentIds.length ? ` (${selectedAgentIds.length})` : ""}
+              <ArrowClockwise size={18} aria-hidden="true" />
             </button>
             <button
-              className={`${buttonClass(isDarkMode)} ${isDarkMode ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/15" : "border-emerald-600/20 bg-emerald-600 text-white hover:bg-emerald-700"}`}
-              onClick={(event) => {
-                resetForm();
-                openEditor(event.currentTarget);
+              type="button"
+              className="ux-btn ux-btn--primary"
+              onClick={(event) => startNewAgent(event.currentTarget)}
+            >
+              <Plus size={16} aria-hidden="true" /> Novo agente
+            </button>
+          </div>
+        </header>
+
+        {viewState === "initial" && <DataSkeleton label="Preparando agentes" columns={2} />}
+        {viewState === "refreshing" && (
+          <p data-state="refreshing" role="status" className="ux-meta">
+            Atualizando agentes...
+          </p>
+        )}
+        {error && <ErrorBox text={error} />}
+        {!aiConfigured && hasLoaded && (
+          <div className="inbox-feedback inbox-feedback-warning" role="status">
+            <WarningCircle size={18} weight="duotone" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="inbox-feedback-title">Respostas automáticas desativadas</p>
+                <span className="inbox-feedback-state">Desativado</span>
+              </div>
+              <p className="inbox-feedback-description">
+                Um administrador precisa configurar o provedor de IA no ADM. Você já pode criar e
+                salvar agentes enquanto isso.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {hasLoaded && (
+          <div className="ux-layout-rail">
+            <section className="ux-panel" aria-labelledby="agents-list-title">
+              <div className="ux-panel-head">
+                <div className="flex min-w-0 items-baseline gap-3">
+                  <h2 id="agents-list-title" className="ux-h2">
+                    Seus agentes
+                  </h2>
+                  {agents.length > 0 && (
+                    <span className="ux-meta">
+                      {enabledCount} de {agents.length} {agents.length === 1 ? "ativo" : "ativos"}
+                    </span>
+                  )}
+                </div>
+                {selectedAgentIds.length > 0 && (
+                  <div className="ux-bulk" aria-live="polite">
+                    <span>
+                      {selectedAgentIds.length}{" "}
+                      {selectedAgentIds.length === 1 ? "selecionado" : "selecionados"}
+                    </span>
+                    <button
+                      type="button"
+                      className="ux-btn ux-btn--ghost"
+                      onClick={() => setSelectedAgentIds([])}
+                    >
+                      Limpar
+                    </button>
+                    <button
+                      type="button"
+                      className="ux-btn ux-btn--danger"
+                      disabled={busy}
+                      onClick={() => setPendingAgentDeleteIds(selectedAgentIds)}
+                    >
+                      <Trash size={16} aria-hidden="true" /> Excluir
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {agents.length === 0 ? (
+                <div className="ux-onboard">
+                  <div className="ux-onboard-intro">
+                    <p className="ux-h3">Crie seu primeiro agente</p>
+                    <p>
+                      Escolha um modelo para ver como ele conversa. Todo agente começa em modo de
+                      teste: nada é enviado a clientes até você ligar a resposta automática.
+                    </p>
+                    <div
+                      className="ux-template-list"
+                      role="radiogroup"
+                      aria-label="Modelos de agente"
+                      onKeyDown={(event) => {
+                        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+                        event.preventDefault();
+                        const index = AGENT_TEMPLATES.findIndex(
+                          (item) => item.id === previewTemplateId,
+                        );
+                        const step = event.key === "ArrowDown" ? 1 : -1;
+                        const next =
+                          AGENT_TEMPLATES[
+                            (index + step + AGENT_TEMPLATES.length) % AGENT_TEMPLATES.length
+                          ];
+                        if (!next) return;
+                        setPreviewTemplateId(next.id);
+                        requestAnimationFrame(() =>
+                          document.getElementById(`agent-template-${next.id}`)?.focus(),
+                        );
+                      }}
+                    >
+                      {AGENT_TEMPLATES.map((template) => {
+                        const Icon = template.icon;
+                        const selected = previewTemplateId === template.id;
+                        return (
+                          <button
+                            key={template.id}
+                            id={`agent-template-${template.id}`}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            tabIndex={selected ? 0 : -1}
+                            className="ux-template"
+                            data-active={selected}
+                            onClick={() => setPreviewTemplateId(template.id)}
+                            onDoubleClick={(event) =>
+                              startFromTemplate(template, event.currentTarget)
+                            }
+                          >
+                            <span className="ux-template-icon" aria-hidden="true">
+                              <Icon size={18} />
+                            </span>
+                            <span className="ux-template-text">
+                              <strong>{template.label}</strong>
+                              <small>{template.summary}</small>
+                            </span>
+                            <span className="ux-template-check" aria-hidden="true">
+                              <Check size={14} weight="bold" />
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      className="ux-btn ux-btn--ghost justify-self-start"
+                      onClick={(event) => startNewAgent(event.currentTarget)}
+                    >
+                      <PencilSimpleLine size={16} aria-hidden="true" /> Começar do zero
+                    </button>
+                  </div>
+                  <div className="ux-preview" aria-live="polite">
+                    <div className="ux-preview-head">
+                      <span className="ux-meta">Exemplo de conversa</span>
+                      <span className="ux-pill">
+                        {AGENT_TEMPLATES.find((item) => item.id === previewTemplateId)?.label}
+                      </span>
+                    </div>
+                    <div className="ux-preview-thread" key={previewTemplateId}>
+                      {(
+                        AGENT_TEMPLATES.find((item) => item.id === previewTemplateId)?.preview || []
+                      ).map((message, index) => (
+                        <div
+                          key={index}
+                          className="ux-bubble"
+                          data-role={message.from === "agent" ? "out" : "in"}
+                          style={{ animationDelay: `${index * 90}ms` }}
+                        >
+                          {message.text}
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="ux-btn ux-btn--primary w-full"
+                      onClick={(event) => {
+                        const template = AGENT_TEMPLATES.find(
+                          (item) => item.id === previewTemplateId,
+                        );
+                        if (template) startFromTemplate(template, event.currentTarget);
+                      }}
+                    >
+                      Usar modelo{" "}
+                      {AGENT_TEMPLATES.find((item) => item.id === previewTemplateId)?.label}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <ul className="ux-list">
+                  {agents.map((agent) => {
+                    const assignedInstance = instances.find(
+                      (instance) => instance.id === agent.instance_id,
+                    );
+                    const selected = selectedAgentIds.includes(agent.id);
+                    const automatic = agent.reply_mode === "automatic";
+                    const instanceFallback = agent.instance_id
+                      ? "Conexão indisponível"
+                      : "Todas as conexões";
+                    const agentConfig = isAgentRuntimeConfig(agent.runtime_config)
+                      ? agent.runtime_config
+                      : null;
+                    const agentObjective = agentConfig?.objective || agent.instructions;
+                    const agentRuns = runs.filter((item) => item.agent_id === agent.id);
+                    const lastRun = agentRuns[0];
+                    return (
+                      <li key={agent.id} className="ux-row" data-selected={selected}>
+                        <Checkbox
+                          aria-label={`Selecionar agente ${agent.name}`}
+                          checked={selected}
+                          onCheckedChange={() => toggleAgentSelection(agent.id)}
+                        />
+                        <div className="ux-row-main">
+                          <div className="ux-row-title">
+                            <p title={agent.name} className="truncate ux-strong">
+                              {agent.name}
+                            </p>
+                            <span
+                              className="ux-pill"
+                              data-tone={automatic ? "positive" : undefined}
+                            >
+                              {automatic ? "Responde sozinho" : "Só teste"}
+                            </span>
+                          </div>
+                          <p
+                            title={assignedInstance?.instance_name || instanceFallback}
+                            className="truncate ux-meta"
+                          >
+                            {assignedInstance?.instance_name || instanceFallback}
+                            {" · "}
+                            {AGENT_TONE_LABEL[agentConfig?.tone || ""] || "Tom profissional"}
+                            {" · "}
+                            {agent.model || "Modelo padrão"}
+                            {agent.allow_groups ? " · responde em grupos" : ""}
+                          </p>
+                          {agentObjective && (
+                            <p className="ux-row-detail line-clamp-1">{agentObjective}</p>
+                          )}
+                          <p className="ux-meta">
+                            {agentRuns.length
+                              ? `${agentRuns.length} ${agentRuns.length === 1 ? "resposta recente" : "respostas recentes"} · última em ${formatRunTime(lastRun?.started_at || "")}`
+                              : "Sem respostas ainda"}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button
+                            type="button"
+                            className="ux-btn ux-btn--ghost hidden sm:inline-flex"
+                            onClick={() => setTestAgentId(agent.id)}
+                          >
+                            <ChatCircleDots size={16} aria-hidden="true" /> Testar
+                          </button>
+                          <button
+                            type="button"
+                            className="ux-icon-btn sm:hidden"
+                            onClick={() => setTestAgentId(agent.id)}
+                            aria-label={`Testar agente ${agent.name}`}
+                          >
+                            <ChatCircleDots size={18} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="ux-icon-btn"
+                            onClick={() => editAgent(agent)}
+                            aria-label={`Editar agente ${agent.name}`}
+                            title="Editar"
+                          >
+                            <PencilSimple size={18} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="ux-icon-btn ux-icon-btn--danger"
+                            onClick={() => handleDeleteAgent(agent)}
+                            aria-label={`Excluir agente ${agent.name}`}
+                            title="Excluir"
+                          >
+                            <Trash size={18} aria-hidden="true" />
+                          </button>
+                          <Switch
+                            className="ux-switch ml-2"
+                            checked={agent.enabled}
+                            disabled={busy}
+                            aria-label={`${agent.enabled ? "Desativar" : "Ativar"} agente ${agent.name}`}
+                            onCheckedChange={(checked) =>
+                              void run(
+                                () => updateAgent({ id: agent.id, enabled: checked }),
+                                checked ? "Agente ativado." : "Agente desativado.",
+                              )
+                            }
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+            <aside className="ux-rail" aria-label="Resumo dos agentes">
+              <section className="ux-panel" aria-labelledby="agent-status-title">
+                <div className="ux-panel-head">
+                  <h2 id="agent-status-title" className="ux-h2">
+                    Status
+                  </h2>
+                </div>
+                <dl className="ux-stats">
+                  <div>
+                    <dt>Provedor de IA</dt>
+                    <dd>
+                      <span
+                        className="ux-dot"
+                        data-tone={aiConfigured ? "positive" : "warning"}
+                        aria-hidden="true"
+                      />
+                      {aiConfigured ? "Configurado" : "Pendente no ADM"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Conexões do WhatsApp</dt>
+                    <dd>
+                      <span
+                        className="ux-dot"
+                        data-tone={connectedInstances > 0 ? "positive" : "warning"}
+                        aria-hidden="true"
+                      />
+                      {connectedInstances} de {instances.length} conectadas
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Agentes ativos</dt>
+                    <dd>
+                      {enabledCount} de {agents.length}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Respondendo sozinhos</dt>
+                    <dd>{automaticCount}</dd>
+                  </div>
+                </dl>
+              </section>
+              <section className="ux-panel" aria-labelledby="knowledge-title">
+                <div className="ux-panel-head">
+                  <div className="min-w-0">
+                    <h2 id="knowledge-title" className="ux-h2">
+                      Base de conhecimento
+                    </h2>
+                    <p className="ux-meta">
+                      Textos que os agentes podem consultar. Ficam só neste workspace.
+                    </p>
+                  </div>
+                  {!knowledgeFormOpen && !knowledgeEditingId && (
+                    <button
+                      type="button"
+                      className="ux-btn"
+                      onClick={() => setKnowledgeFormOpen(true)}
+                    >
+                      <Plus size={16} aria-hidden="true" /> Adicionar
+                    </button>
+                  )}
+                </div>
+                {(knowledgeFormOpen || knowledgeEditingId) && (
+                  <div className="ux-panel-body grid gap-3">
+                    <label className="ux-field">
+                      <span className="ux-label">Título</span>
+                      <input
+                        className="ux-input"
+                        aria-label="Título do documento"
+                        placeholder="Ex.: Política de trocas"
+                        value={knowledgeForm.title}
+                        onChange={(event) =>
+                          setKnowledgeForm({ ...knowledgeForm, title: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="ux-field">
+                      <span className="ux-label">Conteúdo</span>
+                      <textarea
+                        className="ux-input"
+                        aria-label="Conteúdo do documento"
+                        placeholder="Cole aqui o texto que o agente pode usar nas respostas"
+                        value={knowledgeForm.content}
+                        onChange={(event) =>
+                          setKnowledgeForm({ ...knowledgeForm, content: event.target.value })
+                        }
+                      />
+                    </label>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        className="ux-btn ux-btn--ghost"
+                        onClick={closeKnowledgeForm}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        className="ux-btn"
+                        disabled={
+                          knowledgeBusy ||
+                          !knowledgeForm.title.trim() ||
+                          !knowledgeForm.content.trim()
+                        }
+                        onClick={saveKnowledgeDocument}
+                      >
+                        {knowledgeEditingId ? (
+                          <Check size={16} aria-hidden="true" />
+                        ) : (
+                          <Plus size={16} aria-hidden="true" />
+                        )}
+                        {knowledgeEditingId ? "Salvar documento" : "Adicionar documento"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {knowledgeDocuments.length > 0 ? (
+                  <ul className="ux-list border-t border-[var(--ux-line)]">
+                    {knowledgeDocuments.map((document) => (
+                      <li key={document.id} className="ux-row">
+                        <BookOpenText
+                          size={18}
+                          className="shrink-0 text-[var(--ux-subtle)]"
+                          aria-hidden="true"
+                        />
+                        <div className="ux-row-main">
+                          <div className="ux-row-title">
+                            <p title={document.title} className="truncate ux-strong">
+                              {document.title}
+                            </p>
+                            {!document.active && <span className="ux-pill">Pausado</span>}
+                          </div>
+                          <p className="line-clamp-1 ux-meta">{document.content}</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="ux-icon-btn"
+                          aria-label={`Editar ${document.title}`}
+                          onClick={() => editKnowledgeDocument(document)}
+                        >
+                          <PencilSimple size={18} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="ux-icon-btn ux-icon-btn--danger"
+                          aria-label={`Remover ${document.title}`}
+                          onClick={() => setPendingKnowledgeDelete(document)}
+                        >
+                          <Trash size={18} aria-hidden="true" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="ux-meta border-t border-[var(--ux-line)] px-[18px] py-4">
+                    Nenhum documento cadastrado.
+                  </p>
+                )}
+              </section>
+
+              <section className="ux-panel" aria-labelledby="agent-runs-title">
+                <div className="ux-panel-head">
+                  <div className="min-w-0">
+                    <h2 id="agent-runs-title" className="ux-h2">
+                      Atividade recente
+                    </h2>
+                    <p className="ux-meta">Últimas respostas geradas pelos agentes.</p>
+                  </div>
+                </div>
+                {runs.length > 0 ? (
+                  <ul className="ux-list">
+                    {runs.slice(0, 8).map((r) => {
+                      const runAgent = agents.find((agent) => agent.id === r.agent_id);
+                      const tone =
+                        r.status === "failed"
+                          ? "danger"
+                          : r.status === "completed"
+                            ? "positive"
+                            : "warning";
+                      return (
+                        <li key={r.id} className="ux-row">
+                          <span className="ux-dot" data-tone={tone} aria-hidden="true" />
+                          <div className="ux-row-main">
+                            <span
+                              title={r.input_excerpt || "Sem entrada"}
+                              className="truncate text-[13px] text-[var(--ux-ink)]"
+                            >
+                              {r.input_excerpt || "Sem entrada"}
+                            </span>
+                            <span className="ux-meta truncate">
+                              {AGENT_RUN_STATUS[r.status] || r.status}
+                              {runAgent ? ` · ${runAgent.name}` : ""} ·{" "}
+                              {formatRunTime(r.started_at)}
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="ux-meta px-[18px] py-4">
+                    Nenhuma execução ainda. Use "Testar" para ver como um agente responde.
+                  </p>
+                )}
+              </section>
+            </aside>
+          </div>
+        )}
+      </div>
+
+      <DialogPrimitive.Root
+        open={editorOpen}
+        onOpenChange={(open) => {
+          if (!open) closeEditor();
+        }}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content
+            ref={editorDialogRef}
+            className={`ux-drawer`}
+            aria-describedby="agent-editor-description"
+          >
+            <div className="ux-drawer-head">
+              <div className="min-w-0">
+                <DialogPrimitive.Title id="agent-editor-title" className="ux-h2">
+                  {editingId ? "Editar agente" : "Novo agente"}
+                </DialogPrimitive.Title>
+                <DialogPrimitive.Description id="agent-editor-description" className="ux-meta">
+                  As respostas seguem o objetivo, o tom e os limites definidos aqui.
+                </DialogPrimitive.Description>
+              </div>
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar editor de agente">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+
+            <nav className="ux-tabs" aria-label="Seções do agente">
+              {AGENT_EDITOR_SECTIONS.map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  className="ux-tab"
+                  aria-current={editorSection === section.id ? "true" : undefined}
+                  onClick={() => {
+                    setEditorSection(section.id);
+                    document
+                      .getElementById(section.id)
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
+                  {section.label}
+                </button>
+              ))}
+            </nav>
+            <div
+              className="ux-drawer-body"
+              onScroll={(event) => {
+                const body = event.currentTarget;
+                const top = body.getBoundingClientRect().top;
+                let current: string = AGENT_EDITOR_SECTIONS[0].id;
+                for (const section of AGENT_EDITOR_SECTIONS) {
+                  const node = document.getElementById(section.id);
+                  if (node && node.getBoundingClientRect().top - top <= 96) current = section.id;
+                }
+                if (body.scrollTop + body.clientHeight >= body.scrollHeight - 4) {
+                  current = "agent-sec-context";
+                }
+                if (current !== editorSection) setEditorSection(current);
               }}
             >
-              <Plus size={16} weight="bold" aria-hidden="true" /> Criar agente
-            </button>
-          </div>
-        </section>
-      )}
-      {error && <ErrorBox text={error} />}
-      {!aiConfigured && (
-        <div className="inbox-feedback inbox-feedback-warning mb-4" role="status">
-          <WarningCircle size={17} weight="duotone" aria-hidden="true" />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="inbox-feedback-title">Respostas automáticas desativadas</p>
-              <span className="inbox-feedback-state">Desativado</span>
-            </div>
-            <p className="inbox-feedback-description">
-              Configure o provedor de IA para ativar respostas automáticas. Os agentes podem ser
-              salvos enquanto isso.
-            </p>
-          </div>
-        </div>
-      )}
-      {(agents.length === 0 || editorOpen) && (
-        <div
-          className={
-            agents.length > 0
-              ? "fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-6"
-              : "mb-4"
-          }
-          onMouseDown={(event) => {
-            if (agents.length > 0 && event.target === event.currentTarget) closeEditor();
-          }}
-        >
-          <section
-            ref={editorDialogRef}
-            role={agents.length > 0 ? "dialog" : undefined}
-            aria-modal={agents.length > 0 || undefined}
-            aria-labelledby="agent-editor-title"
-            className={
-              agents.length > 0
-                ? "max-h-[92dvh] w-full max-w-4xl overflow-y-auto rounded-t-3xl sm:rounded-3xl"
-                : undefined
-            }
-            onKeyDown={trapEditorFocus}
-          >
-            <div
-              className={`${card(isDarkMode)} grid gap-3 p-4 lg:grid-cols-2 ${agents.length > 0 ? "rounded-t-3xl sm:rounded-3xl" : ""}`}
-            >
-              <div className="lg:col-span-2 flex items-center justify-between gap-3">
-                <div>
-                  <h2 id="agent-editor-title" className="text-sm font-semibold">
-                    {editingId ? "Editar agente" : "Novo agente"}
-                  </h2>
-                  <p className="mt-1 text-[10px] text-zinc-500">
-                    Os campos abaixo são compilados em instruções consistentes para o modelo.
-                  </p>
+              <section className="ux-section" id="agent-sec-identity">
+                <div className="ux-section-head">
+                  <h3 className="ux-h3">Identificação</h3>
+                  <p className="ux-meta">Nome interno e onde o agente atua.</p>
                 </div>
-                {(editingId || agents.length > 0) && (
-                  <button
-                    className={buttonClass(isDarkMode)}
-                    onClick={closeEditor}
-                    aria-label="Fechar editor de agente"
-                  >
-                    <X size={13} />
-                    Cancelar
-                  </button>
-                )}
-              </div>
-              <input
-                className={inputClass(isDarkMode)}
-                placeholder="Nome do agente"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-              <SurfaceSelect
-                isDarkMode={isDarkMode}
-                value={form.instanceId || "__all__"}
-                onValueChange={(instanceId) =>
-                  setForm({ ...form, instanceId: instanceId === "__all__" ? "" : instanceId })
-                }
-                placeholder="Todas as conexões"
-                ariaLabel="Conexão atribuída ao agente"
-              >
-                <SelectItem value="__all__">Todas as conexões</SelectItem>
-                {instances.map((i) => (
-                  <SelectItem key={i.id} value={i.id}>
-                    {i.instance_name} · {i.status}
-                  </SelectItem>
-                ))}
-              </SurfaceSelect>
-              <SurfaceSelect
-                isDarkMode={isDarkMode}
-                ariaLabel="Provedor de IA"
-                value={form.provider}
-                disabled={!aiOptions.length}
-                onValueChange={(providerValue) => {
-                  const provider = providerValue as "groq" | "openrouter";
-                  const option = aiOptions.find((item) => item.provider === provider);
-                  setForm({ ...form, provider, model: option?.models[0] || "" });
-                }}
-                placeholder="Provedor de IA"
-              >
-                {!aiOptions.length && (
-                  <SelectItem value="groq">Configure um provedor no ADM</SelectItem>
-                )}
-                {aiOptions.map((option) => (
-                  <SelectItem key={option.provider} value={option.provider}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SurfaceSelect>
-              <SurfaceSelect
-                isDarkMode={isDarkMode}
-                ariaLabel="Modelo de IA autorizado"
-                value={form.model || "__administrator_default__"}
-                disabled={
-                  !aiOptions.find((option) => option.provider === form.provider)?.models.length
-                }
-                onValueChange={(model) =>
-                  setForm({
-                    ...form,
-                    model: model === "__administrator_default__" ? "" : model,
-                  })
-                }
-                placeholder="Modelo de IA autorizado"
-              >
-                <SelectItem value="__administrator_default__">
-                  Modelo definido pelo administrador
-                </SelectItem>
-                {(aiOptions.find((option) => option.provider === form.provider)?.models || []).map(
-                  (model) => (
-                    <SelectItem key={model} value={model}>
-                      {model}
-                    </SelectItem>
-                  ),
-                )}
-              </SurfaceSelect>
-              <textarea
-                className={`min-h-24 rounded-xl border p-3 text-xs outline-none transition-colors lg:col-span-2 ${
-                  isDarkMode
-                    ? "border-white/10 bg-white/[0.02] text-zinc-100 placeholder:text-zinc-500 focus:border-white/30"
-                    : "border-black/10 bg-white text-zinc-900 placeholder:text-zinc-400 focus:border-black/30"
-                }`}
-                aria-label="Objetivo principal do agente"
-                placeholder="Objetivo principal — por exemplo: qualificar o contato e agendar uma demonstração"
-                value={form.objective}
-                onChange={(e) => setForm({ ...form, objective: e.target.value })}
-              />
-              <input
-                className={inputClass(isDarkMode)}
-                aria-label="Público do agente"
-                placeholder="Público atendido"
-                value={form.audience}
-                onChange={(e) => setForm({ ...form, audience: e.target.value })}
-              />
-              <input
-                className={inputClass(isDarkMode)}
-                aria-label="Personalidade do agente"
-                placeholder="Personalidade — ex.: consultiva e objetiva"
-                value={form.personality}
-                onChange={(e) => setForm({ ...form, personality: e.target.value })}
-              />
-              <SurfaceSelect
-                isDarkMode={isDarkMode}
-                ariaLabel="Tom de voz"
-                value={form.tone}
-                onValueChange={(tone) => setForm({ ...form, tone })}
-                placeholder="Tom de voz"
-              >
-                <SelectItem value="professional">Profissional</SelectItem>
-                <SelectItem value="friendly">Amigável</SelectItem>
-                <SelectItem value="direct">Direto</SelectItem>
-                <SelectItem value="empathetic">Empático</SelectItem>
-              </SurfaceSelect>
-              <input
-                className={inputClass(isDarkMode)}
-                aria-label="Saudação inicial"
-                placeholder="Saudação inicial"
-                value={form.greeting}
-                onChange={(e) => setForm({ ...form, greeting: e.target.value })}
-              />
-              <textarea
-                className={`${inputClass(isDarkMode)} h-24 py-3`}
-                aria-label="Regras obrigatórias"
-                placeholder="Regras obrigatórias — uma por linha"
-                value={form.rules}
-                onChange={(e) => setForm({ ...form, rules: e.target.value })}
-              />
-              <textarea
-                className={`${inputClass(isDarkMode)} h-24 py-3`}
-                aria-label="Assuntos proibidos"
-                placeholder="Assuntos proibidos — um por linha"
-                value={form.forbiddenTopics}
-                onChange={(e) => setForm({ ...form, forbiddenTopics: e.target.value })}
-              />
-              <textarea
-                className={`${inputClass(isDarkMode)} h-24 py-3 lg:col-span-2`}
-                aria-label="Instruções adicionais"
-                placeholder="Instruções adicionais (opcional)"
-                value={form.additionalInstructions}
-                onChange={(e) => setForm({ ...form, additionalInstructions: e.target.value })}
-              />
-              <SurfaceSelect
-                isDarkMode={isDarkMode}
-                value={form.replyMode}
-                onValueChange={(replyMode) => setForm({ ...form, replyMode })}
-                placeholder="Modo de resposta"
-                ariaLabel="Modo de resposta"
-              >
-                <SelectItem value="manual">Somente teste/manual</SelectItem>
-                <SelectItem value="automatic">Responder automaticamente</SelectItem>
-              </SurfaceSelect>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  className={inputClass(isDarkMode)}
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="2"
-                  value={form.temperature}
-                  onChange={(e) => setForm({ ...form, temperature: e.target.value })}
-                  title="Temperatura"
-                />
-                <input
-                  className={inputClass(isDarkMode)}
-                  type="number"
-                  min="64"
-                  max="8192"
-                  value={form.maxTokens}
-                  onChange={(e) => setForm({ ...form, maxTokens: e.target.value })}
-                  title="Max tokens"
-                />
-              </div>
-              <label
-                className="flex min-h-11 items-center gap-2 text-xs cursor-pointer select-none"
-                htmlFor="agent-allow-groups"
-              >
-                <Checkbox
-                  id="agent-allow-groups"
-                  checked={form.allowGroups}
-                  onCheckedChange={(checked) => setForm({ ...form, allowGroups: checked === true })}
-                />
-                Permitir grupos
-              </label>
-              <label
-                className="flex min-h-11 items-center gap-2 text-xs cursor-pointer select-none"
-                htmlFor="agent-handoff-enabled"
-              >
-                <Checkbox
-                  id="agent-handoff-enabled"
-                  checked={form.handoffEnabled}
-                  onCheckedChange={(checked) =>
-                    setForm({ ...form, handoffEnabled: checked === true })
-                  }
-                />
-                Transferir para atendimento humano
-              </label>
-              <input
-                className={`${inputClass(isDarkMode)} lg:col-span-2`}
-                aria-label="Gatilhos de atendimento humano"
-                placeholder="Gatilhos separados por vírgula — ex.: falar com humano, atendente"
-                disabled={!form.handoffEnabled}
-                value={form.handoffTriggers}
-                onChange={(e) => setForm({ ...form, handoffTriggers: e.target.value })}
-              />
-              <div className={`${card(isDarkMode)} grid gap-2 p-3 lg:col-span-2`}>
-                <div className="flex items-center gap-2">
-                  <CalendarDots size={15} />
-                  <p className="text-xs font-semibold">Contexto de clientes e calendário</p>
-                </div>
-                <label
-                  className="flex min-h-11 items-center gap-2 text-xs cursor-pointer"
-                  htmlFor="agent-calendar-enabled"
-                >
-                  <Checkbox
-                    id="agent-calendar-enabled"
-                    checked={form.calendarEnabled}
-                    onCheckedChange={(checked) =>
-                      setForm({ ...form, calendarEnabled: checked === true })
-                    }
-                  />
-                  Permitir que o agente consulte e gerencie agendamentos
-                </label>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <SurfaceSelect
-                    isDarkMode={isDarkMode}
-                    disabled={!form.calendarEnabled}
-                    value={form.calendarId || "__workspace_default__"}
-                    onValueChange={(calendarId) =>
-                      setForm({
-                        ...form,
-                        calendarId: calendarId === "__workspace_default__" ? "" : calendarId,
-                      })
-                    }
-                    ariaLabel="Calendário do agente"
-                    placeholder="Calendário padrão"
-                  >
-                    <SelectItem value="__workspace_default__">Calendário padrão</SelectItem>
-                    {calendars.map((calendar) => (
-                      <SelectItem key={calendar.id} value={calendar.id}>
-                        {calendar.name}
+                <div className="ux-form-grid">
+                  <UxField label="Nome" htmlFor="agent-name">
+                    <input
+                      id="agent-name"
+                      className="ux-input"
+                      placeholder="Ex.: Pré-vendas"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField label="Conexão do WhatsApp">
+                    <SurfaceSelect
+                      isDarkMode={isDarkMode}
+                      className="ux-input"
+                      value={form.instanceId || "__all__"}
+                      onValueChange={(instanceId) =>
+                        setForm({ ...form, instanceId: instanceId === "__all__" ? "" : instanceId })
+                      }
+                      placeholder="Todas as conexões"
+                      ariaLabel="Conexão atribuída ao agente"
+                    >
+                      <SelectItem value="__all__">Todas as conexões</SelectItem>
+                      {instances.map((i) => (
+                        <SelectItem key={i.id} value={i.id}>
+                          {i.instance_name}
+                          {i.status === "open" ? "" : " (desconectada)"}
+                        </SelectItem>
+                      ))}
+                    </SurfaceSelect>
+                  </UxField>
+                  <UxField label="Provedor de IA">
+                    <SurfaceSelect
+                      isDarkMode={isDarkMode}
+                      className="ux-input"
+                      ariaLabel="Provedor de IA"
+                      value={form.provider}
+                      disabled={!aiOptions.length}
+                      onValueChange={(providerValue) => {
+                        const provider = providerValue as "groq" | "openrouter";
+                        const option = aiOptions.find((item) => item.provider === provider);
+                        setForm({ ...form, provider, model: option?.models[0] || "" });
+                      }}
+                      placeholder="Provedor de IA"
+                    >
+                      {!aiOptions.length && (
+                        <SelectItem value="groq">Configure um provedor no ADM</SelectItem>
+                      )}
+                      {aiOptions.map((option) => (
+                        <SelectItem key={option.provider} value={option.provider}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SurfaceSelect>
+                  </UxField>
+                  <UxField label="Modelo">
+                    <SurfaceSelect
+                      isDarkMode={isDarkMode}
+                      className="ux-input"
+                      ariaLabel="Modelo de IA autorizado"
+                      value={form.model || "__administrator_default__"}
+                      disabled={!providerModels.length}
+                      onValueChange={(model) =>
+                        setForm({
+                          ...form,
+                          model: model === "__administrator_default__" ? "" : model,
+                        })
+                      }
+                      placeholder="Modelo de IA autorizado"
+                    >
+                      <SelectItem value="__administrator_default__">
+                        Padrão do administrador
                       </SelectItem>
-                    ))}
-                  </SurfaceSelect>
-                  <input
-                    className={inputClass(isDarkMode)}
-                    disabled={!form.calendarEnabled}
-                    value={form.calendarPermissions}
-                    onChange={(e) => setForm({ ...form, calendarPermissions: e.target.value })}
-                    placeholder="Permissões: read,create,reschedule,cancel"
-                    aria-label="Permissões de calendário"
-                  />
+                      {providerModels.map((model) => (
+                        <SelectItem key={model} value={model}>
+                          {model}
+                        </SelectItem>
+                      ))}
+                    </SurfaceSelect>
+                  </UxField>
                 </div>
-                <div className="flex flex-wrap gap-4">
-                  <label
-                    className="flex min-h-11 items-center gap-2 text-xs cursor-pointer"
-                    htmlFor="agent-client-tags"
+              </section>
+
+              <section className="ux-section" id="agent-sec-behavior">
+                <div className="ux-section-head">
+                  <h3 className="ux-h3">Comportamento</h3>
+                  <p className="ux-meta">O que o agente busca e como ele conversa.</p>
+                </div>
+                <div className="ux-form-grid">
+                  <UxField
+                    label="Objetivo"
+                    htmlFor="agent-objective"
+                    hint="Obrigatório. Ex.: qualificar o contato e agendar uma demonstração."
+                    className="ux-span-2"
                   >
+                    <textarea
+                      id="agent-objective"
+                      className="ux-input"
+                      aria-label="Objetivo principal do agente"
+                      value={form.objective}
+                      onChange={(e) => setForm({ ...form, objective: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField label="Público atendido" htmlFor="agent-audience">
+                    <input
+                      id="agent-audience"
+                      className="ux-input"
+                      aria-label="Público do agente"
+                      placeholder="Ex.: donos de pequenas clínicas"
+                      value={form.audience}
+                      onChange={(e) => setForm({ ...form, audience: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField label="Personalidade" htmlFor="agent-personality">
+                    <input
+                      id="agent-personality"
+                      className="ux-input"
+                      aria-label="Personalidade do agente"
+                      placeholder="Ex.: consultiva e objetiva"
+                      value={form.personality}
+                      onChange={(e) => setForm({ ...form, personality: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField label="Tom de voz">
+                    <SurfaceSelect
+                      isDarkMode={isDarkMode}
+                      className="ux-input"
+                      ariaLabel="Tom de voz"
+                      value={form.tone}
+                      onValueChange={(tone) => setForm({ ...form, tone })}
+                      placeholder="Tom de voz"
+                    >
+                      <SelectItem value="professional">Profissional</SelectItem>
+                      <SelectItem value="friendly">Amigável</SelectItem>
+                      <SelectItem value="direct">Direto</SelectItem>
+                      <SelectItem value="empathetic">Empático</SelectItem>
+                    </SurfaceSelect>
+                  </UxField>
+                  <UxField label="Saudação inicial" htmlFor="agent-greeting">
+                    <input
+                      id="agent-greeting"
+                      className="ux-input"
+                      aria-label="Saudação inicial"
+                      placeholder="Ex.: Olá! Como posso ajudar?"
+                      value={form.greeting}
+                      onChange={(e) => setForm({ ...form, greeting: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField label="Regras obrigatórias" htmlFor="agent-rules" hint="Uma por linha.">
+                    <textarea
+                      id="agent-rules"
+                      className="ux-input"
+                      aria-label="Regras obrigatórias"
+                      value={form.rules}
+                      onChange={(e) => setForm({ ...form, rules: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField
+                    label="Assuntos proibidos"
+                    htmlFor="agent-forbidden"
+                    hint="Um por linha."
+                  >
+                    <textarea
+                      id="agent-forbidden"
+                      className="ux-input"
+                      aria-label="Assuntos proibidos"
+                      value={form.forbiddenTopics}
+                      onChange={(e) => setForm({ ...form, forbiddenTopics: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField
+                    label="Instruções adicionais"
+                    htmlFor="agent-extra"
+                    hint="Opcional."
+                    className="ux-span-2"
+                  >
+                    <textarea
+                      id="agent-extra"
+                      className="ux-input"
+                      aria-label="Instruções adicionais"
+                      value={form.additionalInstructions}
+                      onChange={(e) => setForm({ ...form, additionalInstructions: e.target.value })}
+                    />
+                  </UxField>
+                </div>
+              </section>
+
+              <section className="ux-section" id="agent-sec-replies">
+                <div className="ux-section-head">
+                  <h3 className="ux-h3">Respostas</h3>
+                  <p className="ux-meta">Quando e como o agente responde.</p>
+                </div>
+                <div className="ux-form-grid">
+                  <UxField
+                    label="Modo"
+                    hint={
+                      form.replyMode === "automatic"
+                        ? "Responde clientes reais assim que uma mensagem chega."
+                        : "Nada é enviado a clientes. Use para testar."
+                    }
+                    className="ux-span-2"
+                  >
+                    <SurfaceSelect
+                      isDarkMode={isDarkMode}
+                      className="ux-input"
+                      value={form.replyMode}
+                      onValueChange={(replyMode) => setForm({ ...form, replyMode })}
+                      placeholder="Modo de resposta"
+                      ariaLabel="Modo de resposta"
+                    >
+                      <SelectItem value="manual">Só teste</SelectItem>
+                      <SelectItem value="automatic">Responder automaticamente</SelectItem>
+                    </SurfaceSelect>
+                  </UxField>
+                  <UxField
+                    label="Criatividade"
+                    htmlFor="agent-temperature"
+                    hint="0 = mais previsível, 1 = mais variado. Recomendado: 0,3."
+                  >
+                    <input
+                      id="agent-temperature"
+                      className="ux-input"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="2"
+                      value={form.temperature}
+                      onChange={(e) => setForm({ ...form, temperature: e.target.value })}
+                    />
+                  </UxField>
+                  <UxField
+                    label="Tamanho máximo da resposta"
+                    htmlFor="agent-max-tokens"
+                    hint="Em tokens. 700 equivale a uns 3 parágrafos."
+                  >
+                    <input
+                      id="agent-max-tokens"
+                      className="ux-input"
+                      type="number"
+                      min="64"
+                      max="8192"
+                      value={form.maxTokens}
+                      onChange={(e) => setForm({ ...form, maxTokens: e.target.value })}
+                    />
+                  </UxField>
+                  <label className="ux-check ux-span-2" htmlFor="agent-allow-groups">
+                    <Checkbox
+                      id="agent-allow-groups"
+                      checked={form.allowGroups}
+                      onCheckedChange={(checked) =>
+                        setForm({ ...form, allowGroups: checked === true })
+                      }
+                    />
+                    <span>
+                      Responder em grupos
+                      <small className="ux-hint">
+                        Por padrão o agente só responde conversas individuais.
+                      </small>
+                    </span>
+                  </label>
+                </div>
+              </section>
+
+              <section className="ux-section" id="agent-sec-handoff">
+                <div className="ux-section-head">
+                  <h3 className="ux-h3">Transferência para humano</h3>
+                  <p className="ux-meta">O agente para e chama a equipe quando o cliente pedir.</p>
+                </div>
+                <label className="ux-check" htmlFor="agent-handoff-enabled">
+                  <Checkbox
+                    id="agent-handoff-enabled"
+                    checked={form.handoffEnabled}
+                    onCheckedChange={(checked) =>
+                      setForm({ ...form, handoffEnabled: checked === true })
+                    }
+                  />
+                  <span>Transferir para atendimento humano</span>
+                </label>
+                <UxField
+                  label="Frases que acionam a transferência"
+                  htmlFor="agent-handoff-triggers"
+                  hint="Separe por vírgula."
+                >
+                  <input
+                    id="agent-handoff-triggers"
+                    className="ux-input"
+                    aria-label="Gatilhos de atendimento humano"
+                    placeholder="falar com humano, atendente"
+                    disabled={!form.handoffEnabled}
+                    value={form.handoffTriggers}
+                    onChange={(e) => setForm({ ...form, handoffTriggers: e.target.value })}
+                  />
+                </UxField>
+              </section>
+
+              <section className="ux-section" id="agent-sec-context">
+                <div className="ux-section-head">
+                  <h3 className="ux-h3">Contexto e agenda</h3>
+                  <p className="ux-meta">Informações extras que o agente pode usar.</p>
+                </div>
+                <div className="grid gap-1">
+                  <label className="ux-check" htmlFor="agent-client-tags">
                     <Checkbox
                       id="agent-client-tags"
                       checked={form.includeClientTags}
@@ -1598,12 +2392,9 @@ export function AgentsView({ isDarkMode }: Props) {
                         setForm({ ...form, includeClientTags: checked === true })
                       }
                     />
-                    Incluir tags do cliente
+                    <span>Tags do cliente</span>
                   </label>
-                  <label
-                    className="flex min-h-11 items-center gap-2 text-xs cursor-pointer"
-                    htmlFor="agent-follow-ups"
-                  >
+                  <label className="ux-check" htmlFor="agent-follow-ups">
                     <Checkbox
                       id="agent-follow-ups"
                       checked={form.includeFollowUps}
@@ -1611,12 +2402,9 @@ export function AgentsView({ isDarkMode }: Props) {
                         setForm({ ...form, includeFollowUps: checked === true })
                       }
                     />
-                    Incluir follow-ups pendentes
+                    <span>Follow-ups pendentes</span>
                   </label>
-                  <label
-                    className="flex min-h-11 items-center gap-2 text-xs cursor-pointer"
-                    htmlFor="agent-knowledge-base"
-                  >
+                  <label className="ux-check" htmlFor="agent-knowledge-base">
                     <Checkbox
                       id="agent-knowledge-base"
                       checked={form.includeKnowledgeBase}
@@ -1624,283 +2412,174 @@ export function AgentsView({ isDarkMode }: Props) {
                         setForm({ ...form, includeKnowledgeBase: checked === true })
                       }
                     />
-                    Incluir base de conhecimento autorizada
+                    <span>
+                      Base de conhecimento
+                      <small className="ux-hint">
+                        {knowledgeDocuments.filter((document) => document.active).length}{" "}
+                        documento(s) ativo(s) neste workspace.
+                      </small>
+                    </span>
+                  </label>
+                  <label className="ux-check" htmlFor="agent-calendar-enabled">
+                    <Checkbox
+                      id="agent-calendar-enabled"
+                      checked={form.calendarEnabled}
+                      onCheckedChange={(checked) =>
+                        setForm({ ...form, calendarEnabled: checked === true })
+                      }
+                    />
+                    <span>Consultar e gerenciar agendamentos</span>
                   </label>
                 </div>
-              </div>
-              <button
-                className={buttonClass(isDarkMode)}
-                disabled={busy || !form.name.trim() || !form.objective.trim()}
-                onClick={() =>
-                  void run(
-                    async () => {
-                      const payload = {
-                        name: form.name.trim(),
-                        runtimeConfig: {
-                          objective: form.objective.trim(),
-                          audience: form.audience.trim(),
-                          personality: form.personality.trim(),
-                          tone: form.tone,
-                          greeting: form.greeting.trim(),
-                          rules: form.rules,
-                          forbiddenTopics: form.forbiddenTopics,
-                          additionalInstructions: form.additionalInstructions.trim(),
-                          handoffEnabled: form.handoffEnabled,
-                          handoffTriggers: form.handoffTriggers,
-                          calendarEnabled: form.calendarEnabled,
-                          calendarId: form.calendarId || null,
-                          calendarPermissions: form.calendarPermissions,
-                          includeClientTags: form.includeClientTags,
-                          includeFollowUps: form.includeFollowUps,
-                          includeKnowledgeBase: form.includeKnowledgeBase,
-                        },
-                        instanceId: form.instanceId || null,
-                        ...(aiConfigured
-                          ? { provider: form.provider, model: form.model || null }
-                          : {}),
-                        replyMode: form.replyMode,
-                        allowGroups: form.allowGroups,
-                        temperature: Number(form.temperature),
-                        maxCompletionTokens: Number(form.maxTokens),
-                      };
-                      if (editingId) await updateAgent({ id: editingId, ...payload });
-                      else await createAgent(payload);
-                      resetForm();
-                      setEditorOpen(false);
-                    },
-                    editingId ? "Agente atualizado com sucesso." : "Agente criado com sucesso.",
-                  )
-                }
-              >
-                {editingId ? <PencilSimple size={13} /> : <Plus size={13} />}
-                {editingId ? "Salvar personalização" : "Criar agente"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-      <section className={`${card(isDarkMode)} mb-4 p-4`} aria-labelledby="knowledge-title">
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-2">
-            <BookOpenText size={18} aria-hidden="true" />
-            <div>
-              <h2 id="knowledge-title" className="text-sm font-semibold">
-                Base de conhecimento do workspace
-              </h2>
-              <p className="mt-1 max-w-2xl text-[10px] text-zinc-500">
-                Documentos ficam isolados neste workspace e só entram no contexto de agentes que
-                você autorizar.
-              </p>
-            </div>
-          </div>
-          {knowledgeEditingId && (
-            <button className={buttonClass(isDarkMode)} onClick={resetKnowledgeDocument}>
-              <X size={13} aria-hidden="true" /> Cancelar
-            </button>
-          )}
-        </div>
-        <div className="grid gap-2 lg:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)_auto]">
-          <input
-            className={inputClass(isDarkMode)}
-            aria-label="Título do documento"
-            placeholder="Título do documento"
-            value={knowledgeForm.title}
-            onChange={(event) => setKnowledgeForm({ ...knowledgeForm, title: event.target.value })}
-          />
-          <textarea
-            className={`${inputClass(isDarkMode)} min-h-10 py-3`}
-            aria-label="Conteúdo do documento"
-            placeholder="Conteúdo que o agente pode consultar"
-            value={knowledgeForm.content}
-            onChange={(event) =>
-              setKnowledgeForm({ ...knowledgeForm, content: event.target.value })
-            }
-          />
-          <button
-            className={buttonClass(isDarkMode)}
-            disabled={knowledgeBusy || !knowledgeForm.title.trim() || !knowledgeForm.content.trim()}
-            onClick={saveKnowledgeDocument}
-          >
-            {knowledgeEditingId ? <PencilSimple size={13} /> : <Plus size={13} />}
-            {knowledgeEditingId ? "Salvar" : "Adicionar"}
-          </button>
-        </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {knowledgeDocuments.map((document) => (
-            <article
-              key={document.id}
-              className={`${card(isDarkMode)} flex min-w-0 items-start justify-between gap-3 p-3`}
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p title={document.title} className="truncate text-xs font-semibold">
-                    {document.title}
-                  </p>
-                  <span className="inbox-feedback-state">
-                    {document.active ? "Ativo" : "Pausado"}
-                  </span>
-                </div>
-                <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-[11px] text-zinc-500">
-                  {document.content}
-                </p>
-              </div>
-              <div className="flex shrink-0 gap-1">
-                <button
-                  className={buttonClass(isDarkMode)}
-                  aria-label={`Editar ${document.title}`}
-                  onClick={() => editKnowledgeDocument(document)}
-                >
-                  <PencilSimple size={13} />
-                </button>
-                <button
-                  className={buttonClass(isDarkMode)}
-                  aria-label={`Remover ${document.title}`}
-                  onClick={() => setPendingKnowledgeDelete(document)}
-                >
-                  <Trash size={13} />
-                </button>
-              </div>
-            </article>
-          ))}
-          {!knowledgeDocuments.length && (
-            <p className="text-xs text-zinc-500">Nenhum documento cadastrado.</p>
-          )}
-        </div>
-      </section>
-      <div className="grid gap-3 xl:grid-cols-2">
-        {agents.map((agent) => {
-          const assignedInstance = instances.find((instance) => instance.id === agent.instance_id);
-          const selected = selectedAgentIds.includes(agent.id);
-          return (
-            <article
-              key={agent.id}
-              className={`${card(isDarkMode)} p-4 ${selected ? (isDarkMode ? "ring-1 ring-emerald-400/45" : "ring-1 ring-emerald-600/35") : ""}`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      aria-label={`Selecionar agente ${agent.name}`}
-                      checked={selected}
-                      onCheckedChange={() => toggleAgentSelection(agent.id)}
-                    />
-                    <Robot size={17} />
-                    <p title={agent.name} className="truncate text-sm font-semibold">
-                      {agent.name}
-                    </p>
+                {form.calendarEnabled && (
+                  <div className="ux-form-grid">
+                    <UxField label="Calendário">
+                      <SurfaceSelect
+                        isDarkMode={isDarkMode}
+                        className="ux-input"
+                        value={form.calendarId || "__workspace_default__"}
+                        onValueChange={(calendarId) =>
+                          setForm({
+                            ...form,
+                            calendarId: calendarId === "__workspace_default__" ? "" : calendarId,
+                          })
+                        }
+                        ariaLabel="Calendário do agente"
+                        placeholder="Calendário padrão"
+                      >
+                        <SelectItem value="__workspace_default__">Calendário padrão</SelectItem>
+                        {calendars.map((calendar) => (
+                          <SelectItem key={calendar.id} value={calendar.id}>
+                            {calendar.name}
+                          </SelectItem>
+                        ))}
+                      </SurfaceSelect>
+                    </UxField>
+                    <div className="ux-field" role="group" aria-label="Permissões de calendário">
+                      <span className="ux-label">O agente pode</span>
+                      <div className="grid grid-cols-2 gap-x-3">
+                        {AGENT_CALENDAR_PERMISSIONS.map((permission) => (
+                          <label
+                            key={permission.value}
+                            className="ux-check"
+                            htmlFor={`agent-calendar-${permission.value}`}
+                          >
+                            <Checkbox
+                              id={`agent-calendar-${permission.value}`}
+                              checked={calendarPermissionSet.has(permission.value)}
+                              onCheckedChange={(checked) =>
+                                toggleCalendarPermission(permission.value, checked === true)
+                              }
+                            />
+                            <span>{permission.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <p className="mt-1 text-[10px] text-zinc-500">
-                    {agent.provider === "openrouter" ? "OpenRouter" : "Groq"} ·{" "}
-                    {agent.model || "modelo padrão"} · {agent.reply_mode} ·{" "}
-                    {agent.instance_id ? "conexão específica" : "todas as conexões"}
-                  </p>
-                  {agent.instance_id && (
-                    <p
-                      title={assignedInstance?.instance_name || "conexão indisponível"}
-                      className="mt-1 truncate text-[11px] font-medium text-zinc-500"
-                    >
-                      WhatsApp atribuído:{" "}
-                      {assignedInstance?.instance_name || "conexão indisponível"}
-                    </p>
-                  )}
-                </div>
-                <button
-                  className={`${buttonClass(isDarkMode)} ${agent.enabled ? "text-emerald-500 font-bold" : ""}`}
-                  onClick={() =>
-                    void run(
-                      () => updateAgent({ id: agent.id, enabled: !agent.enabled }),
-                      agent.enabled ? "Agente desativado." : "Agente ativado.",
-                    )
-                  }
-                >
-                  {agent.enabled ? "Ativo" : "Inativo"}
-                </button>
-              </div>
-              <p className="mt-3 line-clamp-3 whitespace-pre-wrap text-xs text-zinc-500">
-                {agent.instructions}
+                )}
+              </section>
+            </div>
+
+            <div className="ux-drawer-foot">
+              <p className="ux-meta">
+                {canSaveAgent ? "" : "Preencha nome e objetivo para salvar."}
               </p>
-              <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2">
-                <input
-                  className={`${inputClass(isDarkMode)} col-span-3`}
-                  placeholder="Teste uma mensagem"
-                  value={testText[agent.id] || ""}
-                  onChange={(e) => setTestText({ ...testText, [agent.id]: e.target.value })}
-                />
+              <div className="flex gap-2">
+                <DialogPrimitive.Close className="ux-btn ux-btn--ghost">
+                  Cancelar
+                </DialogPrimitive.Close>
                 <button
-                  className={buttonClass(isDarkMode)}
-                  disabled={busy || !aiConfigured || !(testText[agent.id] || "").trim()}
-                  onClick={() => {
-                    setBusy(true);
-                    setError("");
-                    void testAgent(agent.id, testText[agent.id] || "")
-                      .then((r) => {
-                        setTestResult({ ...testResult, [agent.id]: r.text });
-                        WhatsAppToast.success("Teste concluído", "Resposta obtida do agente.");
-                      })
-                      .catch((e) => {
-                        setError(e.message);
-                        WhatsAppToast.networkError(e.message);
-                      })
-                      .finally(() => setBusy(false));
-                  }}
+                  type="button"
+                  className="ux-btn ux-btn--primary"
+                  disabled={busy || !canSaveAgent}
+                  onClick={saveAgent}
                 >
-                  Testar
-                </button>
-                <button
-                  className={`${buttonClass(isDarkMode)} aspect-square px-3`}
-                  onClick={() => editAgent(agent)}
-                  title="Editar personalização"
-                  aria-label={`Editar agente ${agent.name}`}
-                >
-                  <PencilSimple size={13} />
-                </button>
-                <button
-                  className={`${buttonClass(isDarkMode)} aspect-square px-3 text-red-500 hover:text-red-600`}
-                  onClick={() => handleDeleteAgent(agent)}
-                  title="Excluir agente"
-                  aria-label={`Excluir agente ${agent.name}`}
-                >
-                  <Trash size={13} />
+                  {editingId ? "Salvar alterações" : "Criar agente"}
                 </button>
               </div>
-              {testResult[agent.id] && (
-                <div className="mt-3 rounded-xl border border-current/5 p-3 text-xs whitespace-pre-wrap">
-                  {testResult[agent.id]}
-                </div>
-              )}
-            </article>
-          );
-        })}
-        {!agents.length && <Empty>Nenhum agente configurado.</Empty>}
-      </div>
-      {runs.length > 0 && (
-        <div className={`${card(isDarkMode)} mt-4 p-4`}>
-          <div className="mb-3 flex items-center gap-2">
-            <UsersThree size={16} />
-            <h2 className="text-xs font-semibold">Execuções recentes</h2>
-          </div>
-          <div className="grid gap-2">
-            {runs.slice(0, 8).map((r) => (
-              <div key={r.id} className="flex items-center justify-between gap-3 text-[10px]">
-                <span title={r.input_excerpt || "Sem entrada"} className="truncate text-zinc-500">
-                  {r.input_excerpt || "Sem entrada"}
-                </span>
-                <span
-                  className={
-                    r.status === "failed"
-                      ? "text-red-500"
-                      : r.status === "completed"
-                        ? "text-emerald-500"
-                        : "text-zinc-500"
-                  }
-                >
-                  {r.status}
-                </span>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      <DialogPrimitive.Root
+        open={Boolean(testingAgent)}
+        onOpenChange={(open) => {
+          if (!open) setTestAgentId(null);
+        }}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content
+            className={`ux-drawer ux-drawer--narrow`}
+            aria-describedby="agent-test-description"
+          >
+            <div className="ux-drawer-head">
+              <div className="min-w-0">
+                <DialogPrimitive.Title className="ux-h2 truncate">
+                  Testar {testingAgent?.name}
+                </DialogPrimitive.Title>
+                <DialogPrimitive.Description id="agent-test-description" className="ux-meta">
+                  Simula a primeira mensagem de um cliente. Nada é enviado no WhatsApp.
+                </DialogPrimitive.Description>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar teste do agente">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+            <div className="ux-drawer-body">
+              <div className="ux-thread" aria-live="polite">
+                {testThread.length === 0 && (
+                  <p className="ux-meta">
+                    Escreva como um cliente escreveria. Cada mensagem é avaliada sem o histórico das
+                    anteriores.
+                  </p>
+                )}
+                {testThread.map((message, index) => (
+                  <div key={index} className="ux-bubble" data-role={message.role}>
+                    {message.text}
+                  </div>
+                ))}
+                {testBusy && (
+                  <div className="ux-bubble ux-meta" data-role="agent">
+                    Gerando resposta...
+                  </div>
+                )}
+              </div>
+            </div>
+            <form
+              className="ux-composer"
+              onSubmit={(event) => {
+                event.preventDefault();
+                sendTest();
+              }}
+            >
+              <input
+                className="ux-input"
+                aria-label="Mensagem de teste"
+                placeholder={
+                  aiConfigured ? "Ex.: Vocês atendem no sábado?" : "Provedor de IA não configurado"
+                }
+                disabled={!aiConfigured}
+                value={testDraft}
+                onChange={(e) =>
+                  testingAgent && setTestText({ ...testText, [testingAgent.id]: e.target.value })
+                }
+              />
+              <button
+                type="submit"
+                className="ux-btn ux-btn--primary"
+                disabled={!aiConfigured || testBusy || !testDraft.trim()}
+                aria-label="Enviar mensagem de teste"
+              >
+                <PaperPlaneRight size={16} aria-hidden="true" />
+              </button>
+            </form>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
       <ConfirmDialog
         open={Boolean(pendingKnowledgeDelete)}
         title="Remover documento da base?"
@@ -1917,76 +2596,32 @@ export function AgentsView({ isDarkMode }: Props) {
           removeKnowledgeDocument(document);
         }}
       />
-      {pendingAgentDeleteIds && (
-        <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setPendingAgentDeleteIds(null);
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="agent-delete-title"
-            className={`${card(isDarkMode)} w-full max-w-md p-5 shadow-2xl`}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setPendingAgentDeleteIds(null);
-            }}
-          >
-            <div className="flex items-start gap-3">
-              <div
-                className={
-                  isDarkMode
-                    ? "rounded-xl bg-red-400/10 p-2 text-red-300"
-                    : "rounded-xl bg-red-50 p-2 text-red-700"
-                }
-              >
-                <WarningCircle size={20} weight="duotone" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <h2 id="agent-delete-title" className="text-sm font-semibold">
-                  Remover agente{pendingAgentDeleteIds.length > 1 ? "s" : ""}?
-                </h2>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">
-                  Esta ação remove{" "}
-                  {pendingAgentDeleteIds.length > 1
-                    ? `${pendingAgentDeleteIds.length} agentes`
-                    : "o agente selecionado"}{" "}
-                  e não pode ser desfeita.
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                className={buttonClass(isDarkMode)}
-                autoFocus
-                onClick={() => setPendingAgentDeleteIds(null)}
-              >
-                Cancelar
-              </button>
-              <button
-                className={`${buttonClass(isDarkMode)} border-red-500/30 text-red-600 hover:bg-red-500/10 dark:text-red-300`}
-                disabled={busy}
-                onClick={() => {
-                  const ids = pendingAgentDeleteIds;
-                  setPendingAgentDeleteIds(null);
-                  void run(
-                    async () => {
-                      for (const id of ids) await deleteAgent(id);
-                      setSelectedAgentIds((current) => current.filter((id) => !ids.includes(id)));
-                    },
-                    ids.length > 1
-                      ? "Agentes removidos com sucesso."
-                      : "Agente removido com sucesso.",
-                  );
-                }}
-              >
-                <Trash size={15} aria-hidden="true" /> Remover
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <ConfirmDialog
+        open={Boolean(pendingAgentDeleteIds)}
+        title={(pendingAgentDeleteIds?.length || 0) > 1 ? "Excluir agentes?" : "Excluir agente?"}
+        description={`${
+          (pendingAgentDeleteIds?.length || 0) > 1
+            ? `${pendingAgentDeleteIds?.length} agentes serão excluídos`
+            : "O agente será excluído"
+        } e deixará de responder. Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        destructive
+        busy={busy}
+        dark={isDarkMode}
+        onCancel={() => setPendingAgentDeleteIds(null)}
+        onConfirm={() => {
+          const ids = pendingAgentDeleteIds;
+          if (!ids) return;
+          setPendingAgentDeleteIds(null);
+          void run(
+            async () => {
+              for (const id of ids) await deleteAgent(id);
+              setSelectedAgentIds((current) => current.filter((id) => !ids.includes(id)));
+            },
+            ids.length > 1 ? "Agentes excluídos." : "Agente excluído.",
+          );
+        }}
+      />
     </main>
   );
 }
