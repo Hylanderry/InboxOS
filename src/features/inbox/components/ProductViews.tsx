@@ -646,6 +646,18 @@ export function CrmView({ isDarkMode }: Props) {
     kind: "open" | "won" | "lost";
   } | null>(null);
   const [pendingStageDelete, setPendingStageDelete] = useState<CrmStage | null>(null);
+  const [activeStageId, setActiveStageId] = useState("");
+  const [boardWidth, setBoardWidth] = useState(0);
+  const boardWrapRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const node = boardWrapRef.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setBoardWidth(entry.contentRect.width);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  });
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -782,6 +794,15 @@ export function CrmView({ isDarkMode }: Props) {
   const openStageIds = new Set(stages.filter((s) => s.kind === "open").map((s) => s.id));
   const openValue = sumLeadValues(leads.filter((lead) => openStageIds.has(lead.stage_id)));
 
+  const orderedStageList = [...stages].sort((a, b) => a.position - b.position);
+  // Sem rolagem horizontal: todas as colunas lado a lado só quando cada uma
+  // recebe ao menos 210px; caso contrário, abas de etapa + uma coluna.
+  const fitsBoard = boardWidth === 0 || boardWidth / Math.max(1, stages.length) >= 210;
+  const currentStageId =
+    orderedStageList.find((stage) => stage.id === activeStageId)?.id ||
+    orderedStageList[0]?.id ||
+    "";
+
   const leadContact = (lead: CrmLead) =>
     lead.company || lead.phone_e164 || lead.email || "Sem contato";
 
@@ -847,7 +868,27 @@ export function CrmView({ isDarkMode }: Props) {
                 onChange={(event) => setCrmQuery(event.target.value)}
               />
             </div>
-            <div className="ux-segmented ml-auto" role="tablist" aria-label="Modo de exibição">
+            {canManage && (
+              <button
+                type="button"
+                className="ux-btn ux-btn--ghost ml-auto"
+                onClick={() =>
+                  setStageEdit({
+                    id: "",
+                    name: "",
+                    color: STAGE_COLORS[1] || "#3b82f6",
+                    kind: "open",
+                  })
+                }
+              >
+                <Plus size={16} aria-hidden="true" /> Nova etapa
+              </button>
+            )}
+            <div
+              className={`ux-segmented ${canManage ? "" : "ml-auto"}`}
+              role="tablist"
+              aria-label="Modo de exibição"
+            >
               <button
                 type="button"
                 role="tab"
@@ -871,223 +912,231 @@ export function CrmView({ isDarkMode }: Props) {
         )}
 
         {hasLoaded && viewState !== "empty" && layout === "board" && (
-          <div className="ux-board" aria-label="Quadro do pipeline">
-            {[...stages]
-              .sort((a, b) => a.position - b.position)
-              .map((stage, stageIndex, orderedStages) => {
-                const stageLeads = filteredLeads.filter((lead) => lead.stage_id === stage.id);
-                const visibleLeadLimit =
-                  visibleLeadCounts[stage.id] ?? progressiveRenderLimit(viewport.horizontal);
-                const visibleLeads = stageLeads.slice(0, visibleLeadLimit);
-                return (
-                  <section
+          <div ref={boardWrapRef} className="grid min-w-0 gap-3">
+            {!fitsBoard && (
+              <div className="ux-segmented ux-stage-tabs" role="tablist" aria-label="Etapas">
+                {orderedStageList.map((stage) => (
+                  <button
                     key={stage.id}
-                    className="ux-col"
-                    data-drop={dropStageId === stage.id}
-                    aria-label={`Etapa ${stage.name}`}
-                    onDragOver={(event) => {
-                      if (!dragLeadId) return;
-                      event.preventDefault();
-                      event.dataTransfer.dropEffect = "move";
-                      if (dropStageId !== stage.id) setDropStageId(stage.id);
-                    }}
-                    onDragLeave={(event) => {
-                      if (!event.currentTarget.contains(event.relatedTarget as Node | null))
-                        setDropStageId(null);
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      const lead = leads.find((item) => item.id === dragLeadId);
-                      setDropStageId(null);
-                      setDragLeadId(null);
-                      if (lead) moveLead(lead, stage.id);
-                    }}
+                    type="button"
+                    role="tab"
+                    aria-selected={currentStageId === stage.id}
+                    className="ux-segment"
+                    onClick={() => setActiveStageId(stage.id)}
                   >
-                    <div className="ux-col-head" style={{ borderTopColor: stage.color }}>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <h2 title={stage.name} className="truncate ux-h3">
-                            {stage.name}
-                          </h2>
-                          <span className="ux-col-count">{stageLeads.length}</span>
+                    <span
+                      className="ux-chip-dot"
+                      style={{ background: stage.color }}
+                      aria-hidden="true"
+                    />
+                    {stage.name}
+                    <span className="ux-segment-count">
+                      {filteredLeads.filter((lead) => lead.stage_id === stage.id).length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div
+              className="ux-board"
+              aria-label="Quadro do pipeline"
+              style={{
+                gridTemplateColumns: `repeat(${fitsBoard ? Math.max(1, stages.length) : 1}, minmax(0, 1fr))`,
+              }}
+            >
+              {orderedStageList
+                .map((stage, stageIndex, orderedStages) => ({ stage, stageIndex, orderedStages }))
+                .filter(({ stage }) => fitsBoard || stage.id === currentStageId)
+                .map(({ stage, stageIndex, orderedStages }) => {
+                  const stageLeads = filteredLeads.filter((lead) => lead.stage_id === stage.id);
+                  const visibleLeadLimit =
+                    visibleLeadCounts[stage.id] ?? progressiveRenderLimit(viewport.horizontal);
+                  const visibleLeads = stageLeads.slice(0, visibleLeadLimit);
+                  return (
+                    <section
+                      key={stage.id}
+                      className="ux-col"
+                      data-drop={dropStageId === stage.id}
+                      aria-label={`Etapa ${stage.name}`}
+                      onDragOver={(event) => {
+                        if (!dragLeadId) return;
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                        if (dropStageId !== stage.id) setDropStageId(stage.id);
+                      }}
+                      onDragLeave={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+                          setDropStageId(null);
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        const lead = leads.find((item) => item.id === dragLeadId);
+                        setDropStageId(null);
+                        setDragLeadId(null);
+                        if (lead) moveLead(lead, stage.id);
+                      }}
+                    >
+                      <div className="ux-col-head" style={{ borderTopColor: stage.color }}>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <h2 title={stage.name} className="truncate ux-h3">
+                              {stage.name}
+                            </h2>
+                            <span className="ux-col-count">{stageLeads.length}</span>
+                          </div>
+                          <p className="ux-meta truncate">{sumLeadValues(stageLeads)}</p>
                         </div>
-                        <p className="ux-meta truncate">{sumLeadValues(stageLeads)}</p>
-                      </div>
-                      {canManage && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            className="ux-icon-btn ux-col-menu"
-                            aria-label={`Opções da etapa ${stage.name}`}
-                          >
-                            <DotsThree size={18} weight="bold" aria-hidden="true" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="min-w-[200px]">
-                            <DropdownMenuItem
-                              onSelect={() =>
-                                setStageEdit({
-                                  id: stage.id,
-                                  name: stage.name,
-                                  color: stage.color,
-                                  kind: stage.kind,
-                                })
-                              }
+                        {canManage && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              className="ux-icon-btn ux-col-menu"
+                              aria-label={`Opções da etapa ${stage.name}`}
                             >
-                              <PencilSimple size={16} aria-hidden="true" /> Editar etapa
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={stageIndex === 0}
-                              onSelect={() => shiftStage(stage, -1)}
-                            >
-                              <ArrowLeft size={16} aria-hidden="true" /> Mover para a esquerda
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={stageIndex === orderedStages.length - 1}
-                              onSelect={() => shiftStage(stage, 1)}
-                            >
-                              <ArrowRight size={16} aria-hidden="true" /> Mover para a direita
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-[var(--ux-danger)] focus:text-[var(--ux-danger)]"
-                              onSelect={() => setPendingStageDelete(stage)}
-                            >
-                              <Trash size={16} aria-hidden="true" /> Excluir etapa
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-                    <div className="ux-col-body">
-                      {visibleLeads.map((lead) => (
-                        <article
-                          key={lead.id}
-                          className="ux-card"
-                          draggable={canManage}
-                          data-dragging={dragLeadId === lead.id}
-                          onDragStart={(event) => {
-                            event.dataTransfer.effectAllowed = "move";
-                            event.dataTransfer.setData("text/plain", lead.id);
-                            setDragLeadId(lead.id);
-                          }}
-                          onDragEnd={() => {
-                            setDragLeadId(null);
-                            setDropStageId(null);
-                          }}
-                        >
-                          <div className="flex items-start gap-2">
-                            <div className="min-w-0 flex-1">
-                              <button
-                                type="button"
-                                className="ux-card-open"
-                                onClick={() => openLead(lead)}
-                                aria-label={`Abrir detalhes de ${lead.name}`}
+                              <DotsThree size={18} weight="bold" aria-hidden="true" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="min-w-[200px]">
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  setStageEdit({
+                                    id: stage.id,
+                                    name: stage.name,
+                                    color: stage.color,
+                                    kind: stage.kind,
+                                  })
+                                }
                               >
-                                <p title={lead.name} className="truncate ux-strong">
-                                  {lead.name}
+                                <PencilSimple size={16} aria-hidden="true" /> Editar etapa
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={stageIndex === 0}
+                                onSelect={() => shiftStage(stage, -1)}
+                              >
+                                <ArrowLeft size={16} aria-hidden="true" /> Mover para a esquerda
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={stageIndex === orderedStages.length - 1}
+                                onSelect={() => shiftStage(stage, 1)}
+                              >
+                                <ArrowRight size={16} aria-hidden="true" /> Mover para a direita
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-[var(--ux-danger)] focus:text-[var(--ux-danger)]"
+                                onSelect={() => setPendingStageDelete(stage)}
+                              >
+                                <Trash size={16} aria-hidden="true" /> Excluir etapa
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
+                      <div className="ux-col-body">
+                        {visibleLeads.map((lead) => (
+                          <article
+                            key={lead.id}
+                            className="ux-card"
+                            draggable={canManage}
+                            data-dragging={dragLeadId === lead.id}
+                            onDragStart={(event) => {
+                              event.dataTransfer.effectAllowed = "move";
+                              event.dataTransfer.setData("text/plain", lead.id);
+                              setDragLeadId(lead.id);
+                            }}
+                            onDragEnd={() => {
+                              setDragLeadId(null);
+                              setDropStageId(null);
+                            }}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className="min-w-0 flex-1">
+                                <button
+                                  type="button"
+                                  className="ux-card-open"
+                                  onClick={() => openLead(lead)}
+                                  aria-label={`Abrir detalhes de ${lead.name}`}
+                                >
+                                  <p title={lead.name} className="truncate ux-strong">
+                                    {lead.name}
+                                  </p>
+                                </button>
+                                <p title={leadContact(lead)} className="truncate ux-meta">
+                                  {leadContact(lead)}
                                 </p>
-                              </button>
-                              <p title={leadContact(lead)} className="truncate ux-meta">
-                                {leadContact(lead)}
-                              </p>
+                              </div>
+                              {canManage && (
+                                <button
+                                  type="button"
+                                  className="ux-icon-btn ux-icon-btn--danger ux-card-action"
+                                  onClick={() => handleDeleteLead(lead)}
+                                  aria-label={`Excluir lead ${lead.name}`}
+                                  title="Excluir"
+                                >
+                                  <Trash size={16} aria-hidden="true" />
+                                </button>
+                              )}
+                            </div>
+                            <div className="ux-card-foot">
+                              <span className="ux-card-value" data-empty={!lead.value_cents}>
+                                {lead.value_cents
+                                  ? formatMoney(lead.value_cents, lead.currency || "BRL")
+                                  : "Sem valor"}
+                              </span>
+                              {lead.contactCategory === "saved_contact" && (
+                                <span className="ux-card-tag">Contato salvo</span>
+                              )}
+                              {lead.contactCategory === "potential_lead" && (
+                                <span className="ux-card-tag">Possível lead</span>
+                              )}
                             </div>
                             {canManage && (
-                              <button
-                                type="button"
-                                className="ux-icon-btn ux-icon-btn--danger ux-card-action"
-                                onClick={() => handleDeleteLead(lead)}
-                                aria-label={`Excluir lead ${lead.name}`}
-                                title="Excluir"
-                              >
-                                <Trash size={16} aria-hidden="true" />
-                              </button>
+                              <div className="ux-card-stage">
+                                <SurfaceSelect
+                                  isDarkMode={isDarkMode}
+                                  className="ux-input ux-input--sm"
+                                  value={lead.stage_id}
+                                  onValueChange={(stageId) => moveLead(lead, stageId)}
+                                  placeholder="Etapa do lead"
+                                  ariaLabel={`Mover etapa do lead ${lead.name}`}
+                                >
+                                  {stages.map((s) => (
+                                    <SelectItem key={s.id} value={s.id}>
+                                      {s.name}
+                                    </SelectItem>
+                                  ))}
+                                </SurfaceSelect>
+                              </div>
                             )}
-                          </div>
-                          <div className="ux-card-foot">
-                            <span className="ux-card-value" data-empty={!lead.value_cents}>
-                              {lead.value_cents
-                                ? formatMoney(lead.value_cents, lead.currency || "BRL")
-                                : "Sem valor"}
-                            </span>
-                            {lead.contactCategory === "saved_contact" && (
-                              <span className="ux-card-tag">Contato salvo</span>
-                            )}
-                            {lead.contactCategory === "potential_lead" && (
-                              <span className="ux-card-tag">Possível lead</span>
-                            )}
-                          </div>
-                          {canManage && (
-                            <div className="ux-card-stage">
-                              <SurfaceSelect
-                                isDarkMode={isDarkMode}
-                                className="ux-input ux-input--sm"
-                                value={lead.stage_id}
-                                onValueChange={(stageId) => moveLead(lead, stageId)}
-                                placeholder="Etapa do lead"
-                                ariaLabel={`Mover etapa do lead ${lead.name}`}
-                              >
-                                {stages.map((s) => (
-                                  <SelectItem key={s.id} value={s.id}>
-                                    {s.name}
-                                  </SelectItem>
-                                ))}
-                              </SurfaceSelect>
-                            </div>
-                          )}
-                        </article>
-                      ))}
-                      {!stageLeads.length && (
-                        <p className="ux-col-empty">
-                          {dragLeadId
-                            ? "Solte aqui"
-                            : normalizedQuery
-                              ? "Nenhum resultado"
-                              : "Sem leads"}
-                        </p>
-                      )}
-                      {stageLeads.length > visibleLeads.length && (
-                        <button
-                          type="button"
-                          className="ux-btn ux-btn--ghost w-full"
-                          onClick={() =>
-                            setVisibleLeadCounts((current) => ({
-                              ...current,
-                              [stage.id]:
-                                visibleLeadLimit + progressiveRenderLimit(viewport.horizontal),
-                            }))
-                          }
-                        >
-                          Mostrar mais ({stageLeads.length - visibleLeads.length})
-                        </button>
-                      )}
-                    </div>
-                  </section>
-                );
-              })}
-            {canManage && (
-              <form
-                className="ux-col ux-col--new"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (!newStage.trim() || busy) return;
-                  void run(async () => {
-                    await createStage({ name: newStage.trim(), position: stages.length });
-                    setNewStage("");
-                  }, "Etapa criada com sucesso.");
-                }}
-              >
-                <p className="ux-h3">Nova etapa</p>
-                <input
-                  className="ux-input"
-                  aria-label="Nome da nova etapa"
-                  placeholder="Ex.: Proposta enviada"
-                  value={newStage}
-                  onChange={(e) => setNewStage(e.target.value)}
-                />
-                <button type="submit" className="ux-btn" disabled={!newStage.trim() || busy}>
-                  <Plus size={16} aria-hidden="true" /> Adicionar etapa
-                </button>
-              </form>
-            )}
+                          </article>
+                        ))}
+                        {!stageLeads.length && (
+                          <p className="ux-col-empty">
+                            {dragLeadId
+                              ? "Solte aqui"
+                              : normalizedQuery
+                                ? "Nenhum resultado"
+                                : "Sem leads"}
+                          </p>
+                        )}
+                        {stageLeads.length > visibleLeads.length && (
+                          <button
+                            type="button"
+                            className="ux-btn ux-btn--ghost w-full"
+                            onClick={() =>
+                              setVisibleLeadCounts((current) => ({
+                                ...current,
+                                [stage.id]:
+                                  visibleLeadLimit + progressiveRenderLimit(viewport.horizontal),
+                              }))
+                            }
+                          >
+                            Mostrar mais ({stageLeads.length - visibleLeads.length})
+                          </button>
+                        )}
+                      </div>
+                    </section>
+                  );
+                })}
+            </div>
           </div>
         )}
 
@@ -1434,7 +1483,9 @@ export function CrmView({ isDarkMode }: Props) {
           <DialogPrimitive.Content className="ux-modal" aria-describedby="crm-stage-description">
             <div className="ux-drawer-head">
               <div className="min-w-0">
-                <DialogPrimitive.Title className="ux-h2">Editar etapa</DialogPrimitive.Title>
+                <DialogPrimitive.Title className="ux-h2">
+                  {stageEdit?.id ? "Editar etapa" : "Nova etapa"}
+                </DialogPrimitive.Title>
                 <DialogPrimitive.Description id="crm-stage-description" className="ux-meta">
                   Nome, cor e tipo da etapa no pipeline.
                 </DialogPrimitive.Description>
@@ -1450,15 +1501,27 @@ export function CrmView({ isDarkMode }: Props) {
                   event.preventDefault();
                   if (!stageEdit.name.trim()) return;
                   const edit = stageEdit;
-                  void run(async () => {
-                    await updateStage({
-                      id: edit.id,
-                      name: edit.name.trim(),
-                      color: edit.color,
-                      kind: edit.kind,
-                    });
-                    setStageEdit(null);
-                  }, "Etapa atualizada.");
+                  void run(
+                    async () => {
+                      if (edit.id) {
+                        await updateStage({
+                          id: edit.id,
+                          name: edit.name.trim(),
+                          color: edit.color,
+                          kind: edit.kind,
+                        });
+                      } else {
+                        await createStage({
+                          name: edit.name.trim(),
+                          color: edit.color,
+                          kind: edit.kind,
+                          position: stages.length,
+                        });
+                      }
+                      setStageEdit(null);
+                    },
+                    edit.id ? "Etapa atualizada." : "Etapa criada com sucesso.",
+                  );
                 }}
               >
                 <UxField label="Nome" htmlFor="crm-stage-name">
@@ -1522,7 +1585,7 @@ export function CrmView({ isDarkMode }: Props) {
                     className="ux-btn ux-btn--primary"
                     disabled={busy || !stageEdit.name.trim()}
                   >
-                    Salvar etapa
+                    {stageEdit.id ? "Salvar etapa" : "Criar etapa"}
                   </button>
                 </div>
               </form>
@@ -3790,6 +3853,20 @@ function localDateTime(date: Date) {
   return local.toISOString().slice(0, 16);
 }
 
+const APPOINTMENT_STATUS: Record<string, { label: string; tone?: "positive" | "danger" }> = {
+  scheduled: { label: "Agendado" },
+  confirmed: { label: "Confirmado", tone: "positive" },
+  completed: { label: "Concluído" },
+  canceled: { label: "Cancelado", tone: "danger" },
+  no_show: { label: "Não compareceu", tone: "danger" },
+};
+
+const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+function timeLabel(value: string) {
+  return new Date(value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
 export function CalendarView({ isDarkMode }: Props) {
   const [calendars, setCalendars] = useState<CalendarConfig[]>([]);
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([]);
@@ -3801,6 +3878,9 @@ export function CalendarView({ isDarkMode }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editingAppointmentId, setEditingAppointmentId] = useState<string | null>(null);
+  const [appointmentOpen, setAppointmentOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [pendingCancel, setPendingCancel] = useState<CalendarAppointment | null>(null);
   const [month, setMonth] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState(() => dayKey(new Date()));
   const [form, setForm] = useState({
@@ -3862,9 +3942,11 @@ export function CalendarView({ isDarkMode }: Props) {
     "crm_lead_tags:change",
   ]);
 
-  const selectedAppointments = appointments.filter(
-    (appointment) =>
-      dayKey(appointment.starts_at) === selectedDay && appointment.status !== "canceled",
+  const activeAppointments = appointments
+    .filter((appointment) => appointment.status !== "canceled")
+    .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+  const selectedAppointments = activeAppointments.filter(
+    (appointment) => dayKey(appointment.starts_at) === selectedDay,
   );
   const selectedCalendar =
     calendars.find((calendar) => calendar.id === form.calendarId) ?? calendars[0];
@@ -3894,6 +3976,25 @@ export function CalendarView({ isDarkMode }: Props) {
       leadId: appointment.lead_id ?? "",
       agentId: appointment.agent_id ?? "",
     });
+    setAppointmentOpen(true);
+  };
+
+  const newAppointmentOnDay = (key: string) => {
+    const now = new Date();
+    const base = new Date(
+      `${key}T${String(Math.max(9, now.getHours() + 1)).padStart(2, "0")}:00:00`,
+    );
+    const slot = selectedCalendar?.slot_duration_minutes || 30;
+    setEditingAppointmentId(null);
+    setForm((current) => ({
+      ...current,
+      title: "",
+      startsAt: localDateTime(base),
+      endsAt: localDateTime(new Date(base.getTime() + slot * 60_000)),
+      leadId: "",
+      agentId: "",
+    }));
+    setAppointmentOpen(true);
   };
 
   const viewState = deriveViewDataState({
@@ -3902,337 +4003,592 @@ export function CalendarView({ isDarkMode }: Props) {
     hasError: Boolean(error),
     isEmpty: hasLoaded && appointments.length === 0 && calendars.length === 0,
   });
+  const todayKey = dayKey(new Date());
+  const selectedDate = new Date(`${selectedDay}T12:00:00`);
 
   return (
-    <main className="inboxos-page inboxos-product-surface inboxos-calendar-surface flex-1 overflow-auto p-4 sm:p-6">
-      <Heading
-        title="Calendário"
-        description="Agendamentos vinculados a clientes e agentes, com capacidade e conflito controlados."
-        isDarkMode={isDarkMode}
-        onRefresh={() => void refresh()}
-      />
-      {error && <ErrorBox text={error} />}
-      {viewState === "initial" && <DataSkeleton label="Preparando calendário" columns={2} />}
-      {viewState === "refreshing" && (
-        <p data-state="refreshing" role="status" className="mb-3 text-xs text-zinc-500">
-          Atualizando calendário...
-        </p>
-      )}
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <section className={`${card(isDarkMode)} min-w-0 p-4`}>
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <CalendarDots size={18} />
-              <h2 className="text-sm font-semibold">
-                {month.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
-              </h2>
-            </div>
-            <div className="flex gap-1">
-              <button
-                className={buttonClass(isDarkMode)}
-                onClick={() =>
-                  setMonth((value) => new Date(value.getFullYear(), value.getMonth() - 1, 1))
-                }
-              >
-                ‹
-              </button>
-              <button
-                className={buttonClass(isDarkMode)}
-                onClick={() => {
-                  const now = new Date();
-                  setMonth(now);
-                  setSelectedDay(dayKey(now));
-                }}
-              >
-                Hoje
-              </button>
-              <button
-                className={buttonClass(isDarkMode)}
-                onClick={() =>
-                  setMonth((value) => new Date(value.getFullYear(), value.getMonth() + 1, 1))
-                }
-              >
-                ›
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-zinc-500">
-            {["dom", "seg", "ter", "qua", "qui", "sex", "sáb"].map((day) => (
-              <span key={day} className="py-2 uppercase">
-                {day}
-              </span>
-            ))}
-            {monthDays(month).map((date) => {
-              const key = dayKey(date);
-              const count = appointments.filter(
-                (appointment) =>
-                  dayKey(appointment.starts_at) === key && appointment.status !== "canceled",
-              ).length;
-              const outside = date.getMonth() !== month.getMonth();
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setSelectedDay(key)}
-                  className={`min-h-16 rounded-xl border p-2 text-left transition-colors ${selectedDay === key ? "border-emerald-500/60 bg-emerald-500/10" : isDarkMode ? "border-white/[0.06] hover:bg-white/[0.04]" : "border-black/[0.06] hover:bg-black/[0.03]"} ${outside ? "opacity-40" : ""}`}
-                >
-                  <span className="text-xs font-semibold">{date.getDate()}</span>
-                  {count > 0 && (
-                    <span className="mt-2 block text-[10px] text-emerald-500">{count} ag.</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-        <aside className="grid content-start gap-4">
-          <section className={`${card(isDarkMode)} p-4`}>
-            <h2 className="text-sm font-semibold">
-              {new Date(`${selectedDay}T12:00:00`).toLocaleDateString("pt-BR", {
-                day: "2-digit",
-                month: "long",
-              })}
-            </h2>
-            <p className="mt-1 text-[10px] text-zinc-500">
-              {selectedAppointments.length}/{selectedCalendar?.daily_capacity ?? 0} agendamentos
-              ativos
+    <main className="inboxos-page inboxos-product-surface inboxos-calendar-surface ux-page flex-1 overflow-auto">
+      <div className="ux-container">
+        <header className="ux-page-header">
+          <div className="min-w-0">
+            <h1 className="ux-h1">Calendário</h1>
+            <p className="ux-lead">
+              Agendamentos com clientes, feitos pela equipe ou pelos agentes de IA.
             </p>
-            <div className="mt-3 grid gap-2">
-              {selectedAppointments.map((appointment) => (
-                <div key={appointment.id} className="rounded-xl border border-current/10 p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p title={appointment.title} className="truncate text-xs font-semibold">
-                        {appointment.title}
-                      </p>
-                      <p className="mt-1 text-[10px] text-zinc-500">
-                        {new Date(appointment.starts_at).toLocaleTimeString("pt-BR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}{" "}
-                        · {appointment.lead?.name ?? "Cliente não vinculado"}
-                      </p>
-                    </div>
-                    {canManage && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          className="text-zinc-500 hover:text-zinc-200"
-                          title="Remarcar agendamento"
-                          aria-label={`Remarcar ${appointment.title}`}
-                          onClick={() => editAppointment(appointment)}
-                        >
-                          <PencilSimple size={15} />
-                        </button>
-                        <button
-                          className="text-red-500"
-                          title="Cancelar agendamento"
-                          aria-label={`Cancelar ${appointment.title}`}
-                          onClick={() =>
-                            void run(
-                              () => cancelAppointment(appointment.id),
-                              "Agendamento cancelado.",
-                            )
-                          }
-                        >
-                          <X size={15} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {!selectedAppointments.length && <Empty>Nenhum agendamento neste dia.</Empty>}
-            </div>
-          </section>
-          {canManage && (
-            <section className={`${card(isDarkMode)} grid gap-2 p-4`}>
-              <h2 className="text-sm font-semibold">
-                {editingAppointmentId ? "Remarcar agendamento" : "Novo agendamento"}
-              </h2>
-              <input
-                className={inputClass(isDarkMode)}
-                placeholder="Título do atendimento"
-                value={form.title}
-                onChange={(event) => setForm({ ...form, title: event.target.value })}
-              />
-              <SurfaceSelect
-                isDarkMode={isDarkMode}
-                value={form.calendarId || "__choose_calendar__"}
-                onValueChange={(calendarId) =>
-                  setForm({
-                    ...form,
-                    calendarId: calendarId === "__choose_calendar__" ? "" : calendarId,
-                  })
-                }
-                placeholder="Calendário"
-                ariaLabel="Calendário do agendamento"
-              >
-                <SelectItem value="__choose_calendar__">Calendário</SelectItem>
-                {calendars.map((calendar) => (
-                  <SelectItem key={calendar.id} value={calendar.id}>
-                    {calendar.name}
-                  </SelectItem>
-                ))}
-              </SurfaceSelect>
-              <input
-                className={inputClass(isDarkMode)}
-                type="datetime-local"
-                value={form.startsAt}
-                onChange={(event) => setForm({ ...form, startsAt: event.target.value })}
-                aria-label="Início do agendamento"
-              />
-              <input
-                className={inputClass(isDarkMode)}
-                type="datetime-local"
-                value={form.endsAt}
-                onChange={(event) => setForm({ ...form, endsAt: event.target.value })}
-                aria-label="Fim do agendamento"
-              />
-              <SurfaceSelect
-                isDarkMode={isDarkMode}
-                value={form.leadId || "__no_client__"}
-                onValueChange={(leadId) =>
-                  setForm({ ...form, leadId: leadId === "__no_client__" ? "" : leadId })
-                }
-                placeholder="Cliente (opcional)"
-                ariaLabel="Cliente do agendamento"
-              >
-                <SelectItem value="__no_client__">Cliente (opcional)</SelectItem>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name || client.phone_e164 || "Cliente sem nome"}
-                  </SelectItem>
-                ))}
-              </SurfaceSelect>
-              <SurfaceSelect
-                isDarkMode={isDarkMode}
-                value={form.agentId || "__no_agent__"}
-                onValueChange={(agentId) =>
-                  setForm({ ...form, agentId: agentId === "__no_agent__" ? "" : agentId })
-                }
-                placeholder="Agente (opcional)"
-                ariaLabel="Agente do agendamento"
-              >
-                <SelectItem value="__no_agent__">Agente (opcional)</SelectItem>
-                {agents.map((agent) => (
-                  <SelectItem key={agent.id} value={agent.id}>
-                    {agent.name}
-                  </SelectItem>
-                ))}
-              </SurfaceSelect>
+          </div>
+          <div className="ux-actions">
+            <button
+              type="button"
+              className="ux-icon-btn"
+              onClick={() => void refresh()}
+              aria-label="Atualizar dados de Calendário"
+              title="Atualizar"
+            >
+              <ArrowClockwise size={18} aria-hidden="true" />
+            </button>
+            {canManage && calendars.length > 0 && (
               <button
-                className={buttonClass(isDarkMode)}
-                disabled={busy || !form.title.trim() || !form.calendarId}
-                onClick={() =>
-                  void run(
-                    () =>
-                      saveAppointment({
-                        ...(editingAppointmentId ? { id: editingAppointmentId } : {}),
-                        calendarId: form.calendarId,
-                        title: form.title.trim(),
-                        startsAt: new Date(form.startsAt).toISOString(),
-                        endsAt: new Date(form.endsAt).toISOString(),
-                        leadId: form.leadId || null,
-                        agentId: form.agentId || null,
-                      }).then(() => setEditingAppointmentId(null)),
-                    editingAppointmentId ? "Agendamento remarcado." : "Agendamento salvo.",
-                  )
-                }
+                type="button"
+                className="ux-btn ux-btn--primary"
+                onClick={() => newAppointmentOnDay(selectedDay)}
               >
-                {editingAppointmentId ? <Check size={13} /> : <Plus size={13} />}
-                {editingAppointmentId ? "Salvar remarcação" : "Agendar"}
+                <Plus size={16} aria-hidden="true" /> Novo agendamento
               </button>
-              {editingAppointmentId && (
+            )}
+          </div>
+        </header>
+        {error && <ErrorBox text={error} />}
+        {viewState === "initial" && <DataSkeleton label="Preparando calendário" columns={2} />}
+        {viewState === "refreshing" && (
+          <p data-state="refreshing" role="status" className="ux-meta">
+            Atualizando calendário...
+          </p>
+        )}
+
+        {hasLoaded && calendars.length === 0 && (
+          <section className="ux-panel">
+            <div className="ux-empty">
+              <p className="ux-h3">Nenhuma agenda criada</p>
+              <p>
+                Crie uma agenda com horário de atendimento e capacidade diária. Os agentes de IA
+                usam essas regras para oferecer horários livres.
+              </p>
+              {canManage && (
                 <button
-                  className={buttonClass(isDarkMode)}
                   type="button"
-                  onClick={() => setEditingAppointmentId(null)}
+                  className="ux-btn ux-btn--primary mt-2"
+                  onClick={() => setCalendarOpen(true)}
                 >
-                  Cancelar edição
+                  <Plus size={16} aria-hidden="true" /> Criar agenda
                 </button>
               )}
-            </section>
-          )}
-          {canManage && !calendars.length && (
-            <section className={`${card(isDarkMode)} grid gap-2 p-4`}>
-              <h2 className="text-sm font-semibold">Criar calendário</h2>
-              <input
-                className={inputClass(isDarkMode)}
-                value={calendarForm.name}
-                onChange={(event) => setCalendarForm({ ...calendarForm, name: event.target.value })}
-                placeholder="Nome da agenda"
-              />
-              <input
-                className={inputClass(isDarkMode)}
-                value={calendarForm.timezone}
-                onChange={(event) =>
-                  setCalendarForm({ ...calendarForm, timezone: event.target.value })
-                }
-                placeholder="Fuso IANA"
-              />
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  className={inputClass(isDarkMode)}
-                  type="number"
-                  min="5"
-                  value={calendarForm.slotDurationMinutes}
-                  onChange={(event) =>
-                    setCalendarForm({ ...calendarForm, slotDurationMinutes: event.target.value })
-                  }
-                  aria-label="Duração"
-                />
-                <input
-                  className={inputClass(isDarkMode)}
-                  type="number"
-                  min="0"
-                  value={calendarForm.bufferMinutes}
-                  onChange={(event) =>
-                    setCalendarForm({ ...calendarForm, bufferMinutes: event.target.value })
-                  }
-                  aria-label="Intervalo"
-                />
-                <input
-                  className={inputClass(isDarkMode)}
-                  type="number"
-                  min="1"
-                  value={calendarForm.dailyCapacity}
-                  onChange={(event) =>
-                    setCalendarForm({ ...calendarForm, dailyCapacity: event.target.value })
-                  }
-                  aria-label="Capacidade diária"
-                />
+            </div>
+          </section>
+        )}
+
+        {hasLoaded && calendars.length > 0 && (
+          <div className="ux-layout-rail">
+            <section className="ux-panel" aria-labelledby="calendar-month-title">
+              <div className="ux-panel-head">
+                <h2 id="calendar-month-title" className="ux-h2 first-letter:uppercase">
+                  {month.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+                </h2>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="ux-icon-btn"
+                    aria-label="Mês anterior"
+                    onClick={() =>
+                      setMonth((value) => new Date(value.getFullYear(), value.getMonth() - 1, 1))
+                    }
+                  >
+                    <ArrowLeft size={18} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="ux-btn ux-btn--ghost"
+                    onClick={() => {
+                      const now = new Date();
+                      setMonth(now);
+                      setSelectedDay(dayKey(now));
+                    }}
+                  >
+                    Hoje
+                  </button>
+                  <button
+                    type="button"
+                    className="ux-icon-btn"
+                    aria-label="Próximo mês"
+                    onClick={() =>
+                      setMonth((value) => new Date(value.getFullYear(), value.getMonth() + 1, 1))
+                    }
+                  >
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </button>
+                </div>
               </div>
-              <button
-                className={buttonClass(isDarkMode)}
-                disabled={busy || !calendarForm.name.trim()}
-                onClick={() =>
-                  void run(
-                    () =>
-                      saveCalendar({
-                        name: calendarForm.name.trim(),
-                        timezone: calendarForm.timezone,
-                        slotDurationMinutes: Number(calendarForm.slotDurationMinutes),
-                        bufferMinutes: Number(calendarForm.bufferMinutes),
-                        dailyCapacity: Number(calendarForm.dailyCapacity),
-                        availability: {
-                          mon: [["09:00", "18:00"]],
-                          tue: [["09:00", "18:00"]],
-                          wed: [["09:00", "18:00"]],
-                          thu: [["09:00", "18:00"]],
-                          fri: [["09:00", "18:00"]],
-                        },
-                        isDefault: true,
-                      }),
-                    "Calendário criado.",
-                  )
-                }
-              >
-                <Plus size={13} /> Criar calendário
-              </button>
+              <div className="ux-month" role="grid" aria-labelledby="calendar-month-title">
+                {WEEKDAYS.map((day) => (
+                  <span key={day} className="ux-month-weekday" role="columnheader">
+                    {day}
+                  </span>
+                ))}
+                {monthDays(month).map((date) => {
+                  const key = dayKey(date);
+                  const dayItems = activeAppointments.filter(
+                    (appointment) => dayKey(appointment.starts_at) === key,
+                  );
+                  const outside = date.getMonth() !== month.getMonth();
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="gridcell"
+                      aria-selected={selectedDay === key}
+                      aria-label={`${date.toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}, ${dayItems.length} agendamentos`}
+                      className="ux-day"
+                      data-outside={outside}
+                      data-today={key === todayKey}
+                      onClick={() => setSelectedDay(key)}
+                      onDoubleClick={() => canManage && newAppointmentOnDay(key)}
+                    >
+                      <span className="ux-day-number">{date.getDate()}</span>
+                      {dayItems.slice(0, 2).map((appointment) => (
+                        <span key={appointment.id} className="ux-day-event">
+                          <b>{timeLabel(appointment.starts_at)}</b> {appointment.title}
+                        </span>
+                      ))}
+                      {dayItems.length > 2 && (
+                        <span className="ux-day-more">+{dayItems.length - 2}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </section>
-          )}
-        </aside>
+
+            <aside className="ux-rail" aria-label="Agenda do dia">
+              <section className="ux-panel" aria-labelledby="calendar-day-title">
+                <div className="ux-panel-head">
+                  <div className="min-w-0">
+                    <h2 id="calendar-day-title" className="ux-h2 first-letter:uppercase">
+                      {selectedDate.toLocaleDateString("pt-BR", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </h2>
+                    <p className="ux-meta">
+                      {selectedAppointments.length} de {selectedCalendar?.daily_capacity ?? 0}{" "}
+                      horários ocupados
+                    </p>
+                  </div>
+                </div>
+                {selectedAppointments.length > 0 ? (
+                  <ul className="ux-list">
+                    {selectedAppointments.map((appointment) => {
+                      const status = APPOINTMENT_STATUS[appointment.status] || {
+                        label: appointment.status,
+                      };
+                      return (
+                        <li key={appointment.id} className="ux-row ux-appointment">
+                          <span className="ux-appointment-time">
+                            <b>{timeLabel(appointment.starts_at)}</b>
+                            <span>{timeLabel(appointment.ends_at)}</span>
+                          </span>
+                          <div className="ux-row-main">
+                            <p title={appointment.title} className="truncate ux-strong">
+                              {appointment.title}
+                            </p>
+                            <p className="ux-meta truncate">
+                              {appointment.lead?.name ?? "Sem cliente"}
+                              {appointment.source === "agent"
+                                ? ` · via ${appointment.agent?.name || "agente"}`
+                                : ""}
+                            </p>
+                            <span
+                              className="ux-pill mt-1 justify-self-start"
+                              data-tone={status.tone}
+                            >
+                              {status.label}
+                            </span>
+                          </div>
+                          {canManage && (
+                            <div className="flex shrink-0 flex-col gap-1">
+                              <button
+                                type="button"
+                                className="ux-icon-btn"
+                                aria-label={`Remarcar ${appointment.title}`}
+                                title="Remarcar"
+                                onClick={() => editAppointment(appointment)}
+                              >
+                                <PencilSimple size={18} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                className="ux-icon-btn ux-icon-btn--danger"
+                                aria-label={`Cancelar ${appointment.title}`}
+                                title="Cancelar"
+                                onClick={() => setPendingCancel(appointment)}
+                              >
+                                <X size={18} aria-hidden="true" />
+                              </button>
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="ux-empty">
+                    <p>Nenhum agendamento neste dia.</p>
+                  </div>
+                )}
+                {canManage && (
+                  <div className="border-t border-[var(--ux-line)] p-3">
+                    <button
+                      type="button"
+                      className="ux-btn ux-btn--ghost w-full"
+                      onClick={() => newAppointmentOnDay(selectedDay)}
+                    >
+                      <Plus size={16} aria-hidden="true" /> Agendar neste dia
+                    </button>
+                  </div>
+                )}
+              </section>
+              {selectedCalendar && (
+                <section className="ux-panel" aria-labelledby="calendar-config-title">
+                  <div className="ux-panel-head">
+                    <h2 id="calendar-config-title" className="ux-h2">
+                      {selectedCalendar.name}
+                    </h2>
+                  </div>
+                  <dl className="ux-stats">
+                    <div>
+                      <dt>Duração do horário</dt>
+                      <dd>{selectedCalendar.slot_duration_minutes} min</dd>
+                    </div>
+                    <div>
+                      <dt>Intervalo</dt>
+                      <dd>{selectedCalendar.buffer_minutes} min</dd>
+                    </div>
+                    <div>
+                      <dt>Capacidade diária</dt>
+                      <dd>{selectedCalendar.daily_capacity}</dd>
+                    </div>
+                    <div>
+                      <dt>Fuso horário</dt>
+                      <dd className="truncate">{selectedCalendar.timezone}</dd>
+                    </div>
+                  </dl>
+                </section>
+              )}
+            </aside>
+          </div>
+        )}
       </div>
+
+      <DialogPrimitive.Root
+        open={appointmentOpen}
+        onOpenChange={(open) => {
+          setAppointmentOpen(open);
+          if (!open) setEditingAppointmentId(null);
+        }}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content
+            className="ux-drawer ux-drawer--narrow"
+            aria-describedby="appointment-description"
+          >
+            <div className="ux-drawer-head">
+              <div className="min-w-0">
+                <DialogPrimitive.Title className="ux-h2">
+                  {editingAppointmentId ? "Remarcar agendamento" : "Novo agendamento"}
+                </DialogPrimitive.Title>
+                <DialogPrimitive.Description id="appointment-description" className="ux-meta">
+                  Conflitos e capacidade da agenda são verificados ao salvar.
+                </DialogPrimitive.Description>
+              </div>
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar agendamento">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+            <form
+              id="appointment-form"
+              className="ux-drawer-body"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (busy || !form.title.trim() || !form.calendarId) return;
+                void run(
+                  () =>
+                    saveAppointment({
+                      ...(editingAppointmentId ? { id: editingAppointmentId } : {}),
+                      calendarId: form.calendarId,
+                      title: form.title.trim(),
+                      startsAt: new Date(form.startsAt).toISOString(),
+                      endsAt: new Date(form.endsAt).toISOString(),
+                      leadId: form.leadId || null,
+                      agentId: form.agentId || null,
+                    }).then(() => {
+                      setEditingAppointmentId(null);
+                      setAppointmentOpen(false);
+                    }),
+                  editingAppointmentId ? "Agendamento remarcado." : "Agendamento salvo.",
+                );
+              }}
+            >
+              <div className="ux-section">
+                <UxField label="Título" htmlFor="appointment-title">
+                  <input
+                    id="appointment-title"
+                    className="ux-input"
+                    placeholder="Ex.: Demonstração do produto"
+                    value={form.title}
+                    onChange={(event) => setForm({ ...form, title: event.target.value })}
+                  />
+                </UxField>
+                <UxField label="Agenda">
+                  <SurfaceSelect
+                    isDarkMode={isDarkMode}
+                    className="ux-input"
+                    value={form.calendarId || "__choose_calendar__"}
+                    onValueChange={(calendarId) =>
+                      setForm({
+                        ...form,
+                        calendarId: calendarId === "__choose_calendar__" ? "" : calendarId,
+                      })
+                    }
+                    placeholder="Calendário"
+                    ariaLabel="Calendário do agendamento"
+                  >
+                    <SelectItem value="__choose_calendar__">Escolha uma agenda</SelectItem>
+                    {calendars.map((calendar) => (
+                      <SelectItem key={calendar.id} value={calendar.id}>
+                        {calendar.name}
+                      </SelectItem>
+                    ))}
+                  </SurfaceSelect>
+                </UxField>
+                <div className="ux-form-grid">
+                  <UxField label="Início" htmlFor="appointment-start">
+                    <input
+                      id="appointment-start"
+                      className="ux-input"
+                      type="datetime-local"
+                      value={form.startsAt}
+                      onChange={(event) => setForm({ ...form, startsAt: event.target.value })}
+                      aria-label="Início do agendamento"
+                    />
+                  </UxField>
+                  <UxField label="Fim" htmlFor="appointment-end">
+                    <input
+                      id="appointment-end"
+                      className="ux-input"
+                      type="datetime-local"
+                      value={form.endsAt}
+                      onChange={(event) => setForm({ ...form, endsAt: event.target.value })}
+                      aria-label="Fim do agendamento"
+                    />
+                  </UxField>
+                </div>
+                <UxField label="Cliente" hint="Opcional.">
+                  <SurfaceSelect
+                    isDarkMode={isDarkMode}
+                    className="ux-input"
+                    value={form.leadId || "__no_client__"}
+                    onValueChange={(leadId) =>
+                      setForm({ ...form, leadId: leadId === "__no_client__" ? "" : leadId })
+                    }
+                    placeholder="Sem cliente"
+                    ariaLabel="Cliente do agendamento"
+                  >
+                    <SelectItem value="__no_client__">Sem cliente</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name || client.phone_e164 || "Cliente sem nome"}
+                      </SelectItem>
+                    ))}
+                  </SurfaceSelect>
+                </UxField>
+                <UxField label="Agente responsável" hint="Opcional.">
+                  <SurfaceSelect
+                    isDarkMode={isDarkMode}
+                    className="ux-input"
+                    value={form.agentId || "__no_agent__"}
+                    onValueChange={(agentId) =>
+                      setForm({ ...form, agentId: agentId === "__no_agent__" ? "" : agentId })
+                    }
+                    placeholder="Nenhum"
+                    ariaLabel="Agente do agendamento"
+                  >
+                    <SelectItem value="__no_agent__">Nenhum</SelectItem>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name}
+                      </SelectItem>
+                    ))}
+                  </SurfaceSelect>
+                </UxField>
+              </div>
+            </form>
+            <div className="ux-drawer-foot">
+              <span />
+              <div className="flex gap-2">
+                <DialogPrimitive.Close className="ux-btn ux-btn--ghost">
+                  Cancelar
+                </DialogPrimitive.Close>
+                <button
+                  type="submit"
+                  form="appointment-form"
+                  className="ux-btn ux-btn--primary"
+                  disabled={busy || !form.title.trim() || !form.calendarId}
+                >
+                  {editingAppointmentId ? "Salvar remarcação" : "Agendar"}
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      <DialogPrimitive.Root open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content
+            className="ux-drawer ux-drawer--narrow"
+            aria-describedby="calendar-create-description"
+          >
+            <div className="ux-drawer-head">
+              <div className="min-w-0">
+                <DialogPrimitive.Title className="ux-h2">Criar agenda</DialogPrimitive.Title>
+                <DialogPrimitive.Description id="calendar-create-description" className="ux-meta">
+                  Atendimento de segunda a sexta, das 9h às 18h. Você pode ajustar depois.
+                </DialogPrimitive.Description>
+              </div>
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar criar agenda">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+            <form
+              id="calendar-create-form"
+              className="ux-drawer-body"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (busy || !calendarForm.name.trim()) return;
+                void run(
+                  () =>
+                    saveCalendar({
+                      name: calendarForm.name.trim(),
+                      timezone: calendarForm.timezone,
+                      slotDurationMinutes: Number(calendarForm.slotDurationMinutes),
+                      bufferMinutes: Number(calendarForm.bufferMinutes),
+                      dailyCapacity: Number(calendarForm.dailyCapacity),
+                      availability: {
+                        mon: [["09:00", "18:00"]],
+                        tue: [["09:00", "18:00"]],
+                        wed: [["09:00", "18:00"]],
+                        thu: [["09:00", "18:00"]],
+                        fri: [["09:00", "18:00"]],
+                      },
+                      isDefault: true,
+                    }).then(() => setCalendarOpen(false)),
+                  "Calendário criado.",
+                );
+              }}
+            >
+              <div className="ux-section">
+                <UxField label="Nome da agenda" htmlFor="calendar-name">
+                  <input
+                    id="calendar-name"
+                    className="ux-input"
+                    value={calendarForm.name}
+                    onChange={(event) =>
+                      setCalendarForm({ ...calendarForm, name: event.target.value })
+                    }
+                  />
+                </UxField>
+                <UxField
+                  label="Fuso horário"
+                  htmlFor="calendar-timezone"
+                  hint="Ex.: America/Sao_Paulo"
+                >
+                  <input
+                    id="calendar-timezone"
+                    className="ux-input"
+                    value={calendarForm.timezone}
+                    onChange={(event) =>
+                      setCalendarForm({ ...calendarForm, timezone: event.target.value })
+                    }
+                  />
+                </UxField>
+                <div className="ux-form-grid">
+                  <UxField label="Duração (min)" htmlFor="calendar-slot">
+                    <input
+                      id="calendar-slot"
+                      className="ux-input"
+                      type="number"
+                      min="5"
+                      value={calendarForm.slotDurationMinutes}
+                      onChange={(event) =>
+                        setCalendarForm({
+                          ...calendarForm,
+                          slotDurationMinutes: event.target.value,
+                        })
+                      }
+                      aria-label="Duração"
+                    />
+                  </UxField>
+                  <UxField label="Intervalo (min)" htmlFor="calendar-buffer">
+                    <input
+                      id="calendar-buffer"
+                      className="ux-input"
+                      type="number"
+                      min="0"
+                      value={calendarForm.bufferMinutes}
+                      onChange={(event) =>
+                        setCalendarForm({ ...calendarForm, bufferMinutes: event.target.value })
+                      }
+                      aria-label="Intervalo"
+                    />
+                  </UxField>
+                </div>
+                <UxField
+                  label="Capacidade diária"
+                  htmlFor="calendar-capacity"
+                  hint="Máximo de agendamentos por dia."
+                >
+                  <input
+                    id="calendar-capacity"
+                    className="ux-input"
+                    type="number"
+                    min="1"
+                    value={calendarForm.dailyCapacity}
+                    onChange={(event) =>
+                      setCalendarForm({ ...calendarForm, dailyCapacity: event.target.value })
+                    }
+                    aria-label="Capacidade diária"
+                  />
+                </UxField>
+              </div>
+            </form>
+            <div className="ux-drawer-foot">
+              <span />
+              <div className="flex gap-2">
+                <DialogPrimitive.Close className="ux-btn ux-btn--ghost">
+                  Cancelar
+                </DialogPrimitive.Close>
+                <button
+                  type="submit"
+                  form="calendar-create-form"
+                  className="ux-btn ux-btn--primary"
+                  disabled={busy || !calendarForm.name.trim()}
+                >
+                  Criar agenda
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      <ConfirmDialog
+        open={Boolean(pendingCancel)}
+        title="Cancelar agendamento?"
+        description={`O agendamento ${pendingCancel?.title || "selecionado"} será cancelado e o horário ficará livre.`}
+        confirmLabel="Cancelar agendamento"
+        cancelLabel="Manter"
+        destructive
+        busy={busy}
+        dark={isDarkMode}
+        onCancel={() => setPendingCancel(null)}
+        onConfirm={() => {
+          if (!pendingCancel) return;
+          const appointment = pendingCancel;
+          setPendingCancel(null);
+          void run(() => cancelAppointment(appointment.id), "Agendamento cancelado.");
+        }}
+      />
     </main>
   );
 }
