@@ -4581,3 +4581,153 @@ textarea.ux-input {
   color: var(--ux-subtle);
   text-decoration: line-through;
 }
+
+/* Barra de ferramentas de lista */
+.ux-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ux-line);
+}
+.ux-search {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 200px;
+  max-width: 380px;
+  color: var(--ux-subtle);
+}
+.ux-search > svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  translate: 0 -50%;
+  pointer-events: none;
+}
+.ux-search .ux-input {
+  padding-left: 34px;
+}
+
+/* Barra de ações em massa */
+.ux-bulkbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ux-line);
+  background: var(--ux-surface-2);
+  animation: ux-reveal 200ms var(--motion-ease) both;
+}
+
+/* Chips de tag */
+.ux-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid var(--ux-line-strong);
+  background: var(--ux-surface);
+  color: var(--ux-ink);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--motion-ease);
+}
+button.ux-chip:hover {
+  background: var(--ux-hover);
+}
+button.ux-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ux-chip--static {
+  height: 22px;
+  padding: 0 7px;
+  border-color: var(--ux-line);
+  cursor: default;
+}
+.ux-chip-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+/* Tabela (grid) */
+.ux-table {
+  display: grid;
+}
+.ux-table-head,
+.ux-table-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1.4fr) 120px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+}
+.ux-table-head {
+  min-height: 38px;
+  border-bottom: 1px solid var(--ux-line);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ux-subtle);
+}
+.ux-table-row {
+  min-height: 56px;
+  transition: background-color var(--motion-fast) var(--motion-ease);
+}
+.ux-table-row + .ux-table-row {
+  border-top: 1px solid var(--ux-line);
+}
+.ux-table-row:hover {
+  background: var(--ux-hover);
+}
+.ux-table-row[data-selected="true"] {
+  background: var(--ux-press);
+}
+.ux-col-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+@media (max-width: 899px) {
+  .ux-table-head,
+  .ux-table-row {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+  }
+  .ux-col-company,
+  .ux-col-tags {
+    display: none !important;
+  }
+}
+.ux-client {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.ux-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--ux-surface-2);
+  border: 1px solid var(--ux-line);
+  color: var(--ux-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ux-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

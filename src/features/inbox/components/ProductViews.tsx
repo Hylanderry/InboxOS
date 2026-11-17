@@ -3509,6 +3509,8 @@ export function CalendarView({ isDarkMode }: Props) {
   );
 }
 
+type ClientCategoryFilter = "all" | "saved_contact" | "potential_lead" | "manual";
+
 export function ClientsView({ isDarkMode }: Props) {
   const [clients, setClients] = useState<WorkspaceClient[]>([]);
   const [tags, setTags] = useState<ClientTag[]>([]);
@@ -3522,6 +3524,9 @@ export function ClientsView({ isDarkMode }: Props) {
   const [importSummary, setImportSummary] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [newClient, setNewClient] = useState({ name: "", phone: "", email: "" });
+  const [categoryFilter, setCategoryFilter] = useState<ClientCategoryFilter>("all");
+  const [tagFilter, setTagFilter] = useState("");
+  const [tagsOpen, setTagsOpen] = useState(false);
   // Loading cached CRM data first keeps the page usable when Evolution is
   // slow or temporarily unavailable. The explicit Atualizar action retries
   // the remote sync.
@@ -3661,212 +3666,475 @@ export function ClientsView({ isDarkMode }: Props) {
     hasError: Boolean(error),
     isEmpty: hasLoaded && clients.length === 0,
   });
+  const categoryOf = (client: WorkspaceClient) => client.contactCategory || "manual";
+  const categoryCounts = {
+    all: clients.length,
+    saved_contact: clients.filter((client) => categoryOf(client) === "saved_contact").length,
+    potential_lead: clients.filter((client) => categoryOf(client) === "potential_lead").length,
+    manual: clients.filter((client) => categoryOf(client) === "manual").length,
+  };
+  const visibleClients = clients.filter((client) => {
+    if (categoryFilter !== "all" && categoryOf(client) !== categoryFilter) return false;
+    if (tagFilter && !client.tags.some((tag) => tag.id === tagFilter)) return false;
+    return true;
+  });
+  const allVisibleSelected =
+    visibleClients.length > 0 && visibleClients.every((client) => selected.includes(client.id));
+  const categoryFilters: Array<{ id: ClientCategoryFilter; label: string }> = [
+    { id: "all", label: "Todos" },
+    { id: "saved_contact", label: "Salvos" },
+    { id: "potential_lead", label: "Possíveis leads" },
+    { id: "manual", label: "Manuais" },
+  ];
+
   return (
-    <main className="inboxos-page inboxos-product-surface inboxos-clients-surface flex-1 overflow-auto p-4 sm:p-6">
-      <Heading
-        title="Clientes"
-        description="Clientes importados do WhatsApp e leads com tags operacionais."
-        isDarkMode={isDarkMode}
-        onRefresh={() => {
-          initialSync.current = true;
-          void refresh();
-        }}
-      />
-      {error && <ErrorBox text={error} />}
-      {viewState === "initial" && (
-        <DataSkeleton label="Preparando clientes do workspace" columns={2} />
-      )}
-      {viewState === "refreshing" && (
-        <p data-state="refreshing" role="status" className="mb-3 text-xs text-zinc-500">
-          Atualizando clientes...
-        </p>
-      )}
-      {importSummary && <p className="mb-3 text-xs text-zinc-500">{importSummary}</p>}
-      <div
-        className={`${card(isDarkMode)} inboxos-responsive-actions mb-4 grid gap-2 p-3 md:grid-cols-[1fr_auto_auto]`}
-      >
-        <div className="relative">
-          <MagnifyingGlass size={15} className="absolute left-3 top-3 text-zinc-500" />
-          <input
-            className={`${inputClass(isDarkMode)} w-full pl-9`}
-            placeholder="Buscar por nome, telefone, e-mail ou empresa"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </div>
-        <label className={`${buttonClass(isDarkMode)} cursor-pointer`}>
-          <UploadSimple size={13} /> Importar CSV
-          <input
-            type="file"
-            accept=".csv,.txt"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void importCsv(file);
-              event.currentTarget.value = "";
-            }}
-          />
-        </label>
-        <button
-          className={buttonClass(isDarkMode)}
-          onClick={() => setShowCreate((value) => !value)}
-        >
-          <UserPlus size={13} /> {showCreate ? "Fechar cadastro" : "Novo cliente"}
-        </button>
-        <button
-          className={buttonClass(isDarkMode)}
-          disabled={busy || !clients.length}
-          onClick={exportCsv}
-        >
-          <DownloadSimple size={13} /> Exportar CSV
-        </button>
-        <button
-          className={buttonClass(isDarkMode)}
-          disabled={busy || !newTag.trim()}
-          onClick={() =>
-            void run(async () => {
-              const result = await saveClientTag({ name: newTag.trim(), color: "#71717a" });
-              setTags((current) => [...current, result.tag]);
-              setNewTag("");
-            }, "Tag criada.")
-          }
-        >
-          <Tag size={13} /> Criar tag
-        </button>
-        <input
-          className={`${inputClass(isDarkMode)} md:col-span-3`}
-          placeholder="Nome da nova tag (use o botão ao lado)"
-          value={newTag}
-          onChange={(event) => setNewTag(event.target.value)}
-        />
-      </div>
-      {showCreate && (
-        <form
-          className={`${card(isDarkMode)} mb-4 grid gap-2 p-3 md:grid-cols-[1.2fr_1fr_1.2fr_auto]`}
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!newClient.name.trim()) return;
-            void run(async () => {
-              await createLead({
-                name: newClient.name.trim(),
-                phoneE164: newClient.phone.trim() || null,
-                email: newClient.email.trim() || null,
-                source: "manual",
-              });
-              setNewClient({ name: "", phone: "", email: "" });
-              setShowCreate(false);
-            }, "Cliente criado.");
-          }}
-        >
-          <input
-            className={inputClass(isDarkMode)}
-            placeholder="Nome do cliente"
-            value={newClient.name}
-            onChange={(event) => setNewClient({ ...newClient, name: event.target.value })}
-            required
-          />
-          <input
-            className={inputClass(isDarkMode)}
-            placeholder="+5511999999999"
-            inputMode="tel"
-            value={newClient.phone}
-            onChange={(event) => setNewClient({ ...newClient, phone: event.target.value })}
-          />
-          <input
-            className={inputClass(isDarkMode)}
-            placeholder="cliente@empresa.com"
-            type="email"
-            value={newClient.email}
-            onChange={(event) => setNewClient({ ...newClient, email: event.target.value })}
-          />
-          <button className={buttonClass(isDarkMode)} disabled={busy || !newClient.name.trim()}>
-            <Check size={13} /> Salvar
-          </button>
-        </form>
-      )}
-      <div className={`${card(isDarkMode)} mb-4 flex flex-wrap items-center gap-2 p-3`}>
-        <span className="text-xs text-zinc-500">{selected.length} selecionado(s)</span>
-        {tags.map((tag) => (
-          <button
-            key={tag.id}
-            className={buttonClass(isDarkMode)}
-            disabled={busy || !selected.length}
-            onClick={() =>
-              void run(() => assignClientTags(selected, [tag.id]), `Tag ${tag.name} atribuída.`)
-            }
-          >
-            <span className="h-2 w-2 rounded-full" style={{ background: tag.color }} />
-            {tag.name}
-          </button>
-        ))}
-        {selected.length > 0 && (
-          <button className={buttonClass(isDarkMode)} onClick={() => setSelected([])}>
-            Limpar seleção
-          </button>
+    <main className="inboxos-page inboxos-product-surface inboxos-clients-surface ux-page flex-1 overflow-auto">
+      <div className="ux-container">
+        <header className="ux-page-header">
+          <div className="min-w-0">
+            <h1 className="ux-h1" title="Clientes">
+              Clientes
+            </h1>
+            <p className="ux-lead">
+              Contatos do WhatsApp e leads cadastrados. Use tags para organizar e segmentar.
+            </p>
+          </div>
+          <div className="ux-actions">
+            <button
+              type="button"
+              className="ux-icon-btn"
+              onClick={() => {
+                initialSync.current = true;
+                void refresh();
+              }}
+              aria-label="Atualizar dados de Clientes"
+              title="Sincronizar com o WhatsApp"
+            >
+              <ArrowClockwise size={18} aria-hidden="true" />
+            </button>
+            <label className="ux-btn ux-btn--ghost cursor-pointer">
+              <UploadSimple size={16} aria-hidden="true" /> Importar CSV
+              <input
+                type="file"
+                accept=".csv,.txt"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void importCsv(file);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              className="ux-btn ux-btn--ghost"
+              disabled={busy || !clients.length}
+              onClick={exportCsv}
+            >
+              <DownloadSimple size={16} aria-hidden="true" /> Exportar CSV
+            </button>
+            <button
+              type="button"
+              className="ux-btn ux-btn--primary"
+              onClick={() => setShowCreate(true)}
+            >
+              <UserPlus size={16} aria-hidden="true" /> Novo cliente
+            </button>
+          </div>
+        </header>
+        {error && <ErrorBox text={error} />}
+        {viewState === "initial" && (
+          <DataSkeleton label="Preparando clientes do workspace" columns={2} />
+        )}
+        {viewState === "refreshing" && (
+          <p data-state="refreshing" role="status" className="ux-meta">
+            Atualizando clientes...
+          </p>
+        )}
+        {importSummary && (
+          <p role="status" className="ux-meta">
+            Importação: {importSummary}
+          </p>
+        )}
+        {hasLoaded && (
+          <section className="ux-panel" aria-label="Lista de clientes">
+            <div className="ux-toolbar">
+              <div className="ux-search">
+                <MagnifyingGlass size={16} aria-hidden="true" />
+                <input
+                  className="ux-input"
+                  aria-label="Buscar clientes"
+                  placeholder="Buscar por nome, telefone, e-mail ou empresa"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </div>
+              <div className="ux-segmented" role="tablist" aria-label="Filtrar por origem">
+                {categoryFilters.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={categoryFilter === item.id}
+                    className="ux-segment"
+                    onClick={() => setCategoryFilter(item.id)}
+                  >
+                    {item.label}
+                    <span className="ux-segment-count">{categoryCounts[item.id]}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                {tags.length > 0 && (
+                  <SurfaceSelect
+                    isDarkMode={isDarkMode}
+                    className="ux-input min-w-[150px]"
+                    value={tagFilter || "__all__"}
+                    onValueChange={(value) => setTagFilter(value === "__all__" ? "" : value)}
+                    placeholder="Todas as tags"
+                    ariaLabel="Filtrar por tag"
+                  >
+                    <SelectItem value="__all__">Todas as tags</SelectItem>
+                    {tags.map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id}>
+                        {tag.name}
+                      </SelectItem>
+                    ))}
+                  </SurfaceSelect>
+                )}
+                <button
+                  type="button"
+                  className="ux-btn ux-btn--ghost"
+                  onClick={() => setTagsOpen(true)}
+                >
+                  <Tag size={16} aria-hidden="true" /> Tags
+                </button>
+              </div>
+            </div>
+
+            {selected.length > 0 && (
+              <div className="ux-bulkbar" aria-live="polite">
+                <span className="ux-strong">
+                  {selected.length} {selected.length === 1 ? "selecionado" : "selecionados"}
+                </span>
+                <span className="ux-meta">Aplicar tag:</span>
+                {tags.length === 0 && <span className="ux-meta">crie uma tag primeiro</span>}
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className="ux-chip"
+                    disabled={busy}
+                    onClick={() =>
+                      void run(
+                        () => assignClientTags(selected, [tag.id]),
+                        `Tag ${tag.name} atribuída.`,
+                      )
+                    }
+                  >
+                    <span className="ux-chip-dot" style={{ background: tag.color }} />
+                    {tag.name}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="ux-btn ux-btn--ghost ml-auto"
+                  onClick={() => setSelected([])}
+                >
+                  Limpar seleção
+                </button>
+              </div>
+            )}
+
+            {visibleClients.length > 0 ? (
+              <div className="ux-table" role="table" aria-label="Clientes">
+                <div className="ux-table-head" role="row">
+                  <span role="columnheader">
+                    <Checkbox
+                      aria-label="Selecionar todos os clientes visíveis"
+                      checked={allVisibleSelected}
+                      onCheckedChange={(checked) =>
+                        setSelected((current) =>
+                          checked === true
+                            ? Array.from(
+                                new Set([...current, ...visibleClients.map((client) => client.id)]),
+                              )
+                            : current.filter(
+                                (id) => !visibleClients.some((client) => client.id === id),
+                              ),
+                        )
+                      }
+                    />
+                  </span>
+                  <span role="columnheader">Cliente</span>
+                  <span role="columnheader" className="ux-col-company">
+                    Empresa
+                  </span>
+                  <span role="columnheader" className="ux-col-tags">
+                    Tags
+                  </span>
+                  <span role="columnheader" className="ux-col-origin">
+                    Origem
+                  </span>
+                </div>
+                {visibleClients.map((client) => {
+                  const checked = selected.includes(client.id);
+                  const category = categoryOf(client);
+                  return (
+                    <div
+                      key={client.id}
+                      className="ux-table-row"
+                      role="row"
+                      data-selected={checked}
+                    >
+                      <span role="cell">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(nextChecked) =>
+                            setSelected((current) =>
+                              nextChecked === true
+                                ? [...current, client.id]
+                                : current.filter((id) => id !== client.id),
+                            )
+                          }
+                          aria-label={`Selecionar ${client.name}`}
+                        />
+                      </span>
+                      <span role="cell" className="ux-client">
+                        <span className="ux-avatar" aria-hidden="true">
+                          {client.profilePicUrl ? (
+                            <img src={client.profilePicUrl} alt="" loading="lazy" />
+                          ) : (
+                            <span>{(client.name || "?").trim().charAt(0).toUpperCase()}</span>
+                          )}
+                        </span>
+                        <span className="min-w-0">
+                          <p title={client.name} className="truncate ux-strong">
+                            {client.name}
+                          </p>
+                          <p
+                            title={client.phone_e164 || client.email || "Sem contato"}
+                            className="truncate ux-meta"
+                          >
+                            {client.phone_e164 || client.email || "Sem contato"}
+                          </p>
+                        </span>
+                      </span>
+                      <span role="cell" className="ux-col-company truncate ux-meta">
+                        {client.company || "—"}
+                      </span>
+                      <span role="cell" className="ux-col-tags">
+                        {client.tags.length ? (
+                          client.tags.map((tag) => (
+                            <span key={tag.id} className="ux-chip ux-chip--static">
+                              <span className="ux-chip-dot" style={{ background: tag.color }} />
+                              {tag.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="ux-meta">—</span>
+                        )}
+                      </span>
+                      <span role="cell" className="ux-col-origin">
+                        <span
+                          className="ux-pill"
+                          data-tone={category === "potential_lead" ? "positive" : undefined}
+                        >
+                          {category === "saved_contact"
+                            ? "Salvo"
+                            : category === "potential_lead"
+                              ? "Possível lead"
+                              : "Manual"}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="ux-empty">
+                <p className="ux-h3">
+                  {viewState === "empty" && !query ? "Nenhum cliente ainda" : "Nenhum resultado"}
+                </p>
+                <p>
+                  {viewState === "empty" && !query
+                    ? "Os contatos do WhatsApp aparecem aqui automaticamente. Você também pode importar um CSV ou cadastrar manualmente."
+                    : "Ajuste a busca ou os filtros para ver outros clientes."}
+                </p>
+              </div>
+            )}
+          </section>
         )}
       </div>
-      <div className="grid gap-2 lg:grid-cols-2">
-        {clients.map((client) => {
-          const checked = selected.includes(client.id);
-          return (
-            <article key={client.id} className={`${card(isDarkMode)} flex items-center gap-3 p-3`}>
-              <Checkbox
-                checked={checked}
-                onCheckedChange={(nextChecked) =>
-                  setSelected((current) =>
-                    nextChecked === true
-                      ? [...current, client.id]
-                      : current.filter((id) => id !== client.id),
-                  )
-                }
-                aria-label={`Selecionar ${client.name}`}
-              />
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-current/10 bg-current/5">
-                {client.profilePicUrl ? (
-                  <img
-                    src={client.profilePicUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    loading="lazy"
+
+      <DialogPrimitive.Root open={showCreate} onOpenChange={setShowCreate}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content
+            className="ux-drawer ux-drawer--narrow"
+            aria-describedby="client-create-description"
+          >
+            <div className="ux-drawer-head">
+              <div className="min-w-0">
+                <DialogPrimitive.Title className="ux-h2">Novo cliente</DialogPrimitive.Title>
+                <DialogPrimitive.Description id="client-create-description" className="ux-meta">
+                  O cliente fica disponível no CRM, no calendário e para os agentes.
+                </DialogPrimitive.Description>
+              </div>
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar novo cliente">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+            <form
+              id="client-create-form"
+              className="ux-drawer-body"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!newClient.name.trim()) return;
+                void run(async () => {
+                  await createLead({
+                    name: newClient.name.trim(),
+                    phoneE164: newClient.phone.trim() || null,
+                    email: newClient.email.trim() || null,
+                    source: "manual",
+                  });
+                  setNewClient({ name: "", phone: "", email: "" });
+                  setShowCreate(false);
+                }, "Cliente criado.");
+              }}
+            >
+              <div className="ux-section">
+                <UxField label="Nome" htmlFor="client-name">
+                  <input
+                    id="client-name"
+                    className="ux-input"
+                    placeholder="Nome do cliente"
+                    value={newClient.name}
+                    onChange={(event) => setNewClient({ ...newClient, name: event.target.value })}
+                    required
                   />
-                ) : (
-                  <UserCircle className="h-full w-full text-zinc-500" weight="duotone" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p title={client.name} className="truncate text-xs font-semibold">
-                  {client.name}
-                </p>
-                <p
-                  title={client.phone_e164 || client.email || "Sem contato"}
-                  className="truncate text-[10px] text-zinc-500"
+                </UxField>
+                <UxField
+                  label="Telefone"
+                  htmlFor="client-phone"
+                  hint="Com código do país. Ex.: +5511999999999"
                 >
-                  {client.phone_e164 || client.email || "Sem contato"}
-                </p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {client.tags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold"
-                      style={{ color: tag.color, backgroundColor: `${tag.color}18` }}
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
+                  <input
+                    id="client-phone"
+                    className="ux-input"
+                    placeholder="+5511999999999"
+                    inputMode="tel"
+                    value={newClient.phone}
+                    onChange={(event) => setNewClient({ ...newClient, phone: event.target.value })}
+                  />
+                </UxField>
+                <UxField label="E-mail" htmlFor="client-email" hint="Opcional.">
+                  <input
+                    id="client-email"
+                    className="ux-input"
+                    placeholder="cliente@empresa.com"
+                    type="email"
+                    value={newClient.email}
+                    onChange={(event) => setNewClient({ ...newClient, email: event.target.value })}
+                  />
+                </UxField>
               </div>
-              <span className="text-[9px] text-zinc-500">
-                {client.contactCategory === "saved_contact"
-                  ? "Salvo"
-                  : client.contactCategory === "potential_lead"
-                    ? "Possível lead"
-                    : "Manual"}
-              </span>
-            </article>
-          );
-        })}
-        {viewState === "empty" && <Empty>Nenhum cliente encontrado.</Empty>}
-      </div>
+            </form>
+            <div className="ux-drawer-foot">
+              <span />
+              <div className="flex gap-2">
+                <DialogPrimitive.Close className="ux-btn ux-btn--ghost">
+                  Cancelar
+                </DialogPrimitive.Close>
+                <button
+                  type="submit"
+                  form="client-create-form"
+                  className="ux-btn ux-btn--primary"
+                  disabled={busy || !newClient.name.trim()}
+                >
+                  Salvar cliente
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      <DialogPrimitive.Root open={tagsOpen} onOpenChange={setTagsOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="ux-drawer-overlay" />
+          <DialogPrimitive.Content
+            className="ux-drawer ux-drawer--narrow"
+            aria-describedby="client-tags-description"
+          >
+            <div className="ux-drawer-head">
+              <div className="min-w-0">
+                <DialogPrimitive.Title className="ux-h2">Tags</DialogPrimitive.Title>
+                <DialogPrimitive.Description id="client-tags-description" className="ux-meta">
+                  Selecione clientes na lista para aplicar uma tag.
+                </DialogPrimitive.Description>
+              </div>
+              <DialogPrimitive.Close className="ux-icon-btn" aria-label="Fechar tags">
+                <X size={18} aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </div>
+            <div className="ux-drawer-body">
+              <form
+                className="ux-section"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!newTag.trim()) return;
+                  void run(async () => {
+                    const result = await saveClientTag({ name: newTag.trim(), color: "#71717a" });
+                    setTags((current) => [...current, result.tag]);
+                    setNewTag("");
+                  }, "Tag criada.");
+                }}
+              >
+                <UxField label="Nova tag" htmlFor="client-new-tag">
+                  <div className="flex gap-2">
+                    <input
+                      id="client-new-tag"
+                      className="ux-input"
+                      placeholder="Ex.: VIP, Orçamento enviado"
+                      value={newTag}
+                      onChange={(event) => setNewTag(event.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="ux-btn ux-btn--primary"
+                      disabled={busy || !newTag.trim()}
+                    >
+                      Criar tag
+                    </button>
+                  </div>
+                </UxField>
+              </form>
+              {tags.length > 0 ? (
+                <ul className="ux-list border-t border-[var(--ux-line)]">
+                  {tags.map((tag) => (
+                    <li key={tag.id} className="ux-row">
+                      <span className="ux-chip-dot" style={{ background: tag.color }} />
+                      <span className="ux-row-main ux-strong">{tag.name}</span>
+                      <span className="ux-meta">
+                        {
+                          clients.filter((client) => client.tags.some((t) => t.id === tag.id))
+                            .length
+                        }{" "}
+                        clientes
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="ux-meta border-t border-[var(--ux-line)] px-6 py-4">
+                  Nenhuma tag criada.
+                </p>
+              )}
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </main>
   );
 }
