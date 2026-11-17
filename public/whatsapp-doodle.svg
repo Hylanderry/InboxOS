@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="412" height="412" viewBox="0 0 412 412" fill="none" opacity="0.06">
+  <!-- Chat Bubble -->
+  <path d="M40 30 C30 30 20 40 20 50 C20 65 35 75 45 75 L42 85 L55 75 C65 75 75 65 75 50 C75 35 60 30 40 30 Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Heart -->
+  <path d="M140 35 C135 25 120 25 115 35 C110 25 95 25 90 35 C80 50 115 75 115 75 C115 75 150 50 140 35 Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Camera -->
+  <rect x="200" y="35" width="40" height="28" rx="5" stroke="currentColor" stroke-width="1.8"/>
+  <circle cx="220" cy="49" r="7" stroke="currentColor" stroke-width="1.8"/>
+  <path d="M212 35 L215 30 L225 30 L228 35 Z" stroke="currentColor" stroke-width="1.8"/>
+  <!-- Headphones -->
+  <path d="M300 55 A20 20 0 0 1 340 55 V68 H332 V55 A12 12 0 0 0 308 55 V68 H300 Z" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="296" y="58" width="8" height="14" rx="3" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="336" y="58" width="8" height="14" rx="3" stroke="currentColor" stroke-width="1.8"/>
+  
+  <!-- Coffee Cup -->
+  <path d="M45 140 H75 V160 C75 170 65 175 60 175 C55 175 45 170 45 160 Z" stroke="currentColor" stroke-width="1.8"/>
+  <path d="M75 145 H83 C86 145 88 148 88 152 C88 156 86 159 83 159 H75" stroke="currentColor" stroke-width="1.8"/>
+  <path d="M40 178 H80" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  
+  <!-- Star -->
+  <polygon points="140,130 144,142 157,142 147,150 151,162 140,154 129,162 133,150 123,142 136,142" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+  
+  <!-- Umbrella -->
+  <path d="M220 135 A20 20 0 0 1 260 135 Z" stroke="currentColor" stroke-width="1.8"/>
+  <path d="M240 135 V165 C240 170 235 172 232 170" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M240 128 V135" stroke="currentColor" stroke-width="1.8"/>
+  
+  <!-- Music Note -->
+  <path d="M320 160 V135 L345 130 V155" stroke="currentColor" stroke-width="1.8"/>
+  <circle cx="315" cy="162" r="6" stroke="currentColor" stroke-width="1.8"/>
+  <circle cx="340" cy="157" r="6" stroke="currentColor" stroke-width="1.8"/>
+  
+  <!-- Clock -->
+  <circle cx="55" cy="250" r="18" stroke="currentColor" stroke-width="1.8"/>
+  <polyline points="55,238 55,250 64,250" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  
+  <!-- Gamepad -->
+  <rect x="130" y="240" width="45" height="26" rx="10" stroke="currentColor" stroke-width="1.8"/>
+  <line x1="140" y1="253" x2="148" y2="253" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="144" y1="249" x2="144" y2="257" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="162" cy="250" r="2" fill="currentColor"/>
+  <circle cx="168" cy="256" r="2" fill="currentColor"/>
+  
+  <!-- Globe / World -->
+  <circle cx="240" cy="250" r="18" stroke="currentColor" stroke-width="1.8"/>
+  <ellipse cx="240" cy="250" rx="9" ry="18" stroke="currentColor" stroke-width="1.8"/>
+  <line x1="222" y1="250" x2="258" y2="250" stroke="currentColor" stroke-width="1.8"/>
+  
+  <!-- Message Envelope -->
+  <rect x="315" y="240" width="36" height="24" rx="4" stroke="currentColor" stroke-width="1.8"/>
+  <polyline points="315,242 333,254 351,242" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  
+  <!-- Sun -->
+  <circle cx="55" cy="350" r="12" stroke="currentColor" stroke-width="1.8"/>
+  <line x1="55" y1="332" x2="55" y2="335" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="55" y1="365" x2="55" y2="368" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="37" y1="350" x2="40" y2="350" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="70" y1="350" x2="73" y2="350" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  
+  <!-- Paper Airplane -->
+  <path d="M130 360 L165 335 L140 370 L144 352 Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+  
+  <!-- Location Pin -->
+  <path d="M240 335 C230 335 224 342 224 350 C224 362 240 375 240 375 C240 375 256 362 256 350 C256 342 250 335 240 335 Z" stroke="currentColor" stroke-width="1.8"/>
+  <circle cx="240" cy="349" r="4" stroke="currentColor" stroke-width="1.8"/>
+  
+  <!-- Bell / Notification -->
+  <path d="M325 360 C325 350 330 345 335 342 V338 A5 5 0 0 1 345 338 V342 C350 345 355 350 355 360 H325 Z" stroke="currentColor" stroke-width="1.8"/>
+  <path d="M336 363 A4 4 0 0 0 344 363" stroke="currentColor" stroke-width="1.8"/>
+</svg>

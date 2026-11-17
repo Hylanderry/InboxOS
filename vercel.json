@@ -1,0 +1,15 @@
+{
+  "framework": "tanstack-start",
+  "installCommand": "npm ci --include=dev --include=optional --no-audit --no-fund",
+  "buildCommand": "npm run build",
+  "crons": [
+    {
+      "path": "/api/cron/evolution-recover",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/privacy-retention",
+      "schedule": "30 3 * * *"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# dependencies / build
+node_modules/
+dist/
+.output/
+.nitro/
+.tanstack/
+.vinxi/
+*.tsbuildinfo
+
+# env & secrets
+.env*
+!.env.example
+
+# vercel / supabase local state
+.vercel
+supabase/.temp/
+supabase/.branches/
+
+# tooling / logs
+.playwright-cli/
+output/
+*.log
+.DS_Store

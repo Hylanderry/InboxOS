@@ -1,0 +1,5 @@
+{
+  "framework": "tanstack-start",
+  "installCommand": "npm ci --include=dev --include=optional --no-audit --no-fund",
+  "buildCommand": "npm run build"
+}

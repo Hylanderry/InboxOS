@@ -1,0 +1,102 @@
+name: InboxOS staging HTTP smoke (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_url:
+        description: "HTTPS URL of an isolated Vercel preview (never production)"
+        required: true
+        type: string
+      run_evolution_smoke:
+        description: "Run synthetic Evolution webhook smoke against the isolated preview"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-unauthenticated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+      - name: Validate isolated preview target (dependency-free)
+        env:
+          TEST_BASE_URL: ${{ inputs.staging_url }}
+          PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL }}
+          STAGING_VERCEL_PREVIEW_CONFIRMED: ${{ vars.STAGING_VERCEL_PREVIEW_CONFIRMED }}
+        run: node --experimental-strip-types scripts/validate-staging-target.mjs
+      - name: Verify public template has no secrets or artefacts
+        run: npm run audit:public
+      - name: Unauthenticated security smoke (no real message sends)
+        env:
+          TEST_BASE_URL: ${{ inputs.staging_url }}
+          PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL }}
+          STAGING_VERCEL_PREVIEW_CONFIRMED: ${{ vars.STAGING_VERCEL_PREVIEW_CONFIRMED }}
+        run: npm run test:integration
+
+  browser-public-smoke:
+    name: Public UI browser smoke (mobile)
+    needs: smoke-unauthenticated
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+          cache: npm
+      - name: Install dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Exercise public auth/legal UI on mobile viewport
+        env:
+          TEST_BASE_URL: ${{ inputs.staging_url }}
+          PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL }}
+          STAGING_VERCEL_PREVIEW_CONFIRMED: ${{ vars.STAGING_VERCEL_PREVIEW_CONFIRMED }}
+        run: npm run test:staging:browser
+
+  evolution-synthetic-smoke:
+    name: Synthetic Evolution webhook smoke (opt-in)
+    if: ${{ inputs.run_evolution_smoke == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+      - name: Validate isolated Evolution target (no network)
+        env:
+          EVOLUTION_STAGING_WEBHOOK_URL: ${{ inputs.staging_url }}/api/public/webhooks/evolution
+          EVOLUTION_STAGING_INSTANCE: ${{ vars.EVOLUTION_STAGING_INSTANCE }}
+          EVOLUTION_STAGING_WEBHOOK_TOKEN: ${{ secrets.EVOLUTION_STAGING_WEBHOOK_TOKEN }}
+          EVOLUTION_STAGING_SUPABASE_REF: ${{ vars.EVOLUTION_STAGING_SUPABASE_REF }}
+          EVOLUTION_PRODUCTION_SUPABASE_REF: ${{ vars.EVOLUTION_PRODUCTION_SUPABASE_REF }}
+          PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL }}
+          STAGING_ISOLATED_DB_CONFIRMED: ${{ vars.STAGING_ISOLATED_DB_CONFIRMED }}
+          STAGING_VERCEL_PREVIEW_CONFIRMED: ${{ vars.STAGING_VERCEL_PREVIEW_CONFIRMED }}
+          STAGING_AUTOREPLY_DISABLED_CONFIRMED: ${{ vars.STAGING_AUTOREPLY_DISABLED_CONFIRMED }}
+        run: >-
+          node --input-type=module -e "import { validateEvolutionSmokeEnvironment } from './scripts/lib/evolution-smoke-policy.mjs';
+          const result = validateEvolutionSmokeEnvironment(process.env);
+          if (!result.valid) { for (const error of result.errors) console.error('BLOCKED: ' + error); process.exit(2); }
+          console.log('PASS: isolated Evolution target validated');"
+      - name: Execute synthetic webhook smoke (no WhatsApp send)
+        env:
+          EVOLUTION_STAGING_WEBHOOK_URL: ${{ inputs.staging_url }}/api/public/webhooks/evolution
+          EVOLUTION_STAGING_INSTANCE: ${{ vars.EVOLUTION_STAGING_INSTANCE }}
+          EVOLUTION_STAGING_WEBHOOK_TOKEN: ${{ secrets.EVOLUTION_STAGING_WEBHOOK_TOKEN }}
+          EVOLUTION_STAGING_SUPABASE_REF: ${{ vars.EVOLUTION_STAGING_SUPABASE_REF }}
+          EVOLUTION_PRODUCTION_SUPABASE_REF: ${{ vars.EVOLUTION_PRODUCTION_SUPABASE_REF }}
+          PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL }}
+          STAGING_ISOLATED_DB_CONFIRMED: ${{ vars.STAGING_ISOLATED_DB_CONFIRMED }}
+          STAGING_VERCEL_PREVIEW_CONFIRMED: ${{ vars.STAGING_VERCEL_PREVIEW_CONFIRMED }}
+          STAGING_AUTOREPLY_DISABLED_CONFIRMED: ${{ vars.STAGING_AUTOREPLY_DISABLED_CONFIRMED }}
+        run: node scripts/evolution-preview-smoke.mjs --execute

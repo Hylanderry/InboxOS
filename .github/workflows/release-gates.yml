@@ -1,0 +1,48 @@
+name: InboxOS release gates
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inboxos-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-and-build:
+    name: Unit, audit, lint, typecheck, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      ENABLE_BILLING: "false"
+      VITE_ENABLE_BILLING: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --include=dev --include=optional
+      - name: Unit and regression tests
+        run: npm test
+      - name: Local HTTP integration tests
+        run: npm run test:integration:local
+      - name: Structural release checks
+        run: npm run audit:release
+      - name: Public template secret/artefact check
+        run: npm run audit:public
+      - name: Production dependency audit
+        run: npm run audit:prod
+      - name: ESLint
+        run: npm run lint
+      - name: TypeScript strict typecheck
+        run: npx tsc --noEmit
+      - name: Vercel/TanStack production build
+        run: npm run build

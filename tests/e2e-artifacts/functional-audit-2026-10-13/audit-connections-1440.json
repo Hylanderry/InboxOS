@@ -1,0 +1,472 @@
+{
+  "generatedAt": "2026-10-20T18:26:32.518Z",
+  "baseUrl": "http://127.0.0.1:4173",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "isolation": "Playwright session, Supabase auth and application APIs mocked; no external writes or WhatsApp messages.",
+  "pages": [
+    {
+      "requestedLabel": "Conexões",
+      "actualLabel": "Conexões",
+      "status": "PASS",
+      "actions": [
+        "Atualizar",
+        "Nova Conexão",
+        "abrir/fechar QR"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "Dashboard",
+            "label": null
+          },
+          {
+            "text": "CRM",
+            "label": null
+          },
+          {
+            "text": "Clientes",
+            "label": null
+          },
+          {
+            "text": "Inbox",
+            "label": null
+          },
+          {
+            "text": "Follow-up",
+            "label": null
+          },
+          {
+            "text": "Calendário",
+            "label": null
+          },
+          {
+            "text": "Conexões",
+            "label": null
+          },
+          {
+            "text": "Agentes",
+            "label": null
+          },
+          {
+            "text": "ADM global",
+            "label": null
+          },
+          {
+            "text": "Configurações",
+            "label": null
+          },
+          {
+            "text": "Sair",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Ocultar navegação"
+          },
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar status das conexões"
+          },
+          {
+            "text": "Nova Conexão",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Editar nome de WhatsApp_QA"
+          },
+          {
+            "text": "",
+            "label": null
+          },
+          {
+            "text": "Ver Conversas",
+            "label": null
+          }
+        ],
+        "inputs": []
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "Dashboard",
+            "label": null
+          },
+          {
+            "text": "CRM",
+            "label": null
+          },
+          {
+            "text": "Clientes",
+            "label": null
+          },
+          {
+            "text": "Inbox",
+            "label": null
+          },
+          {
+            "text": "Follow-up",
+            "label": null
+          },
+          {
+            "text": "Calendário",
+            "label": null
+          },
+          {
+            "text": "Conexões",
+            "label": null
+          },
+          {
+            "text": "Agentes",
+            "label": null
+          },
+          {
+            "text": "ADM global",
+            "label": null
+          },
+          {
+            "text": "Configurações",
+            "label": null
+          },
+          {
+            "text": "Sair",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Ocultar navegação"
+          },
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar status das conexões"
+          },
+          {
+            "text": "Nova Conexão",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Editar nome de WhatsApp_QA"
+          },
+          {
+            "text": "",
+            "label": null
+          },
+          {
+            "text": "Ver Conversas",
+            "label": null
+          }
+        ],
+        "inputs": []
+      },
+      "requests": [
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/chat-1/messages?limit=50",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/chat-1/read",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [],
+      "pageErrors": []
+    }
+  ],
+  "console": [],
+  "pageErrors": [],
+  "network": [
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/chat-1/messages?limit=50",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/chat-1/read",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    }
+  ],
+  "summary": {
+    "pagesPassed": 1,
+    "pagesFailed": 0,
+    "httpErrors": 0,
+    "slowRequests": 0,
+    "consoleErrors": 0,
+    "pageErrors": 0
+  }
+}

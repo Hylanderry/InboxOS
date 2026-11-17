@@ -1,0 +1,6027 @@
+{
+  "generatedAt": "2026-10-20T18:35:20.807Z",
+  "baseUrl": "http://127.0.0.1:4173",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "isolation": "Playwright session, Supabase auth and application APIs mocked; no external writes or WhatsApp messages.",
+  "pages": [
+    {
+      "requestedLabel": "Dashboard",
+      "actualLabel": "Início",
+      "status": "PASS",
+      "actions": [
+        "Atualizar"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Dashboard"
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": []
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Dashboard"
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": []
+      },
+      "requests": [
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 1,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [],
+      "pageErrors": []
+    },
+    {
+      "requestedLabel": "CRM",
+      "status": "FAIL",
+      "error": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: /Etapa/i }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed select-none border-black/10 text-zinc-800 hover:bg-black/[0.04] active:bg-black/[0.08]\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <button type=\"button\" class=\"fixed bottom-20 right-4 z-40 rounded-xl border border-white/20 bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-lg\">ADM</button> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <button type=\"button\" class=\"fixed bottom-20 right-4 z-40 rounded-xl border border-white/20 bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-lg\">ADM</button> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    58 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <button type=\"button\" class=\"fixed bottom-20 right-4 z-40 rounded-xl border border-white/20 bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-lg\">ADM</button> intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de CRM"
+          },
+          {
+            "text": "Lead",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Excluir lead Cliente QA"
+          },
+          {
+            "text": "",
+            "label": "Excluir lead Lead de auditoria"
+          },
+          {
+            "text": "Etapa",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Nome do lead",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Valor (R$)",
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": "Mover etapa do lead Cliente QA"
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": "Mover etapa do lead Lead de auditoria"
+          },
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Nova etapa",
+            "label": null
+          }
+        ]
+      },
+      "requests": [],
+      "console": [],
+      "pageErrors": []
+    },
+    {
+      "requestedLabel": "Clientes",
+      "actualLabel": "Clientes",
+      "status": "PASS",
+      "actions": [
+        "Atualizar",
+        "Criar tag",
+        "selecionar cliente",
+        "atribuir tag",
+        "buscar cliente"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Clientes"
+          },
+          {
+            "text": "Novo cliente",
+            "label": null
+          },
+          {
+            "text": "Exportar CSV",
+            "label": null
+          },
+          {
+            "text": "Criar tag",
+            "label": null
+          },
+          {
+            "text": "QA",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Buscar por nome, telefone, e-mail ou empresa",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Nome da nova tag (use o botão ao lado)",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": "Selecionar Cliente QA"
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": "Selecionar Lead de auditoria"
+          }
+        ]
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Clientes"
+          },
+          {
+            "text": "Novo cliente",
+            "label": null
+          },
+          {
+            "text": "Exportar CSV",
+            "label": null
+          },
+          {
+            "text": "Criar tag",
+            "label": null
+          },
+          {
+            "text": "QA",
+            "label": null
+          },
+          {
+            "text": "Auditoria",
+            "label": null
+          },
+          {
+            "text": "Limpar seleção",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          },
+          {
+            "text": "",
+            "label": "Close toast"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Buscar por nome, telefone, e-mail ou empresa",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Nome da nova tag (use o botão ao lado)",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": "Selecionar Cliente QA"
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": "Selecionar Lead de auditoria"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 1,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=1",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {
+            "name": "Auditoria",
+            "color": "#71717a"
+          }
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/",
+          "method": "PATCH",
+          "status": 200,
+          "durationMs": 0,
+          "body": {
+            "leadIds": [
+              "lead-1"
+            ],
+            "tagIds": [
+              "tag-1"
+            ]
+          }
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [],
+      "pageErrors": []
+    },
+    {
+      "requestedLabel": "Inbox",
+      "actualLabel": "Inbox",
+      "status": "PASS",
+      "actions": [
+        "modo"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "1",
+            "label": "Gerenciar conexões WhatsApp"
+          },
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "",
+            "label": "Sincronizar fotos de perfil do WhatsApp"
+          },
+          {
+            "text": "",
+            "label": "Importar contatos ou exportar histórico"
+          },
+          {
+            "text": "Todas",
+            "label": null
+          },
+          {
+            "text": "Não Lidas",
+            "label": null
+          },
+          {
+            "text": "Grupos",
+            "label": null
+          },
+          {
+            "text": "Leads",
+            "label": null
+          },
+          {
+            "text": "Pessoais",
+            "label": null
+          },
+          {
+            "text": "Arquivadas",
+            "label": null
+          },
+          {
+            "text": "CQCliente QAWhatsApp_QA15:34Olá, teste seguro1",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Buscar conversa...",
+            "label": "Buscar conversa por nome ou número"
+          }
+        ]
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "1",
+            "label": "Gerenciar conexões WhatsApp"
+          },
+          {
+            "text": "",
+            "label": "Ativar modo claro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "",
+            "label": "Sincronizar fotos de perfil do WhatsApp"
+          },
+          {
+            "text": "",
+            "label": "Importar contatos ou exportar histórico"
+          },
+          {
+            "text": "Todas",
+            "label": null
+          },
+          {
+            "text": "Não Lidas",
+            "label": null
+          },
+          {
+            "text": "Grupos",
+            "label": null
+          },
+          {
+            "text": "Leads",
+            "label": null
+          },
+          {
+            "text": "Pessoais",
+            "label": null
+          },
+          {
+            "text": "Arquivadas",
+            "label": null
+          },
+          {
+            "text": "CQCliente QAWhatsApp_QA15:34Olá, teste seguro1",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Buscar conversa...",
+            "label": "Buscar conversa por nome ou número"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [],
+      "pageErrors": []
+    },
+    {
+      "requestedLabel": "Follow-up",
+      "actualLabel": "Follow-up",
+      "status": "PASS",
+      "actions": [
+        "Atualizar",
+        "Criar",
+        "criar follow-up"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Follow-up"
+          },
+          {
+            "text": "Criar",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Ação de acompanhamento",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "datetime-local",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": "Cliente do follow-up"
+          },
+          {
+            "tag": "textarea",
+            "type": null,
+            "name": null,
+            "placeholder": "Observação interna (opcional)",
+            "label": null
+          }
+        ]
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Follow-up"
+          },
+          {
+            "text": "Criar",
+            "label": null
+          },
+          {
+            "text": "Reagendar",
+            "label": "Reagendar tarefa Follow-up de auditoria"
+          },
+          {
+            "text": "Concluir",
+            "label": "Concluir tarefa Follow-up de auditoria"
+          },
+          {
+            "text": "",
+            "label": "Excluir tarefa Follow-up de auditoria"
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          },
+          {
+            "text": "",
+            "label": "Close toast"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Ação de acompanhamento",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "datetime-local",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": "Cliente do follow-up"
+          },
+          {
+            "tag": "textarea",
+            "type": null,
+            "name": null,
+            "placeholder": "Observação interna (opcional)",
+            "label": null
+          }
+        ]
+      },
+      "requests": [
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/follow-up/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/follow-up/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/follow-up/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/follow-up/",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {
+            "title": "Follow-up de auditoria",
+            "dueAt": "2026-10-21T18:34:00.000Z",
+            "priority": "normal",
+            "leadId": null,
+            "note": null
+          }
+        },
+        {
+          "url": "/api/follow-up/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [],
+      "pageErrors": []
+    },
+    {
+      "requestedLabel": "Calendário",
+      "actualLabel": "Agenda",
+      "status": "PASS",
+      "actions": [
+        "Atualizar",
+        "Hoje",
+        "Agendar",
+        "selecionar hoje",
+        "criar agendamento"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Calendário"
+          },
+          {
+            "text": "‹",
+            "label": null
+          },
+          {
+            "text": "Hoje",
+            "label": null
+          },
+          {
+            "text": "›",
+            "label": null
+          },
+          {
+            "text": "27",
+            "label": null
+          },
+          {
+            "text": "28",
+            "label": null
+          },
+          {
+            "text": "29",
+            "label": null
+          },
+          {
+            "text": "30",
+            "label": null
+          },
+          {
+            "text": "1",
+            "label": null
+          },
+          {
+            "text": "2",
+            "label": null
+          },
+          {
+            "text": "3",
+            "label": null
+          },
+          {
+            "text": "4",
+            "label": null
+          },
+          {
+            "text": "5",
+            "label": null
+          },
+          {
+            "text": "6",
+            "label": null
+          },
+          {
+            "text": "7",
+            "label": null
+          },
+          {
+            "text": "8",
+            "label": null
+          },
+          {
+            "text": "9",
+            "label": null
+          },
+          {
+            "text": "10",
+            "label": null
+          },
+          {
+            "text": "11",
+            "label": null
+          },
+          {
+            "text": "12",
+            "label": null
+          },
+          {
+            "text": "13",
+            "label": null
+          },
+          {
+            "text": "14",
+            "label": null
+          },
+          {
+            "text": "15",
+            "label": null
+          },
+          {
+            "text": "16",
+            "label": null
+          },
+          {
+            "text": "17",
+            "label": null
+          },
+          {
+            "text": "18",
+            "label": null
+          },
+          {
+            "text": "19",
+            "label": null
+          },
+          {
+            "text": "20",
+            "label": null
+          },
+          {
+            "text": "21",
+            "label": null
+          },
+          {
+            "text": "22",
+            "label": null
+          },
+          {
+            "text": "23",
+            "label": null
+          },
+          {
+            "text": "24",
+            "label": null
+          },
+          {
+            "text": "25",
+            "label": null
+          },
+          {
+            "text": "26",
+            "label": null
+          },
+          {
+            "text": "27",
+            "label": null
+          },
+          {
+            "text": "28",
+            "label": null
+          },
+          {
+            "text": "29",
+            "label": null
+          },
+          {
+            "text": "30",
+            "label": null
+          },
+          {
+            "text": "31",
+            "label": null
+          },
+          {
+            "text": "1",
+            "label": null
+          },
+          {
+            "text": "2",
+            "label": null
+          },
+          {
+            "text": "3",
+            "label": null
+          },
+          {
+            "text": "4",
+            "label": null
+          },
+          {
+            "text": "5",
+            "label": null
+          },
+          {
+            "text": "6",
+            "label": null
+          },
+          {
+            "text": "7",
+            "label": null
+          },
+          {
+            "text": "Agendar",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Título do atendimento",
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "datetime-local",
+            "name": null,
+            "placeholder": null,
+            "label": "Início do agendamento"
+          },
+          {
+            "tag": "input",
+            "type": "datetime-local",
+            "name": null,
+            "placeholder": null,
+            "label": "Fim do agendamento"
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          }
+        ]
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Calendário"
+          },
+          {
+            "text": "‹",
+            "label": null
+          },
+          {
+            "text": "Hoje",
+            "label": null
+          },
+          {
+            "text": "›",
+            "label": null
+          },
+          {
+            "text": "27",
+            "label": null
+          },
+          {
+            "text": "28",
+            "label": null
+          },
+          {
+            "text": "29",
+            "label": null
+          },
+          {
+            "text": "30",
+            "label": null
+          },
+          {
+            "text": "1",
+            "label": null
+          },
+          {
+            "text": "2",
+            "label": null
+          },
+          {
+            "text": "3",
+            "label": null
+          },
+          {
+            "text": "4",
+            "label": null
+          },
+          {
+            "text": "5",
+            "label": null
+          },
+          {
+            "text": "6",
+            "label": null
+          },
+          {
+            "text": "7",
+            "label": null
+          },
+          {
+            "text": "8",
+            "label": null
+          },
+          {
+            "text": "9",
+            "label": null
+          },
+          {
+            "text": "10",
+            "label": null
+          },
+          {
+            "text": "11",
+            "label": null
+          },
+          {
+            "text": "12",
+            "label": null
+          },
+          {
+            "text": "13",
+            "label": null
+          },
+          {
+            "text": "14",
+            "label": null
+          },
+          {
+            "text": "15",
+            "label": null
+          },
+          {
+            "text": "16",
+            "label": null
+          },
+          {
+            "text": "17",
+            "label": null
+          },
+          {
+            "text": "18",
+            "label": null
+          },
+          {
+            "text": "19",
+            "label": null
+          },
+          {
+            "text": "201 ag.",
+            "label": null
+          },
+          {
+            "text": "21",
+            "label": null
+          },
+          {
+            "text": "22",
+            "label": null
+          },
+          {
+            "text": "23",
+            "label": null
+          },
+          {
+            "text": "24",
+            "label": null
+          },
+          {
+            "text": "25",
+            "label": null
+          },
+          {
+            "text": "26",
+            "label": null
+          },
+          {
+            "text": "27",
+            "label": null
+          },
+          {
+            "text": "28",
+            "label": null
+          },
+          {
+            "text": "29",
+            "label": null
+          },
+          {
+            "text": "30",
+            "label": null
+          },
+          {
+            "text": "31",
+            "label": null
+          },
+          {
+            "text": "1",
+            "label": null
+          },
+          {
+            "text": "2",
+            "label": null
+          },
+          {
+            "text": "3",
+            "label": null
+          },
+          {
+            "text": "4",
+            "label": null
+          },
+          {
+            "text": "5",
+            "label": null
+          },
+          {
+            "text": "6",
+            "label": null
+          },
+          {
+            "text": "7",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Remarcar Agendamento QA"
+          },
+          {
+            "text": "",
+            "label": "Cancelar Agendamento QA"
+          },
+          {
+            "text": "Agendar",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          },
+          {
+            "text": "",
+            "label": "Close toast"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Título do atendimento",
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "datetime-local",
+            "name": null,
+            "placeholder": null,
+            "label": "Início do agendamento"
+          },
+          {
+            "tag": "input",
+            "type": "datetime-local",
+            "name": null,
+            "placeholder": null,
+            "label": "Fim do agendamento"
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          }
+        ]
+      },
+      "requests": [
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/calendar/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/agents/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=1",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/calendar/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/agents/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=1",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/calendar/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/agents/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/calendar/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/agents/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/calendar/appointments",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {
+            "calendarId": "cal-1",
+            "title": "Agendamento QA",
+            "startsAt": "2026-10-20T19:35:00.000Z",
+            "endsAt": "2026-10-20T20:05:00.000Z",
+            "leadId": null,
+            "agentId": null
+          }
+        },
+        {
+          "url": "/api/calendar/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/agents/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/clients/?sync=0",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [],
+      "pageErrors": []
+    },
+    {
+      "requestedLabel": "Conexões",
+      "actualLabel": "Conexões",
+      "status": "PASS",
+      "actions": [
+        "Atualizar",
+        "Nova Conexão",
+        "abrir/fechar QR"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar status das conexões"
+          },
+          {
+            "text": "Nova Conexão",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Editar nome de WhatsApp_QA"
+          },
+          {
+            "text": "",
+            "label": null
+          },
+          {
+            "text": "Ver Conversas",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": []
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar status das conexões"
+          },
+          {
+            "text": "Nova Conexão",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Editar nome de WhatsApp_QA"
+          },
+          {
+            "text": "",
+            "label": null
+          },
+          {
+            "text": "Ver Conversas",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": []
+      },
+      "requests": [
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [],
+      "pageErrors": []
+    },
+    {
+      "requestedLabel": "Agentes",
+      "actualLabel": "Agentes",
+      "status": "PASS",
+      "actions": [
+        "Atualizar",
+        "Criar agente",
+        "criar agente no modal",
+        "editar/fechar agente"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Agentes"
+          },
+          {
+            "text": "Excluir selecionados",
+            "label": null
+          },
+          {
+            "text": "Criar agente",
+            "label": null
+          },
+          {
+            "text": "Adicionar",
+            "label": null
+          },
+          {
+            "text": "Ativo",
+            "label": null
+          },
+          {
+            "text": "Testar",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Editar agente Agente QA"
+          },
+          {
+            "text": "",
+            "label": "Excluir agente Agente QA"
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Título do documento",
+            "label": "Título do documento"
+          },
+          {
+            "tag": "textarea",
+            "type": null,
+            "name": null,
+            "placeholder": "Conteúdo que o agente pode consultar",
+            "label": "Conteúdo do documento"
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": "Selecionar agente Agente QA"
+          },
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Teste uma mensagem",
+            "label": null
+          }
+        ]
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar",
+            "label": "Atualizar dados de Agentes"
+          },
+          {
+            "text": "Excluir selecionados",
+            "label": null
+          },
+          {
+            "text": "Criar agente",
+            "label": null
+          },
+          {
+            "text": "Adicionar",
+            "label": null
+          },
+          {
+            "text": "Ativo",
+            "label": null
+          },
+          {
+            "text": "Testar",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Editar agente Agente QA"
+          },
+          {
+            "text": "",
+            "label": "Excluir agente Agente QA"
+          },
+          {
+            "text": "Ativo",
+            "label": null
+          },
+          {
+            "text": "Testar",
+            "label": null
+          },
+          {
+            "text": "",
+            "label": "Editar agente Agente novo QA"
+          },
+          {
+            "text": "",
+            "label": "Excluir agente Agente novo QA"
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          },
+          {
+            "text": "",
+            "label": "Close toast"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Título do documento",
+            "label": "Título do documento"
+          },
+          {
+            "tag": "textarea",
+            "type": null,
+            "name": null,
+            "placeholder": "Conteúdo que o agente pode consultar",
+            "label": "Conteúdo do documento"
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": "Selecionar agente Agente QA"
+          },
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Teste uma mensagem",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": "Selecionar agente Agente novo QA"
+          },
+          {
+            "tag": "input",
+            "type": null,
+            "name": null,
+            "placeholder": "Teste uma mensagem",
+            "label": null
+          }
+        ]
+      },
+      "requests": [
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/agents/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/calendar/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/knowledge/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/agents/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/calendar/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/knowledge/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/agents/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/calendar/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/knowledge/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/agents/",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {
+            "name": "Agente novo QA",
+            "runtimeConfig": {
+              "objective": "Qualificar sem prometer resultados.",
+              "audience": "",
+              "personality": "",
+              "tone": "professional",
+              "greeting": "",
+              "rules": "",
+              "forbiddenTopics": "",
+              "additionalInstructions": "",
+              "handoffEnabled": true,
+              "handoffTriggers": "falar com humano, atendente",
+              "calendarEnabled": false,
+              "calendarId": null,
+              "calendarPermissions": "read,create,reschedule",
+              "includeClientTags": true,
+              "includeFollowUps": true,
+              "includeKnowledgeBase": false
+            },
+            "instanceId": null,
+            "provider": "groq",
+            "model": null,
+            "replyMode": "manual",
+            "allowGroups": false,
+            "temperature": 0.3,
+            "maxCompletionTokens": 700
+          }
+        },
+        {
+          "url": "/api/agents/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/calendar/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/knowledge/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [],
+      "pageErrors": []
+    },
+    {
+      "requestedLabel": "Configurações",
+      "actualLabel": "Ajustes",
+      "status": "PASS",
+      "actions": [
+        "Atualizar"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar dados",
+            "label": null
+          },
+          {
+            "text": "Salvar perfil",
+            "label": null
+          },
+          {
+            "text": "Salvar empresa",
+            "label": null
+          },
+          {
+            "text": "Alterar",
+            "label": null
+          },
+          {
+            "text": "Alterar",
+            "label": null
+          },
+          {
+            "text": "Enviar código",
+            "label": null
+          },
+          {
+            "text": "Encerrar",
+            "label": null
+          },
+          {
+            "text": "Ver todas as conexões",
+            "label": null
+          },
+          {
+            "text": "Atualizar",
+            "label": null
+          },
+          {
+            "text": "Criar",
+            "label": null
+          },
+          {
+            "text": "Convidar",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite nome",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite sobrenome",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite e-mail",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite telefone atual",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "file",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite razão social",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite nome fantasia",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite cnpj",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite telefone",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Ex.: Acme Atendimento",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": null,
+            "placeholder": "suporte@empresa.com",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Equipe Acme",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "app.empresa.com",
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "file",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite país",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite novo telefone",
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Nome do workspace",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": null,
+            "placeholder": "Digite convidar por e-mail",
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          }
+        ]
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar modo escuro"
+          },
+          {
+            "text": "",
+            "label": "Abrir configurações"
+          },
+          {
+            "text": "Atualizar dados",
+            "label": null
+          },
+          {
+            "text": "Salvar perfil",
+            "label": null
+          },
+          {
+            "text": "Salvar empresa",
+            "label": null
+          },
+          {
+            "text": "Alterar",
+            "label": null
+          },
+          {
+            "text": "Alterar",
+            "label": null
+          },
+          {
+            "text": "Enviar código",
+            "label": null
+          },
+          {
+            "text": "Encerrar",
+            "label": null
+          },
+          {
+            "text": "Ver todas as conexões",
+            "label": null
+          },
+          {
+            "text": "Atualizar",
+            "label": null
+          },
+          {
+            "text": "Criar",
+            "label": null
+          },
+          {
+            "text": "Convidar",
+            "label": null
+          },
+          {
+            "text": "ADM",
+            "label": null
+          },
+          {
+            "text": "Início",
+            "label": "Início"
+          },
+          {
+            "text": "CRM",
+            "label": "CRM"
+          },
+          {
+            "text": "1Inbox",
+            "label": "Inbox, 1 mensagens não lidas"
+          },
+          {
+            "text": "Conexões",
+            "label": "Conexões"
+          },
+          {
+            "text": "Mais",
+            "label": "Mais áreas"
+          }
+        ],
+        "inputs": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite nome",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite sobrenome",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite e-mail",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite telefone atual",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "file",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite razão social",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite nome fantasia",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite cnpj",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite telefone",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Ex.: Acme Atendimento",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": null,
+            "placeholder": "suporte@empresa.com",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Equipe Acme",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "app.empresa.com",
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "file",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite país",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Digite novo telefone",
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": null,
+            "placeholder": "Nome do workspace",
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": null,
+            "placeholder": "Digite convidar por e-mail",
+            "label": null
+          },
+          {
+            "tag": "select",
+            "type": null,
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          },
+          {
+            "tag": "input",
+            "type": "checkbox",
+            "name": null,
+            "placeholder": null,
+            "label": null
+          }
+        ]
+      },
+      "requests": [
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/profile/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/auth/security/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/profile/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/auth/security/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/legal/status",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/legal/status",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/company/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/members/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/invitations/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/privacy/summary",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/privacy/consents",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/profile/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/auth/security/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/legal/status",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [],
+      "pageErrors": []
+    },
+    {
+      "requestedLabel": "ADM Global",
+      "actualLabel": "ADM",
+      "status": "PASS",
+      "actions": [
+        "Atualizar"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Voltar ao sistema"
+          },
+          {
+            "text": "",
+            "label": "Alternar tema"
+          },
+          {
+            "text": "Sair",
+            "label": null
+          },
+          {
+            "text": "Visão geral",
+            "label": null
+          },
+          {
+            "text": "Usuários",
+            "label": null
+          },
+          {
+            "text": "Workspaces",
+            "label": null
+          },
+          {
+            "text": "Serviços",
+            "label": null
+          },
+          {
+            "text": "Newsletter",
+            "label": null
+          },
+          {
+            "text": "Auditoria",
+            "label": null
+          },
+          {
+            "text": "Administração",
+            "label": null
+          },
+          {
+            "text": "Atualizar dados",
+            "label": null
+          }
+        ],
+        "inputs": []
+      },
+      "afterSurface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Voltar ao sistema"
+          },
+          {
+            "text": "",
+            "label": "Alternar tema"
+          },
+          {
+            "text": "Sair",
+            "label": null
+          },
+          {
+            "text": "Visão geral",
+            "label": null
+          },
+          {
+            "text": "Usuários",
+            "label": null
+          },
+          {
+            "text": "Workspaces",
+            "label": null
+          },
+          {
+            "text": "Serviços",
+            "label": null
+          },
+          {
+            "text": "Newsletter",
+            "label": null
+          },
+          {
+            "text": "Auditoria",
+            "label": null
+          },
+          {
+            "text": "Administração",
+            "label": null
+          },
+          {
+            "text": "Atualizar dados",
+            "label": null
+          }
+        ],
+        "inputs": []
+      },
+      "requests": [
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/events/?cursor=&limit=200",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/dashboard/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/workspaces/branding",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/?limit=1000",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/chats/sync-pfp",
+          "method": "POST",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/instances/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/overview/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/me/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/overview/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        },
+        {
+          "url": "/api/admin/overview/",
+          "method": "GET",
+          "status": 200,
+          "durationMs": 0,
+          "body": {}
+        }
+      ],
+      "errors": [],
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting...",
+          "location": {
+            "url": "http://127.0.0.1:4173/@vite/client",
+            "line": 850,
+            "column": 8,
+            "lineNumber": 850,
+            "columnNumber": 8
+          }
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected.",
+          "location": {
+            "url": "http://127.0.0.1:4173/@vite/client",
+            "line": 954,
+            "column": 11,
+            "lineNumber": 954,
+            "columnNumber": 11
+          }
+        },
+        {
+          "type": "info",
+          "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+          "location": {
+            "url": "http://127.0.0.1:4173/node_modules/.vite/deps/react-dom_client.js?v=0ab471fc",
+            "line": 14333,
+            "column": 48,
+            "lineNumber": 14333,
+            "columnNumber": 48
+          }
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit",
+          "location": {
+            "url": "https://va.vercel-scripts.com/v1/speed-insights/script.debug.js",
+            "line": 0,
+            "column": 11263,
+            "lineNumber": 0,
+            "columnNumber": 11263
+          }
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit",
+          "location": {
+            "url": "https://va.vercel-scripts.com/v1/script.debug.js",
+            "line": 0,
+            "column": 1810,
+            "lineNumber": 0,
+            "columnNumber": 1810
+          }
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c [view] http://127.0.0.1:4173/admin color: rgb(120, 120, 120) color: inherit {o: http://127.0.0.1:4173/admin, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, f: undefined} /_vercel/insights/view",
+          "location": {
+            "url": "https://va.vercel-scripts.com/v1/script.debug.js",
+            "line": 0,
+            "column": 1810,
+            "lineNumber": 0,
+            "columnNumber": 1810
+          }
+        }
+      ],
+      "pageErrors": []
+    }
+  ],
+  "console": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "location": {
+        "url": "http://127.0.0.1:4173/@vite/client",
+        "line": 850,
+        "column": 8,
+        "lineNumber": 850,
+        "columnNumber": 8
+      }
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "location": {
+        "url": "http://127.0.0.1:4173/@vite/client",
+        "line": 954,
+        "column": 11,
+        "lineNumber": 954,
+        "columnNumber": 11
+      }
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "http://127.0.0.1:4173/node_modules/.vite/deps/react-dom_client.js?v=0ab471fc",
+        "line": 14333,
+        "column": 48,
+        "lineNumber": 14333,
+        "columnNumber": 48
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/speed-insights/script.debug.js",
+        "line": 0,
+        "column": 11263,
+        "lineNumber": 0,
+        "columnNumber": 11263
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/script.debug.js",
+        "line": 0,
+        "column": 1810,
+        "lineNumber": 0,
+        "columnNumber": 1810
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c [view] http://127.0.0.1:4173/admin color: rgb(120, 120, 120) color: inherit {o: http://127.0.0.1:4173/admin, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, f: undefined} /_vercel/insights/view",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/script.debug.js",
+        "line": 0,
+        "column": 1810,
+        "lineNumber": 0,
+        "columnNumber": 1810
+      }
+    }
+  ],
+  "pageErrors": [],
+  "network": [
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 1,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/crm/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/crm/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/crm/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/crm/",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {
+        "name": "Lead de auditoria",
+        "valueCents": 1050
+      }
+    },
+    {
+      "url": "/api/crm/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 1,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 1,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=1",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {
+        "name": "Auditoria",
+        "color": "#71717a"
+      }
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/",
+      "method": "PATCH",
+      "status": 200,
+      "durationMs": 0,
+      "body": {
+        "leadIds": [
+          "lead-1"
+        ],
+        "tagIds": [
+          "tag-1"
+        ]
+      }
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/follow-up/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/follow-up/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/follow-up/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/follow-up/",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {
+        "title": "Follow-up de auditoria",
+        "dueAt": "2026-10-21T18:34:00.000Z",
+        "priority": "normal",
+        "leadId": null,
+        "note": null
+      }
+    },
+    {
+      "url": "/api/follow-up/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/calendar/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/agents/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=1",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/calendar/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/agents/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=1",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/calendar/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/agents/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/calendar/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/agents/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/calendar/appointments",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {
+        "calendarId": "cal-1",
+        "title": "Agendamento QA",
+        "startsAt": "2026-10-20T19:35:00.000Z",
+        "endsAt": "2026-10-20T20:05:00.000Z",
+        "leadId": null,
+        "agentId": null
+      }
+    },
+    {
+      "url": "/api/calendar/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/agents/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/clients/?sync=0",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/agents/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/calendar/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/knowledge/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/agents/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/calendar/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/knowledge/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/agents/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/calendar/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/knowledge/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/agents/",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {
+        "name": "Agente novo QA",
+        "runtimeConfig": {
+          "objective": "Qualificar sem prometer resultados.",
+          "audience": "",
+          "personality": "",
+          "tone": "professional",
+          "greeting": "",
+          "rules": "",
+          "forbiddenTopics": "",
+          "additionalInstructions": "",
+          "handoffEnabled": true,
+          "handoffTriggers": "falar com humano, atendente",
+          "calendarEnabled": false,
+          "calendarId": null,
+          "calendarPermissions": "read,create,reschedule",
+          "includeClientTags": true,
+          "includeFollowUps": true,
+          "includeKnowledgeBase": false
+        },
+        "instanceId": null,
+        "provider": "groq",
+        "model": null,
+        "replyMode": "manual",
+        "allowGroups": false,
+        "temperature": 0.3,
+        "maxCompletionTokens": 700
+      }
+    },
+    {
+      "url": "/api/agents/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/calendar/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/knowledge/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/profile/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/auth/security/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/profile/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/auth/security/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/legal/status",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/legal/status",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/company/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/members/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/invitations/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/privacy/summary",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/privacy/consents",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/profile/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/auth/security/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/legal/status",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/events/?cursor=&limit=200",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/dashboard/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/workspaces/branding",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/?limit=1000",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/chats/sync-pfp",
+      "method": "POST",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/instances/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/overview/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/me/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/overview/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    },
+    {
+      "url": "/api/admin/overview/",
+      "method": "GET",
+      "status": 200,
+      "durationMs": 0,
+      "body": {}
+    }
+  ],
+  "summary": {
+    "pagesPassed": 9,
+    "pagesFailed": 1,
+    "httpErrors": 0,
+    "slowRequests": 0,
+    "consoleErrors": 0,
+    "pageErrors": 0
+  }
+}

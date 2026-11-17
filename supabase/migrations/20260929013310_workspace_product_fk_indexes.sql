@@ -1,0 +1,14 @@
+alter table public.crm_leads drop constraint if exists crm_leads_stage_id_fkey, drop constraint if exists crm_leads_chat_id_fkey, drop constraint if exists crm_leads_contact_id_fkey;
+alter table public.follow_up_tasks drop constraint if exists follow_up_tasks_lead_id_fkey, drop constraint if exists follow_up_tasks_chat_id_fkey;
+alter table public.automation_agents drop constraint if exists automation_agents_instance_id_fkey;
+alter table public.automation_agent_runs drop constraint if exists automation_agent_runs_agent_id_fkey, drop constraint if exists automation_agent_runs_chat_id_fkey, drop constraint if exists automation_agent_runs_trigger_message_id_fkey;
+create index if not exists crm_leads_workspace_contact_idx on public.crm_leads(workspace_id, contact_id) where contact_id is not null;
+create index if not exists crm_leads_created_by_idx on public.crm_leads(created_by) where created_by is not null;
+create index if not exists crm_leads_owner_user_idx on public.crm_leads(owner_user_id) where owner_user_id is not null;
+create index if not exists follow_up_workspace_chat_idx on public.follow_up_tasks(workspace_id, chat_id) where chat_id is not null;
+create index if not exists follow_up_created_by_idx on public.follow_up_tasks(created_by) where created_by is not null;
+create index if not exists follow_up_owner_user_idx on public.follow_up_tasks(owner_user_id) where owner_user_id is not null;
+create index if not exists automation_agents_created_by_idx on public.automation_agents(created_by) where created_by is not null;
+create index if not exists automation_agent_runs_workspace_agent_idx on public.automation_agent_runs(workspace_id, agent_id);
+create index if not exists automation_agent_runs_workspace_chat_idx on public.automation_agent_runs(workspace_id, chat_id) where chat_id is not null;
+create index if not exists automation_agent_runs_workspace_trigger_idx on public.automation_agent_runs(workspace_id, trigger_message_id) where trigger_message_id is not null;

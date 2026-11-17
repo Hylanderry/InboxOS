@@ -1,0 +1,461 @@
+{
+  "generatedAt": "2026-10-21T23:19:54.543Z",
+  "baseUrl": "http://127.0.0.1:4173",
+  "isolation": "Playwright em contexto novo por rota; APIs locais mockadas; sem escrita externa.",
+  "pages": [
+    {
+      "label": "Login",
+      "path": "/auth/login",
+      "status": "PASS",
+      "actions": [
+        "marcar lembrar de mim"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar tema claro"
+          },
+          {
+            "text": "",
+            "label": "Ocultar senha"
+          },
+          {
+            "text": "Entrar",
+            "label": null
+          }
+        ],
+        "inputs": [
+          {
+            "type": "email",
+            "placeholder": "voce@empresa.com",
+            "label": null,
+            "name": null
+          },
+          {
+            "type": "text",
+            "placeholder": "Digite sua senha",
+            "label": null,
+            "name": null
+          },
+          {
+            "type": "checkbox",
+            "placeholder": null,
+            "label": null,
+            "name": null
+          }
+        ],
+        "scroll": {
+          "width": 390,
+          "viewport": 390,
+          "height": 844
+        }
+      },
+      "network": [
+        {
+          "url": "/auth/login",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "info",
+          "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c [view] http://127.0.0.1:4173/auth/login color: rgb(120, 120, 120) color: inherit {o: http://127.0.0.1:4173/auth/login, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, r: } /_vercel/insights/view"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "label": "Cadastro",
+      "path": "/auth/register",
+      "status": "PASS",
+      "actions": [
+        "abrir e fechar termos pelo aceite"
+      ],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar tema escuro"
+          },
+          {
+            "text": "Pessoa física",
+            "label": null
+          },
+          {
+            "text": "Empresa",
+            "label": null
+          },
+          {
+            "text": "Brasil",
+            "label": "País selecionado: Brasil"
+          },
+          {
+            "text": "",
+            "label": "Ocultar senha"
+          },
+          {
+            "text": "",
+            "label": "Mostrar senha"
+          },
+          {
+            "text": "Criar conta",
+            "label": null
+          }
+        ],
+        "inputs": [
+          {
+            "type": "text",
+            "placeholder": "Ex.: Ana",
+            "label": null,
+            "name": "firstName"
+          },
+          {
+            "type": "text",
+            "placeholder": "Ex.: Souza",
+            "label": null,
+            "name": "lastName"
+          },
+          {
+            "type": "email",
+            "placeholder": "voce@empresa.com",
+            "label": null,
+            "name": "email"
+          },
+          {
+            "type": "tel",
+            "placeholder": "(11) 9 9999-9999",
+            "label": null,
+            "name": "phone"
+          },
+          {
+            "type": "text",
+            "placeholder": "Crie uma senha forte",
+            "label": null,
+            "name": "password"
+          },
+          {
+            "type": "password",
+            "placeholder": "Repita sua senha",
+            "label": null,
+            "name": "confirmPassword"
+          },
+          {
+            "type": "checkbox",
+            "placeholder": null,
+            "label": "Li e concordo com os Termos de uso e Termos de Privacidade",
+            "name": null
+          }
+        ],
+        "scroll": {
+          "width": 390,
+          "viewport": 390,
+          "height": 1078
+        }
+      },
+      "network": [
+        {
+          "url": "/auth/register",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "info",
+          "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c [view] http://127.0.0.1:4173/auth/register color: rgb(120, 120, 120) color: inherit {o: http://127.0.0.1:4173/auth/register, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, r: } /_vercel/insights/view"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "label": "Recuperação",
+      "path": "/auth/forgot-password",
+      "status": "PASS",
+      "actions": [],
+      "surface": {
+        "buttons": [
+          {
+            "text": "",
+            "label": "Ativar tema escuro"
+          },
+          {
+            "text": "Enviar código",
+            "label": null
+          }
+        ],
+        "inputs": [
+          {
+            "type": "email",
+            "placeholder": "voce@empresa.com",
+            "label": null,
+            "name": null
+          }
+        ],
+        "scroll": {
+          "width": 390,
+          "viewport": 390,
+          "height": 844
+        }
+      },
+      "network": [
+        {
+          "url": "/auth/forgot-password",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "info",
+          "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c [view] http://127.0.0.1:4173/auth/forgot-password color: rgb(120, 120, 120) color: inherit {o: http://127.0.0.1:4173/auth/forgot-password, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, r: } /_vercel/insights/view"
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "label": "Termos",
+      "path": "/legal/terms",
+      "status": "PASS",
+      "actions": [],
+      "surface": {
+        "buttons": [],
+        "inputs": [],
+        "scroll": {
+          "width": 390,
+          "viewport": 390,
+          "height": 1224
+        }
+      },
+      "network": [],
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "info",
+          "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "label": "Privacidade",
+      "path": "/legal/privacy",
+      "status": "PASS",
+      "actions": [],
+      "surface": {
+        "buttons": [],
+        "inputs": [],
+        "scroll": {
+          "width": 390,
+          "viewport": 390,
+          "height": 1216
+        }
+      },
+      "network": [],
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "info",
+          "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "label": "Cookies",
+      "path": "/legal/cookies",
+      "status": "PASS",
+      "actions": [],
+      "surface": {
+        "buttons": [],
+        "inputs": [],
+        "scroll": {
+          "width": 390,
+          "viewport": 390,
+          "height": 844
+        }
+      },
+      "network": [],
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "info",
+          "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c [view] http://127.0.0.1:4173/legal/cookies color: rgb(120, 120, 120) color: inherit {o: http://127.0.0.1:4173/legal/cookies, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, r: } /_vercel/insights/view"
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "label": "Uso aceitável",
+      "path": "/legal/acceptable-use",
+      "status": "PASS",
+      "actions": [],
+      "surface": {
+        "buttons": [],
+        "inputs": [],
+        "scroll": {
+          "width": 390,
+          "viewport": 390,
+          "height": 844
+        }
+      },
+      "network": [],
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "info",
+          "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+        },
+        {
+          "type": "log",
+          "text": "%c[Vercel Web Analytics]%c [view] http://127.0.0.1:4173/legal/acceptable-use color: rgb(120, 120, 120) color: inherit {o: http://127.0.0.1:4173/legal/acceptable-use, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, r: } /_vercel/insights/view"
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "label": "Pagamentos",
+      "path": "/legal/payments",
+      "status": "PASS",
+      "actions": [],
+      "surface": {
+        "buttons": [],
+        "inputs": [],
+        "scroll": {
+          "width": 390,
+          "viewport": 390,
+          "height": 844
+        }
+      },
+      "network": [],
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "info",
+          "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+        }
+      ],
+      "pageErrors": []
+    }
+  ],
+  "summary": {
+    "pagesPassed": 8,
+    "pagesWarned": 0,
+    "pagesFailed": 0,
+    "httpErrors": 0,
+    "consoleErrors": 0,
+    "pageErrors": 0
+  }
+}

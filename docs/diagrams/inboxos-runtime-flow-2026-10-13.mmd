@@ -1,0 +1,25 @@
+flowchart LR
+  Browser[Browser / Playwright] --> Auth[Auth + workspace ativo]
+  Auth --> API[TanStack Start API routes]
+  API --> DB[(Supabase)]
+  API --> Evo[Evolution API]
+  Evo --> Webhook[/api/public/webhooks/evolution]
+  Webhook --> Queue[Event inbox / worker]
+  Queue --> DB
+  DB --> Events[/api/events + Realtime]
+  Events --> Browser
+
+---
+
+sequenceDiagram
+  participant E as Evolution
+  participant W as Webhook InboxOS
+  participant Q as Event inbox/worker
+  participant D as Supabase
+  participant U as Inbox UI
+  E->>W: MESSAGES_UPSERT
+  W->>W: assinatura, tamanho e tenant/instância
+  W->>Q: idempotency key + dispatch durável
+  Q->>D: mensagem, chat, contato e recibo
+  D-->>U: evento escopado
+  U->>D: histórico / mark as read

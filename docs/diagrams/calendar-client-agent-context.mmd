@@ -1,0 +1,25 @@
+flowchart LR
+  WA[WhatsApp / Evolution] -->|contacts + messages + presence| SYNC[Contact & message sync]
+  SYNC --> CRM[(crm_leads)]
+  SYNC --> CONTACTS[(whatsapp_contacts)]
+  CRM --> CLIENTS[Clientes UI]
+  TAGS[(crm_tags)] --> CLIENTS
+  CLIENTS --> LINKS[(crm_lead_tags)]
+  CRM --> APPT[(calendar_appointments)]
+  CAL[(calendar_calendars<br/>availability + capacity)] --> APPT
+  APPT --> CALUI[Calendário UI]
+  AGENT[(automation_agents<br/>runtime_config)] --> AI[Agent context builder]
+  CRM --> AI
+  LINKS --> AI
+  FUP[(follow_up_tasks)] --> AI
+  APPT --> AI
+  IN[Inbound message] --> AI
+  AI -->|authorized booking/reschedule| APPT
+  AI -->|composing → paused| WA
+  AI -->|safe chunks| OUT[Outbound outbox]
+  OUT --> WA
+  AI -->|handoff trigger| HUMAN[Handoff humano]
+  HUMAN --> INBOX[Inbox]
+  CALUI -->|create/reschedule/cancel| APPT
+  CLIENTS -->|bulk tag/import| CRM
+
