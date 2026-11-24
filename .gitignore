@@ -21,3 +21,13 @@ supabase/.branches/
 output/
 *.log
 .DS_Store
+
+# AI/IDE tooling (never track)
+.agents/
+.claude/
+.codex/
+CLAUDE.md
+AGENTS.md
+.cursor/
+.windsurf/
+*.ai/

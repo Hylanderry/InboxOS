@@ -16,8 +16,13 @@
   <a href="#visão-geral">Visão Geral</a> •
   <a href="#arquitetura">Arquitetura</a> •
   <a href="#instalação-local">Instalação</a> •
-  <a href="#licença">Licença</a> •
-  <a href="https://botapix.com/s/hylander">☕ Apoiar</a>
+  <a href="#licença">Licença</a>
+</p>
+
+<p align="center">
+  <a href="https://botapix.com/s/hylander">
+    <img src="https://img.shields.io/badge/☕_Doar-Botapix-FF813F?style=for-the-badge&logo=buy-me-a-coffee&logoColor=white" alt="Doar via Botapix" height="40" />
+  </a>
 </p>
 
 </div>
@@ -153,22 +158,8 @@ Para reportar vulnerabilidades, consulte [SECURITY.md](./SECURITY.md).
 
 Este software é **proprietário e confidencial**. Uso, cópia, modificação, distribuição ou engenharia reversa sem autorização expressa por escrito são estritamente proibidos. Consulte [LICENSE](./LICENSE) para os termos completos.
 
-## Apoie o Projeto
-
-Se este projeto foi útil para você, considere fazer uma doação:
-
-<p align="center">
-  <a href="https://botapix.com/s/hylander">
-    <img src="https://img.shields.io/badge/☕_Doar-Botapix-FF813F?style=for-the-badge&logo=buy-me-a-coffee&logoColor=white" alt="Doar via Botapix" height="40" />
-  </a>
-</p>
-
-<p align="center">Cada contribuição ajuda a manter o desenvolvimento ativo. Obrigado! 💚</p>
-
 ---
 
 <div align="center">
-  <sub>Construído com ❤️ por <a href="https://github.com/hylanderry">@hylanderry</a></sub>
-  <br/>
-  <sub>© 2024–2026 InboxOS. Todos os direitos reservados.</sub>
+  <sub>© 2024–2026 Hylander / InboxOS. Todos os direitos reservados.</sub>
 </div>
