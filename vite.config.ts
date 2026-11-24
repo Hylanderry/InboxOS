@@ -55,8 +55,15 @@ export default defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [tailwindcss(), tanstackStart(), ...(vercelDeployment ? [nitro()] : []), viteReact()],
   build: {
+    // Anti-RE: minificação agressiva + remoção de artefatos de debug
+    minify: "esbuild",
+    cssMinify: "esbuild",
     rollupOptions: {
       output: {
+        // Hash nos filenames para dificultar mapeamento entre versões
+        entryFileNames: "assets/[hash].js",
+        chunkFileNames: "assets/[hash].js",
+        assetFileNames: "assets/[hash][extname]",
         manualChunks(id) {
           if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/"))
             return "vendor-react";
@@ -66,4 +73,12 @@ export default defineConfig({
       },
     },
   },
+  esbuild: {
+    // Remove console/debugger em produção para reduzir superfície de análise
+    ...(vercelProduction ? { drop: ["console", "debugger"] as const } : {}),
+    legalComments: "none",
+    minifyIdentifiers: true,
+    minifySyntax: true,
+    minifyWhitespace: true,
+  } as Record<string, unknown>,
 });

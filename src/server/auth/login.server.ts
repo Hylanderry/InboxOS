@@ -7,6 +7,7 @@ import { ResendDeliveryError } from "../email/resend.server";
 import { verificationCodeEmail } from "../email/templates";
 import { generateSixDigitCode, hashAuthValue } from "./auth-crypto";
 import { appSessionTokenHash, parseSupabaseSessionClaims } from "./session-token";
+import { extractTurnstileToken, verifyTurnstileToken } from "./turnstile.server";
 import type { LiveAuthDatabase } from "./live-auth-database";
 const OTP_TTL = 10 * 60 * 1000,
   TRUST_DAYS = 90 * 24 * 60 * 60 * 1000,
@@ -180,6 +181,14 @@ function tokens(session: {
 }
 export async function startLogin(request: Request, payload: unknown) {
   if (!mutationOriginAllowed(request)) return json({ error: "Origem não permitida" }, 403);
+
+  // Cloudflare Turnstile verification (skip if not configured)
+  const turnstileToken = extractTurnstileToken(payload);
+  const turnstileResult = await verifyTurnstileToken(turnstileToken, ip(request));
+  if (!turnstileResult.success) {
+    return json({ error: turnstileResult.error || "Verificação de segurança falhou" }, 403);
+  }
+
   const p = parse(payload);
   if (!p) return json({ error: "Credenciais inválidas" }, 400);
   try {

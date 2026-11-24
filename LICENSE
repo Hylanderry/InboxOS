@@ -1,21 +1,53 @@
-MIT License
+INBOXOS PROPRIETARY LICENSE
+Copyright © 2024–2026 Hylander / InboxOS. All rights reserved.
 
-Copyright (c) 2026 Ackley Studios by Trax Company
+AVISO IMPORTANTE: ESTE SOFTWARE É PROPRIETÁRIO E CONFIDENCIAL.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. CONCESSÃO DE LICENÇA
+   Nenhuma licença é concedida por este documento. O uso deste software
+   requer autorização expressa por escrito do titular dos direitos autorais.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+2. RESTRIÇÕES
+   Você NÃO pode, sob nenhuma circunstância:
+   a) Copiar, modificar, adaptar, traduzir ou criar obras derivadas;
+   b) Distribuir, sublicenciar, vender, alugar ou transferir este software;
+   c) Realizar engenharia reversa, descompilar, desmontar ou tentar
+      descobrir o código-fonte por qualquer meio;
+   d) Remover, alterar ou obscurecer quaisquer avisos de propriedade
+      intelectual, marcas registradas ou legendas de direitos autorais;
+   e) Usar este software para fins ilegais ou não autorizados;
+   f) Contornar, desativar ou interferir em mecanismos de segurança,
+      proteção contra cópia ou controle de acesso.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. PROPRIEDADE INTELECTUAL
+   Este software e toda a documentação associada são protegidos por leis
+   de direitos autorais, tratados internacionais e outras leis de
+   propriedade intelectual. A estrutura, organização e código-fonte
+   constituem segredos comerciais valiosos do titular.
+
+4. CONFIDENCIALIDADE
+   O conteúdo deste software é confidencial. Você concorda em não divulgar
+   informações sobre sua arquitetura, funcionalidades internas, APIs ou
+   código-fonte a terceiros sem autorização prévia por escrito.
+
+5. GARANTIAS E LIMITAÇÃO DE RESPONSABILIDADE
+   ESTE SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIAS
+   DE QUALQUER TIPO, EXPRESSAS OU IMPLÍCITAS. EM NENHUM CASO OS AUTORES OU
+   TITULARES SERÃO RESPONSÁVEIS POR DANOS DIRETOS, INDIRETOS, INCIDENTAIS,
+   ESPECIAIS, EXEMPLARES OU CONSEQUENCIAIS DECORRENTES DO USO OU DA
+   INCAPACIDADE DE USAR ESTE SOFTWARE.
+
+6. RESCISÃO
+   Qualquer violação destes termos resulta na rescisão imediata de todos
+   os direitos concedidos, sem necessidade de notificação prévia.
+
+7. JURISDIÇÃO
+   Este acordo será regido pelas leis da República Federativa do Brasil.
+
+Para solicitações de licença comercial ou parcerias, entre em contato
+diretamente com o titular dos direitos autorais.
+
+---
+
+AO UTILIZAR ESTE SOFTWARE, VOCÊ RECONHECE TER LIDO, ENTENDIDO E
+CONCORDADO COM TODOS OS TERMOS DESTA LICENÇA.

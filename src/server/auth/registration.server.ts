@@ -12,6 +12,7 @@ import {
   secureStringEquals,
 } from "./auth-crypto";
 import { registrationRateLimitKeys, validateRegistrationPayload } from "./registration-policy";
+import { extractTurnstileToken, verifyTurnstileToken } from "./turnstile.server";
 import type { LiveAuthDatabase } from "./live-auth-database";
 const OTP = 600000,
   PENDING = 86400000,
@@ -104,6 +105,14 @@ async function rate(
 }
 export async function startRegistration(request: Request, payload: unknown) {
   if (!mutationOriginAllowed(request)) return json({ error: "Origem não permitida" }, 403);
+
+  // Cloudflare Turnstile verification (skip if not configured)
+  const turnstileToken = extractTurnstileToken(payload);
+  const turnstileResult = await verifyTurnstileToken(turnstileToken, ip(request));
+  if (!turnstileResult.success) {
+    return json({ error: turnstileResult.error || "Verificação de segurança falhou" }, 403);
+  }
+
   const v = validateRegistrationPayload(payload);
   if (!v.ok) return json({ error: "Dados de cadastro inválidos", fields: v.errors }, 400);
   try {

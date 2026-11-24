@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Check } from "@phosphor-icons/react";
 import { AuthField, AuthShell } from "@/features/auth/components/AuthShell";
+import { TurnstileWidget } from "@/features/auth/components/TurnstileWidget";
 import { normalizeOtp } from "@/features/auth/auth-validation";
 import { browserDeviceToken } from "@/lib/device-token";
 import { supabase } from "@/integrations/supabase/client";
+
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_CLOUDFLARE_TURNSTILE_SITE_KEY"] as string | undefined;
 
 export const Route = createFileRoute("/auth/login")({ component: Login });
 
@@ -18,6 +21,8 @@ function Login() {
   const [resendBusy, setResendBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const handleTurnstileToken = useCallback((token: string | null) => setTurnstileToken(token), []);
 
   useEffect(() => {
     let active = true;
@@ -67,7 +72,7 @@ function Login() {
           "Content-Type": "application/json",
           "x-device-token": deviceToken,
         },
-        body: JSON.stringify({ email, password, deviceToken, rememberDevice: remember }),
+        body: JSON.stringify({ email, password, deviceToken, rememberDevice: remember, turnstileToken }),
       });
       const data = (await response.json().catch(() => ({}))) as {
         error?: string;
@@ -274,7 +279,17 @@ function Login() {
               {error}
             </p>
           )}
-          <button className="auth-primary" disabled={busy}>
+          {TURNSTILE_SITE_KEY && (
+            <TurnstileWidget
+              siteKey={TURNSTILE_SITE_KEY}
+              onTokenChange={handleTurnstileToken}
+              theme="auto"
+            />
+          )}
+          <button
+            className="auth-primary"
+            disabled={busy || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
+          >
             {busy ? "Entrando…" : "Entrar"}
           </button>
         </form>

@@ -66,7 +66,7 @@ const defaultStages = [
   { name: "Novos", color: "#60a5fa", position: 0, kind: "open" },
   { name: "Qualificação", color: "#a78bfa", position: 1, kind: "open" },
   { name: "Proposta", color: "#f59e0b", position: 2, kind: "open" },
-  { name: "Fechado", color: "#22c55e", position: 3, kind: "won" },
+  { name: "Fechado", color: "#00a884", position: 3, kind: "won" },
   { name: "Perdido", color: "#ef4444", position: 4, kind: "lost" },
 ] as const;
 

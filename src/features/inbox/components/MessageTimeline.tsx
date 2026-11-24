@@ -269,7 +269,7 @@ export function MessageTimeline({
               {activeAvatar ? (
                 <img src={activeAvatar} alt="" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-xs font-bold text-[#24b47e]">
+                <span className="text-xs font-bold text-[var(--whatsapp)]">
                   {(stripEmojis(activeName) || "?")
                     .replace(/[^\p{L}\p{N}]/gu, "")
                     .slice(0, 1)
@@ -280,13 +280,13 @@ export function MessageTimeline({
             <div
               className={`px-4 py-3 rounded-2xl rounded-bl-xs flex items-center gap-1.5 border shadow-sm ${
                 isDarkMode
-                  ? "bg-[#111113] border-white/[0.065] text-[#24b47e]"
-                  : "bg-white border-black/[0.07] text-[#1f9d6a]"
+                  ? "bg-[#111113] border-white/[0.065] text-[var(--whatsapp)]"
+                  : "bg-white border-black/[0.07] text-[var(--whatsapp)]"
               }`}
             >
               {recording ? (
                 <div className="flex items-center gap-2 text-xs font-semibold">
-                  <Microphone size={14} weight="fill" className="animate-pulse text-[#24b47e]" />
+                  <Microphone size={14} weight="fill" className="animate-pulse text-[var(--whatsapp)]" />
                   <span className="animate-pulse">gravando áudio...</span>
                 </div>
               ) : (

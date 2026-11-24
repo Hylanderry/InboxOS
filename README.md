@@ -1,87 +1,72 @@
 # InboxOS
 
-InboxOS é um painel multi-tenant para atendimento e vendas por WhatsApp, integrado à Evolution API, Supabase, Resend e Groq. Esta cópia é um modelo white-label para publicação e fork, com Billing desativado por padrão.
+Plataforma SaaS multi-tenant para atendimento e vendas por WhatsApp — construída com TanStack Start, React, Supabase e Evolution API.
 
-Origem e manutenção: **Ackley Studios by Trax Company**.
+## Visão geral
 
-## Recursos
+InboxOS centraliza conversas de WhatsApp, CRM, follow-up, agentes de IA e calendário em um único painel premium. Projetado para times de atendimento e vendas que precisam de escala sem perder a qualidade.
 
-- autenticação com OTP, dispositivos confiáveis, recuperação de senha e sessões revogáveis;
-- Inbox com mensagens, presença, grupos, reações, edição, leitura e mídia privada;
-- conexões Evolution isoladas por workspace e instância, sem importação histórica após a conexão;
-- CRM, clientes, tags, follow-ups, calendário e agentes de IA com handoff humano;
-- branding por workspace (nome, logo, favicon, domínio e remetente de e-mail);
-- privacidade com exportação, exclusão programada, retenção, auditoria e opt-out de IA;
-- ADM global protegido, convites por função e cofre de integrações server-side.
+## Stack
 
-## Desenvolvimento local
+- **Frontend:** React + TanStack Router/Start + Tailwind CSS + shadcn/ui
+- **Backend:** TanStack Start (server functions) + Supabase (PostgreSQL + Auth + Realtime)
+- **WhatsApp:** Evolution API v2
+- **IA:** Groq
+- **E-mail transacional:** Resend
+- **Deploy:** Vercel
 
-Requisitos: Node.js 22.12+ e npm 10.9+ (a mesma faixa usada pelo CI).
+## Requisitos
+
+- Node.js 20+
+- Conta Supabase (projeto configurado)
+- Instância Evolution API v2
+- Chaves de API do Groq e Resend
+
+## Instalação local
 
 ```bash
+# Clonar repositório
+git clone <repo-url>
+cd inbox-os
+
+# Instalar dependências
 npm install
-# macOS/Linux: cp .env.example .env
-# PowerShell:  Copy-Item .env.example .env
+
+# Copiar variáveis de ambiente
+cp .env.example .env
+# Editar .env com suas chaves reais
+
+# Rodar em desenvolvimento
 npm run dev
 ```
 
-Preencha `.env` somente com credenciais próprias. Nunca publique `.env`, service role, chaves da Evolution, Resend, Groq ou `AUTH_CRYPTO_SECRET`.
+## Scripts disponíveis
 
-## Variáveis de ambiente e Vercel
+| Comando           | Descrição                              |
+| ----------------- | -------------------------------------- |
+| `npm run dev`     | Servidor de desenvolvimento            |
+| `npm run build`   | Build de produção                      |
+| `npm run lint`    | Verificação de lint                    |
+| `npm test`        | Suíte de testes (`node --test`)        |
 
-- `.env.example`: desenvolvimento local;
-- `VITE_PLATFORM_BRAND_NAME`: nome público padrão antes de resolver o workspace (não é segredo);
-- Vercel é o único destino de deploy: configure as variáveis no projeto Vercel e use `vercel.json`.
+## Variáveis de ambiente
 
-Chaves server-side não podem usar o prefixo `VITE_`. As migrations em `supabase/migrations` devem ser aplicadas primeiro em um projeto Supabase de staging isolado. A migration `20261018092000_white_label_runtime_defaults.sql` cria os defaults de privacidade, habilita revisão manual de correções e exige nomes de instância Evolution globalmente únicos; ela falha de forma explícita se houver duplicidade para resolver antes. Nunca copie `.env` para o repositório.
-
-Em um deploy de produção, configure também `EXPECTED_SUPABASE_PROJECT_REF` com
-o ref do seu próprio projeto. O template não fixa nenhum projeto Supabase.
-
-> **Importante para forks:** a fundação Auth/multi-tenant está nas migrations versionadas, mas deve ser validada em staging antes de produção. Consulte [`docs/OPEN_SOURCE_SETUP.md`](docs/OPEN_SOURCE_SETUP.md) e teste cadastro, OTP, login, convite e RLS antes de publicar.
-
-O roteiro de isolamento e smoke test está em
-[`docs/STAGING_HANDOFF.md`](docs/STAGING_HANDOFF.md). Sem um preview e um
-Supabase/Evolution de staging confirmados, o build não deve ser promovido.
-
-Os controles técnicos de privacidade e LGPD estão documentados em
-[`docs/PRIVACY_LGPD.md`](docs/PRIVACY_LGPD.md).
-
-## Gates antes de publicar
-
-```bash
-npm test
-npm run lint
-npx tsc --noEmit
-npm run audit:release
-npm run audit:public
-npm run audit:prod
-npm run build
-```
-
-Os testes locais validam contratos, isolamento, rotas, mídia e UI. Homologação real ainda exige dois usuários, dois workspaces e instâncias Evolution separadas em staging. Não execute testes de envio contra WhatsApp de produção.
-
-Para executar a suite HTTP local sem deixar um servidor aberto, use:
-
-```bash
-npm run test:integration:local
-```
-
-Esse comando inicia o Vite apenas em `127.0.0.1`, executa os contratos de
-autenticacao, isolamento, webhook e ADM e encerra o processo automaticamente.
-Para um Deploy Preview, use `TEST_BASE_URL` com `npm run test:integration` e
-valide primeiro o alvo com `node scripts/validate-staging-target.mjs`. Depois,
-execute `npm run test:staging:browser` para conferir auth/legal UI e mobile sem
-escrever dados ou enviar mensagens.
-
-## Estrutura
-
-- `src/`: aplicação React/TanStack Start e APIs server-side;
-- `supabase/migrations/`: schema, RLS e funções de banco;
-- `tests/`: testes unitários e contratos de segurança;
-- `scripts/`: utilitários de auditoria e desenvolvimento;
-- `docs/`: decisões, checklists e documentação de operação.
+Todas as variáveis necessárias estão documentadas em [`.env.example`](./.env.example). Nunca commite arquivos `.env` com valores reais.
 
 ## Licença
 
-Distribuído sob a licença MIT. Consulte `LICENSE` e `SECURITY.md` antes de abrir issues ou configurar uma instalação pública.
+**Todos os direitos reservados.** Este software é proprietário e confidencial.
+
+Consulte o arquivo [LICENSE](./LICENSE) para os termos completos. Uso, cópia, modificação, distribuição ou engenharia reversa sem autorização expressa por escrito são estritamente proibidos.
+
+## Apoie o projeto
+
+Se este projeto foi útil para você, considere fazer uma doação:
+
+☕ [Contribuir via Botapix](https://botapix.com/s/hylander)
+
+Cada contribuição ajuda a manter o desenvolvimento ativo. Obrigado!
+
+---
+
+© 2024–2026 InboxOS. Todos os direitos reservados.

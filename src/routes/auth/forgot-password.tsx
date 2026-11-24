@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { AuthField, AuthShell, PasswordMeter } from "@/features/auth/components/AuthShell";
+import { TurnstileWidget } from "@/features/auth/components/TurnstileWidget";
 import { evaluatePassword, normalizeOtp } from "@/features/auth/auth-validation";
+
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_CLOUDFLARE_TURNSTILE_SITE_KEY"] as string | undefined;
 
 export const Route = createFileRoute("/auth/forgot-password")({ component: Forgot });
 
@@ -17,6 +20,8 @@ function Forgot() {
   const [resendBusy, setResendBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const handleTurnstileToken = useCallback((token: string | null) => setTurnstileToken(token), []);
 
   async function start(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +33,7 @@ function Forgot() {
         cache: "no-store",
         signal: AbortSignal.timeout(15_000),
         headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, turnstileToken }),
       });
       const data = (await response.json().catch(() => ({}))) as {
         challengeId?: string | null;
@@ -150,7 +155,17 @@ function Forgot() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <button className="auth-primary" disabled={busy}>
+          {TURNSTILE_SITE_KEY && (
+            <TurnstileWidget
+              siteKey={TURNSTILE_SITE_KEY}
+              onTokenChange={handleTurnstileToken}
+              theme="auto"
+            />
+          )}
+          <button
+            className="auth-primary"
+            disabled={busy || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
+          >
             {busy ? "Enviando…" : "Enviar código"}
           </button>
           {message && <p className="auth-hint">{message}</p>}

@@ -44,14 +44,14 @@ interface MessageBubbleProps {
 }
 
 const PARTICIPANT_COLORS = [
-  "#06cf9c", // teal / emerald
+  "#00a884", // whatsapp brand
   "#53bdeb", // sky blue
   "#a683f2", // purple
   "#f37373", // coral / red
   "#f59f00", // amber / orange
   "#ec4899", // pink
   "#3b82f6", // blue
-  "#10b981", // green
+  "#00a884", // whatsapp brand
   "#8b5cf6", // violet
 ];
 
@@ -193,7 +193,7 @@ function renderReactionIcon(rawEmoji?: string | null) {
   if (rawEmoji.includes("👏"))
     return <HandsClapping size={13} weight="fill" className="text-amber-400 shrink-0" />;
   if (rawEmoji.includes("✅") || rawEmoji.includes("✔") || rawEmoji.includes("👌")) {
-    return <CheckCircle size={13} weight="fill" className="text-emerald-500 shrink-0" />;
+    return <CheckCircle size={13} weight="fill" className="text-[var(--whatsapp)] shrink-0" />;
   }
   return <Sparkle size={13} weight="fill" className="text-amber-400 shrink-0" />;
 }
@@ -221,7 +221,7 @@ function renderReactionIconSafe(rawEmoji?: string | null) {
   if (code === 0x1f44f)
     return <HandsClapping size={13} weight="fill" className="text-amber-400 shrink-0" />;
   if (code === 0x2705 || code === 0x2714 || code === 0x1f44c) {
-    return <CheckCircle size={13} weight="fill" className="text-emerald-500 shrink-0" />;
+    return <CheckCircle size={13} weight="fill" className="text-[var(--whatsapp)] shrink-0" />;
   }
   return <Sparkle size={13} weight="fill" className="text-amber-400 shrink-0" />;
 }

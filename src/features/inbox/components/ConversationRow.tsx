@@ -91,13 +91,13 @@ export function ConversationRow({
           />
         ) : conversation.isGroup ? (
           <div
-            className={`w-full h-full flex items-center justify-center font-bold text-xs select-none ${isDarkMode ? "bg-zinc-800 text-emerald-400" : "bg-emerald-50 text-emerald-700"}`}
+            className={`w-full h-full flex items-center justify-center font-bold text-xs select-none ${isDarkMode ? "bg-zinc-800 text-[var(--whatsapp)]" : "bg-[color-mix(in_srgb,var(--whatsapp)_8%,transparent)] text-[var(--whatsapp)]"}`}
           >
             <Users size={22} weight="bold" />
           </div>
         ) : (
           <div
-            className={`w-full h-full flex items-center justify-center font-bold text-xs select-none ${isDarkMode ? "bg-zinc-800 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}
+            className={`w-full h-full flex items-center justify-center font-bold text-xs select-none ${isDarkMode ? "bg-zinc-800 text-[var(--whatsapp)]" : "bg-[color-mix(in_srgb,var(--whatsapp)_8%,transparent)] text-[var(--whatsapp)]"}`}
           >
             {initials || <User size={20} weight="bold" />}
           </div>
@@ -129,8 +129,8 @@ export function ConversationRow({
                 title={`Conta WhatsApp: ${conversation.instanceName}`}
                 className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0 max-w-[80px] truncate border ${
                   isDarkMode
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    ? "bg-[color-mix(in_srgb,var(--whatsapp)_10%,transparent)] text-[var(--whatsapp)] border-[color-mix(in_srgb,var(--whatsapp)_20%,transparent)]"
+                    : "bg-[color-mix(in_srgb,var(--whatsapp)_8%,transparent)] text-[var(--whatsapp)] border-[color-mix(in_srgb,var(--whatsapp)_20%,transparent)]"
                 }`}
               >
                 {conversation.instanceName}
@@ -144,7 +144,7 @@ export function ConversationRow({
               conversation.unread > 0
                 ? isDarkMode
                   ? "text-[#00a884] font-semibold"
-                  : "text-emerald-700 font-semibold"
+                  : "text-[var(--whatsapp)] font-semibold"
                 : isDarkMode
                   ? "text-neutral-400"
                   : "text-neutral-500"
@@ -213,7 +213,7 @@ export function ConversationRow({
                       : "bg-amber-300 text-amber-950"
                   : isDarkMode
                     ? "bg-[#00a884] text-[#06251d]"
-                    : "bg-emerald-600 text-white"
+                    : "bg-[var(--whatsapp)] text-white"
               }`}
             >
               {conversation.humanHandoff && <WarningCircle size={11} weight="fill" />}

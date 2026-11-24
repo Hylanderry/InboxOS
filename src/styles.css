@@ -358,7 +358,7 @@ body.dark {
   --trax-glass-border: rgba(255, 255, 255, 0.09);
   --trax-glass-highlight: rgba(255, 255, 255, 0.06);
   --trax-accent: #a1a1aa;
-  --whatsapp: #24b47e;
+  --whatsapp: #00a884;
   --blur-sm: 12px;
   --blur-md: 20px;
   --blur-lg: 32px;
@@ -810,10 +810,11 @@ textarea:focus-visible {
     radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.055), transparent 34%), #080809;
   color: #fafafa;
   position: relative;
-  animation: smoothFadeIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Sem animation na página: evita piscada/duplicação ao trocar de rota.
+     A transição suave cobre tema; o conteúdo entra via auth-card. */
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+    background-color 0.28s var(--ease-premium),
+    color 0.28s var(--ease-premium);
 }
 .auth-card {
   width: min(100%, 440px);
@@ -826,10 +827,18 @@ textarea:focus-visible {
   background: rgba(18, 18, 20, 0.92);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
   scrollbar-width: thin;
+  /* Entrada suave do card — mais lenta (0.42s) e otimizada para 60fps:
+     apenas transform+opacity são animados (camada composta GPU),
+     will-change promove o card para sua própria camada de composição,
+     translateZ(0) força aceleração por hardware no compositor. */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  animation: smoothScaleIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    background-color 0.35s var(--ease-premium),
+    border-color 0.35s var(--ease-premium),
+    box-shadow 0.35s var(--ease-premium);
 }
 .auth-brand {
   display: flex;
@@ -1073,7 +1082,7 @@ textarea:focus-visible {
   background: #84cc16;
 }
 .password-meter.is-score-4 .password-meter-track i {
-  background: #10b981;
+  background: var(--whatsapp);
 }
 .password-rules {
   display: flex;
@@ -1090,10 +1099,29 @@ textarea:focus-visible {
 }
 .auth-otp {
   text-align: center;
-  font-size: 20px !important;
-  font-weight: 800;
-  letter-spacing: 0.45em;
+  font-size: 24px !important;
+  font-weight: 700;
+  letter-spacing: 0.35em;
   font-variant-numeric: tabular-nums;
+  /* Transição suave ao digitar cada dígito */
+  transition:
+    border-color 0.2s var(--ease-premium),
+    box-shadow 0.2s var(--ease-premium),
+    background-color 0.2s var(--ease-premium);
+}
+.auth-otp:focus {
+  transform: scale(1.01);
+  transition: transform 0.15s var(--ease-premium);
+}
+/* Grupo de ações secundárias empilhadas com espaçamento consistente */
+.auth-secondary-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.auth-secondary-group .auth-secondary {
+  width: 100%;
 }
 .auth-theme-toggle {
   position: fixed;
@@ -1460,7 +1488,7 @@ textarea:focus-visible {
   width: 0.38rem;
   height: 0.38rem;
   border-radius: 999px;
-  background: #24b47e;
+  background: var(--whatsapp);
 }
 .mobile-dock {
   position: relative;
@@ -1554,7 +1582,7 @@ textarea:focus-visible {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: #24b47e;
+  background: var(--whatsapp);
   color: #07110d;
   font-size: 0.5rem;
   font-weight: 900;
@@ -2657,7 +2685,7 @@ select {
   color: #059669;
 }
 input[type="checkbox"]:not(.auth-check-input):not(.auth-legal-check) {
-  accent-color: #10b981;
+  accent-color: var(--whatsapp);
   cursor: pointer;
   border-radius: 4px;
   transition:
@@ -2791,6 +2819,10 @@ input[type="checkbox"]:not(.auth-check-input):not(.auth-legal-check):active {
   max-height: min(260px, 40dvh);
   overflow-y: auto;
   overflow-x: hidden;
+  /* Impede que o scroll dentro do dropdown propague para a página,
+     evitando que o listener de scroll feche o menu ao rolar a lista. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 5px;
   border: 1px solid rgba(161, 161, 170, 0.24);
   border-radius: 14px;
@@ -2853,7 +2885,7 @@ input[type="checkbox"]:not(.auth-check-input):not(.auth-legal-check):active {
     transform 160ms ease;
 }
 .group:hover .media-type-icon {
-  color: #10b981;
+  color: var(--whatsapp);
   transform: translateY(-0.5px);
 }
 :root:not(.dark) .auth-check-box {
@@ -3277,6 +3309,14 @@ input[type="checkbox"]:not(.auth-check-input):not(.auth-legal-check):active {
 /* Troca de rota um pouco mais longa e macia que a original (180ms/4px). */
 .route-transition-shell {
   animation: inboxos-route-enter 260ms var(--motion-ease) both;
+}
+
+/* Nas telas de auth, o .auth-card já tem sua própria animação de entrada.
+   Remover a animação do wrapper evita dupla transformação e o "pulo" lateral
+   causado por dois keyframes competindo pelo mesmo elemento. */
+.auth-page .route-transition-shell,
+.route-transition-shell:has(.auth-page) {
+  animation: none !important;
 }
 
 /* Troca de tela dentro do workspace (?view=): cada tela monta de novo ao ser
@@ -3710,6 +3750,7 @@ textarea.ux-input {
   z-index: 80;
   background: rgba(8, 8, 9, 0.42);
   backdrop-filter: blur(2px);
+  will-change: opacity;
   animation: ux-fade-in var(--motion-base) var(--motion-ease) both;
 }
 .ux-drawer {
@@ -3725,6 +3766,8 @@ textarea.ux-input {
   box-shadow: var(--ux-shadow-pop);
   font-size: 13px;
   line-height: 20px;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
   animation: ux-drawer-in var(--motion-sheet) var(--motion-ease) both;
   outline: none;
 }
@@ -3732,10 +3775,10 @@ textarea.ux-input {
   width: min(100vw, 520px);
 }
 .ux-drawer[data-state="closed"] {
-  animation: ux-drawer-out var(--motion-base) var(--motion-ease-exit) both;
+  animation: ux-drawer-out var(--motion-fast) var(--motion-ease-exit) both;
 }
 .ux-drawer-overlay[data-state="closed"] {
-  animation: ux-fade-out var(--motion-base) var(--motion-ease-exit) both;
+  animation: ux-fade-out var(--motion-fast) var(--motion-ease-exit) both;
 }
 .ux-drawer-head {
   display: flex;
@@ -3762,17 +3805,21 @@ textarea.ux-input {
 }
 @keyframes ux-drawer-in {
   from {
-    transform: translate3d(24px, 0, 0);
+    transform: translate3d(100%, 0, 0);
     opacity: 0;
   }
   to {
-    transform: none;
+    transform: translate3d(0, 0, 0);
     opacity: 1;
   }
 }
 @keyframes ux-drawer-out {
+  from {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
   to {
-    transform: translate3d(24px, 0, 0);
+    transform: translate3d(100%, 0, 0);
     opacity: 0;
   }
 }
@@ -5208,4 +5255,101 @@ button.ux-chip:disabled {
   .ux-page-header .ux-actions {
     width: 100%;
   }
+}
+
+/* Configurações: navegação lateral fixa + seções em coluna única */
+.settings-layout {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .settings-layout {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 32px;
+  }
+}
+.settings-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+@media (min-width: 1024px) {
+  .settings-nav {
+    position: sticky;
+    top: 8px;
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+}
+.settings-nav-item {
+  position: relative;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ux-radius-sm);
+  background: transparent;
+  color: var(--ux-muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease);
+}
+.settings-nav-item:hover {
+  background: var(--ux-hover);
+  color: var(--ux-ink);
+}
+.settings-nav-item[aria-current="true"] {
+  background: var(--ux-surface);
+  color: var(--ux-ink);
+  box-shadow: inset 0 0 0 1px var(--ux-line);
+}
+.settings-nav-item:focus-visible {
+  outline: none;
+  box-shadow: var(--ux-focus);
+}
+.settings-sections {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.settings-section {
+  scroll-margin-top: 12px;
+}
+.settings-section-head {
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+}
+.settings-section-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--ux-radius-sm);
+  background: var(--ux-surface-2);
+  border: 1px solid var(--ux-line);
+  color: var(--ux-muted);
+}
+.settings-section-body {
+  padding: 20px;
+}
+/* Alvos de toque de 44px nos botões das configurações (F16/UI13) */
+.settings-content .settings-btn {
+  min-height: 44px;
+}
+/* Rótulos e textos legados dentro das seções seguem a escala nova */
+.settings-section-body .text-\[9px\],
+.settings-section-body .text-\[10px\] {
+  font-size: 12px;
+  line-height: 17px;
+}
+.settings-section-body .rounded-xl.border {
+  border-color: var(--ux-line);
+  border-radius: 10px;
 }

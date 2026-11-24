@@ -479,7 +479,7 @@ export function InboxShell() {
 
               <div className="flex min-w-0 items-center gap-2.5">
                 {currentView === "inbox" && (
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#24b47e]" />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--whatsapp)]" />
                 )}
                 <div className="min-w-0">
                   <p

@@ -156,7 +156,7 @@ export function ChatHeader({
                 />
               ) : (
                 <div
-                  className={`w-full h-full flex items-center justify-center font-bold text-xs select-none ${isDarkMode ? "bg-zinc-800 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}
+                  className={`w-full h-full flex items-center justify-center font-bold text-xs select-none ${isDarkMode ? "bg-zinc-800 text-[var(--whatsapp)]" : "bg-[color-mix(in_srgb,var(--whatsapp)_8%,transparent)] text-[var(--whatsapp)]"}`}
                 >
                   {initials || <User size={20} weight="bold" />}
                 </div>
@@ -248,8 +248,8 @@ export function ChatHeader({
               onClick={() => void onCreateLead()}
               className={`chat-header-action inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition-colors ${
                 isDarkMode
-                  ? "text-emerald-300 hover:bg-emerald-500/10"
-                  : "text-emerald-700 hover:bg-emerald-50"
+                  ? "text-[var(--whatsapp)] hover:bg-[color-mix(in_srgb,var(--whatsapp)_10%,transparent)]"
+                  : "text-[var(--whatsapp)] hover:bg-[color-mix(in_srgb,var(--whatsapp)_8%,transparent)]"
               }`}
               title="Registrar cliente no CRM"
               aria-label="Registrar cliente no CRM"
@@ -268,8 +268,8 @@ export function ChatHeader({
                     ? "border-amber-400/30 bg-amber-400/10 text-amber-300 hover:bg-amber-400/15"
                     : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
                   : isDarkMode
-                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/15"
-                    : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                    ? "border-[color-mix(in_srgb,var(--whatsapp)_30%,transparent)] bg-[color-mix(in_srgb,var(--whatsapp)_10%,transparent)] text-[var(--whatsapp)] hover:bg-[color-mix(in_srgb,var(--whatsapp)_15%,transparent)]"
+                    : "border-[color-mix(in_srgb,var(--whatsapp)_30%,transparent)] bg-[color-mix(in_srgb,var(--whatsapp)_8%,transparent)] text-[var(--whatsapp)] hover:bg-[color-mix(in_srgb,var(--whatsapp)_12%,transparent)]"
               }`}
               title={
                 conversation.aiPaused ? "Retomar IA nesta conversa" : "Pausar IA nesta conversa"

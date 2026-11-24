@@ -81,8 +81,9 @@ function Verify() {
   return (
     <AuthShell
       eyebrow="Verificação"
-      title="Digite o código"
-      description="Enviamos um código de seis dígitos para confirmar esta ação."
+      title="Confirme este dispositivo"
+      description="Digite o código enviado por e-mail para liberar este dispositivo."
+      footer={null}
     >
       <form className="auth-form" onSubmit={verify}>
         <label className="auth-field">
@@ -90,33 +91,38 @@ function Verify() {
           <input
             className="auth-otp"
             inputMode="numeric"
+            pattern="[0-9]{6}"
+            aria-label="Código de segurança de seis dígitos"
             autoComplete="one-time-code"
             maxLength={6}
             value={code}
             onChange={(e) => setCode(normalizeOtp(e.target.value))}
-            placeholder="000000"
+            placeholder="• • • • • •"
           />
         </label>
-        {error && (
-          <p className="auth-inline-status is-invalid" role="alert">
-            {error}
-          </p>
-        )}
+        <p className="auth-hint" role="status">
+          {error ? <span className="is-invalid">{error}</span> : "Código enviado para o seu e-mail."}
+        </p>
         <button
           className="auth-primary"
           type="submit"
           disabled={busy || code.length !== 6 || !challengeId}
         >
-          {busy ? "Confirmando…" : "Confirmar código"}
+          {busy ? "Confirmando…" : "Confirmar dispositivo"}
         </button>
-        <button
-          className="auth-secondary"
-          type="button"
-          disabled={busy || cooldown > 0 || !challengeId}
-          onClick={resend}
-        >
-          {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Reenviar código"}
-        </button>
+        <div className="auth-secondary-group">
+          <button
+            className="auth-secondary"
+            type="button"
+            disabled={busy || cooldown > 0 || !challengeId}
+            onClick={resend}
+          >
+            {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Reenviar código"}
+          </button>
+          <a href="/auth/login" className="auth-secondary" style={{ textDecoration: "none", textAlign: "center" }}>
+            Voltar
+          </a>
+        </div>
       </form>
     </AuthShell>
   );

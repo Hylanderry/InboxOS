@@ -3,7 +3,10 @@ import { CaretDown, Check, GlobeHemisphereWest } from "@phosphor-icons/react";
 import * as Flags from "country-flag-icons/react/3x2";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AuthField, AuthShell, PasswordMeter } from "@/features/auth/components/AuthShell";
+import { TurnstileWidget } from "@/features/auth/components/TurnstileWidget";
 import { LegalConsentDialog } from "@/features/legal/components/LegalConsentDialog";
+
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_CLOUDFLARE_TURNSTILE_SITE_KEY"] as string | undefined;
 import {
   AUTH_COUNTRIES,
   evaluatePassword,
@@ -59,6 +62,8 @@ function Register() {
   const [countryOpen, setCountryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const handleTurnstileToken = useCallback((token: string | null) => setTurnstileToken(token), []);
   const legalAcceptedRef = useRef(false);
   const legalDialogInitialAcceptanceRef = useRef(false);
   const legalConsentExpiryTimerRef = useRef<number | null>(null);
@@ -135,7 +140,14 @@ function Register() {
 
   useEffect(() => {
     if (!countryOpen) return;
-    const closeOnScroll = () => setCountryOpen(false);
+    // Fecha apenas se o scroll ocorrer FORA do próprio menu dropdown.
+    // O listener com capture:true detecta scroll em qualquer elemento,
+    // então filtramos para não fechar ao rolar dentro do menu.
+    const closeOnScroll = (event: Event) => {
+      const target = event.target as Node | null;
+      if (target && countryMenuRef.current?.contains(target)) return;
+      setCountryOpen(false);
+    };
     document.addEventListener("scroll", closeOnScroll, true);
     return () => document.removeEventListener("scroll", closeOnScroll, true);
   }, [countryOpen]);
@@ -178,6 +190,7 @@ function Register() {
         acceptedPrivacy: true,
         invitationId: invitation.invitationId,
         invitationToken: invitation.invitationToken,
+        turnstileToken,
       };
       const r = await fetch("/api/auth/register/start", {
         method: "POST",
@@ -413,7 +426,18 @@ function Register() {
             {error}
           </p>
         )}
-        <button className="auth-primary" type="submit" disabled={!can}>
+        {TURNSTILE_SITE_KEY && (
+          <TurnstileWidget
+            siteKey={TURNSTILE_SITE_KEY}
+            onTokenChange={handleTurnstileToken}
+            theme="auto"
+          />
+        )}
+        <button
+          className="auth-primary"
+          type="submit"
+          disabled={!can || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
+        >
           {submitting ? "Enviando código…" : "Criar conta"}
         </button>
       </form>

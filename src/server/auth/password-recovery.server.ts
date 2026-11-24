@@ -1,5 +1,6 @@
 import { recoveryCodeIsVerified } from "./password-recovery-policy";
 import { enforceSensitiveChallengeVerifyLimit } from "./sensitive-challenge-rate";
+import { extractTurnstileToken, verifyTurnstileToken } from "./turnstile.server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mutationOriginAllowed } from "../middleware/access-auth";
 import { logServerError } from "../logging.ts";
@@ -57,6 +58,15 @@ function emailOf(x: unknown) {
 }
 export async function startPasswordRecovery(request: Request, payload: unknown) {
   if (!mutationOriginAllowed(request)) return json({ message: GENERIC }, 200);
+
+  // Cloudflare Turnstile verification (skip if not configured).
+  // Always return the generic message to avoid leaking account existence.
+  const turnstileToken = extractTurnstileToken(payload);
+  const turnstileResult = await verifyTurnstileToken(turnstileToken, ip(request));
+  if (!turnstileResult.success) {
+    return json({ message: GENERIC }, 200);
+  }
+
   const email = emailOf(payload),
     started = Date.now();
   let challengeId: string | null = null;
