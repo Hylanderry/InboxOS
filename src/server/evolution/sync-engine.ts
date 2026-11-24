@@ -600,55 +600,69 @@ export async function syncRecentMessages(
     let chat = chatByPhone.get(phone);
     const createdAt = toIso(record?.messageTimestamp ?? record?.createdAt);
 
-    // Se a conversa não existe ainda no Supabase, cria imediatamente
+    // Se a conversa não existe ainda no Supabase, busca ou cria atomicamente
+    // para evitar duplicação sob concorrência (dois workers processando o mesmo phone).
     if (!chat) {
-      const fromMe = Boolean(key.fromMe);
-      // A provider pushName is not a tenant-safe identity. Any message marked
-      // fromMe belongs to the connected instance, so never use its pushName to
-      // name the contact or leak the operator's personal brand.
-      const isOwnerPush = fromMe;
-      const safePush = isOwnerPush ? null : record?.pushName;
-
-      // NUNCA usar safePush (pushName do membro) para nomear um grupo do WhatsApp!
-      const groupSubject = isGroup
-        ? getGroupMetadata(workspaceId, instanceName, phone)?.subject ||
-          contactNameCache.get(scopedIdentityKey(workspaceId, instanceName, phone)) ||
-          "Grupo WhatsApp"
-        : null;
-
-      const contactName = isGroup
-        ? groupSubject
-        : (contactNameCache.get(scopedIdentityKey(workspaceId, instanceName, phone)) ??
-          safePush ??
-          null);
-
-      const contactPic =
-        contactPicCache.get(scopedIdentityKey(workspaceId, instanceName, phone)) ?? null;
-
-      const { data: newChat, error: chatErr } = await supabaseAdmin
+      // Primeiro tenta buscar chat existente pela chave composta natural
+      const { data: existingChat } = await supabaseAdmin
         .from("chats")
-        .upsert(
-          {
-            id: randomUUID(),
-            workspace_id: workspaceId,
-            instance_id: ownedInstance.id,
-            instance_name: instanceName,
-            phone,
-            phone_e164: isGroup ? null : phone,
-            remote_jid: isGroup ? rawRemoteJid : `${phone}@s.whatsapp.net`,
-            identity_kind: isGroup ? "group" : "phone",
-            name: contactName,
-            profile_pic_url: contactPic,
-            is_group: isGroup,
-            last_message_at: createdAt,
-          },
-          // The production schema may still expose only a partial composite
-          // index; using the generated primary key keeps this path compatible
-          // until the full identity index is applied.
-          { onConflict: "id" },
-        )
         .select("id, phone, name, profile_pic_url, is_group, remote_jid")
+        .eq("workspace_id", workspaceId)
+        .eq("instance_name", instanceName)
+        .eq("phone", phone)
         .maybeSingle();
+
+      if (existingChat) {
+        chat = existingChat;
+        chatByPhone.set(phone, existingChat);
+      } else {
+        const fromMe = Boolean(key.fromMe);
+        // A provider pushName is not a tenant-safe identity. Any message marked
+        // fromMe belongs to the connected instance, so never use its pushName to
+        // name the contact or leak the operator's personal brand.
+        const isOwnerPush = fromMe;
+        const safePush = isOwnerPush ? null : record?.pushName;
+
+        // NUNCA usar safePush (pushName do membro) para nomear um grupo do WhatsApp!
+        const groupSubject = isGroup
+          ? getGroupMetadata(workspaceId, instanceName, phone)?.subject ||
+            contactNameCache.get(scopedIdentityKey(workspaceId, instanceName, phone)) ||
+            "Grupo WhatsApp"
+          : null;
+
+        const contactName = isGroup
+          ? groupSubject
+          : (contactNameCache.get(scopedIdentityKey(workspaceId, instanceName, phone)) ??
+            safePush ??
+            null);
+
+        const contactPic =
+          contactPicCache.get(scopedIdentityKey(workspaceId, instanceName, phone)) ?? null;
+
+        const { data: newChat, error: chatErr } = await supabaseAdmin
+          .from("chats")
+          .upsert(
+            {
+              id: randomUUID(),
+              workspace_id: workspaceId,
+              instance_id: ownedInstance.id,
+              instance_name: instanceName,
+              phone,
+              phone_e164: isGroup ? null : phone,
+              remote_jid: isGroup ? rawRemoteJid : `${phone}@s.whatsapp.net`,
+              identity_kind: isGroup ? "group" : "phone",
+              name: contactName,
+              profile_pic_url: contactPic,
+              is_group: isGroup,
+              last_message_at: createdAt,
+            },
+            // The production schema may still expose only a partial composite
+            // index; using the generated primary key keeps this path compatible
+            // until the full identity index is applied.
+            { onConflict: "id" },
+          )
+          .select("id, phone, name, profile_pic_url, is_group, remote_jid")
+          .maybeSingle();
 
       if (!chatErr && newChat) {
         chat = newChat;
@@ -673,6 +687,7 @@ export async function syncRecentMessages(
           );
         }
       }
+    }
     }
 
     if (isGroup && chat && chat.remote_jid !== rawRemoteJid) {
