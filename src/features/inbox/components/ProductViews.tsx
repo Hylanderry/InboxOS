@@ -36,6 +36,8 @@ import {
   DotsThree,
   ArrowLeft,
   ArrowRight,
+  ThumbsUp,
+  ThumbsDown,
 } from "@phosphor-icons/react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useNavigate } from "@tanstack/react-router";
@@ -2483,6 +2485,15 @@ export function AgentsView({ isDarkMode }: Props) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
   const [pendingAgentDeleteIds, setPendingAgentDeleteIds] = useState<string[] | null>(null);
+  // E1: Feedback loop — thumbs up/down per agent run (persisted in localStorage)
+  const [runFeedback, setRunFeedback] = useState<Record<string, "up" | "down">>(() => {
+    try {
+      const stored = typeof window !== "undefined" ? localStorage.getItem("inboxos_run_feedback") : null;
+      return stored ? (JSON.parse(stored) as Record<string, "up" | "down">) : {};
+    } catch {
+      return {};
+    }
+  });
   const editorTriggerRef = useRef<HTMLElement | null>(null);
   const editorDialogRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState({
@@ -2559,6 +2570,24 @@ export function AgentsView({ isDarkMode }: Props) {
       editorDialogRef.current?.querySelector<HTMLElement>("input, textarea")?.focus(),
     );
   }, [editorOpen]);
+
+  // E1: Toggle feedback on an agent run and persist to localStorage
+  const toggleRunFeedback = useCallback((runId: string, value: "up" | "down") => {
+    setRunFeedback((prev) => {
+      const next = { ...prev };
+      if (next[runId] === value) {
+        delete next[runId]; // toggle off
+      } else {
+        next[runId] = value;
+      }
+      try {
+        localStorage.setItem("inboxos_run_feedback", JSON.stringify(next));
+      } catch {
+        // storage full or unavailable — ignore
+      }
+      return next;
+    });
+  }, []);
 
   const run = async (fn: () => Promise<unknown>, ok?: string) => {
     setBusy(true);
@@ -3344,6 +3373,36 @@ export function AgentsView({ isDarkMode }: Props) {
                               {runAgent ? ` · ${runAgent.name}` : ""} ·{" "}
                               {formatRunTime(r.started_at)}
                             </span>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-0.5" role="group" aria-label={`Avaliar resposta do agente`}>
+                            <button
+                              type="button"
+                              onClick={() => toggleRunFeedback(r.id, "up")}
+                              className={`rounded-md p-1.5 transition-colors ${
+                                runFeedback[r.id] === "up"
+                                  ? "bg-emerald-500/20 text-emerald-400"
+                                  : "text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-300"
+                              }`}
+                              aria-pressed={runFeedback[r.id] === "up"}
+                              aria-label="Resposta útil"
+                              title="Resposta útil"
+                            >
+                              <ThumbsUp size={14} weight={runFeedback[r.id] === "up" ? "fill" : "regular"} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleRunFeedback(r.id, "down")}
+                              className={`rounded-md p-1.5 transition-colors ${
+                                runFeedback[r.id] === "down"
+                                  ? "bg-red-500/20 text-red-400"
+                                  : "text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-300"
+                              }`}
+                              aria-pressed={runFeedback[r.id] === "down"}
+                              aria-label="Resposta ruim"
+                              title="Resposta ruim"
+                            >
+                              <ThumbsDown size={14} weight={runFeedback[r.id] === "down" ? "fill" : "regular"} />
+                            </button>
                           </div>
                         </li>
                       );
