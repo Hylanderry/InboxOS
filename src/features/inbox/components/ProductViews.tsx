@@ -64,6 +64,12 @@ import { friendlyErrorText } from "@/lib/friendly-error";
 import { deriveViewDataState } from "../view-data-state";
 import { progressiveRenderLimit } from "../product-surface";
 import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import {
   createAgent,
   createFollowUp,
   createLead,
@@ -99,6 +105,8 @@ import {
   type AutomationRun,
   type CrmLead,
   type CrmStage,
+  type DashboardPeriod,
+  type DashboardMessageDay,
   type DashboardMetrics,
   type FollowUpTask,
   type CalendarAppointment,
@@ -293,31 +301,46 @@ type AttentionItem = {
   view: DashboardTarget;
 };
 
+const DASHBOARD_PERIODS: { value: DashboardPeriod; label: string }[] = [
+  { value: "7d", label: "7 dias" },
+  { value: "10d", label: "10 dias" },
+  { value: "30d", label: "30 dias" },
+  { value: "90d", label: "90 dias" },
+];
+
 export function DashboardView(_props: Props) {
   const [data, setData] = useState<DashboardMetrics | null>(null);
+  const [messagesByDay, setMessagesByDay] = useState<DashboardMessageDay[]>([]);
+  const [period, setPeriod] = useState<DashboardPeriod>("30d");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const navigate = useNavigate();
   const go = (view: DashboardTarget) => void navigate({ to: "/", search: { view } });
 
-  const refresh = useCallback(() => {
-    setError("");
-    setIsLoading(true);
-    void loadDashboard()
-      .then((x) => {
-        setData(x.metrics);
-        setUpdatedAt(new Date());
-      })
-      .catch((e) => {
-        const message = errorMessage(e);
-        setError(message);
-        WhatsAppToast.networkError(message);
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
+  const refresh = useCallback(
+    (selectedPeriod: DashboardPeriod) => {
+      setError("");
+      setIsLoading(true);
+      void loadDashboard(selectedPeriod)
+        .then((x) => {
+          setData(x.metrics);
+          setMessagesByDay(x.messagesByDay ?? []);
+          setUpdatedAt(new Date());
+        })
+        .catch((e) => {
+          const message = errorMessage(e);
+          setError(message);
+          WhatsAppToast.networkError(message);
+        })
+        .finally(() => setIsLoading(false));
+    },
+    [],
+  );
 
-  useEffect(refresh, [refresh]);
+  useEffect(() => {
+    refresh(period);
+  }, [period, refresh]);
 
   const money = useMemo(() => {
     if (!data) return "—";
@@ -403,6 +426,23 @@ export function DashboardView(_props: Props) {
             <p className="ux-lead">Como está a operação do workspace agora.</p>
           </div>
           <div className="ux-actions">
+            <div className="flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] p-0.5" role="group" aria-label="Período do dashboard">
+              {DASHBOARD_PERIODS.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => setPeriod(p.value)}
+                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+                    period === p.value
+                      ? "bg-white/10 text-white shadow-sm"
+                      : "text-neutral-400 hover:text-neutral-200"
+                  }`}
+                  aria-pressed={period === p.value}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
             {updatedAt && (
               <span className="ux-meta">
                 Atualizado às{" "}
@@ -412,7 +452,7 @@ export function DashboardView(_props: Props) {
             <button
               type="button"
               className="ux-icon-btn"
-              onClick={refresh}
+              onClick={() => refresh(period)}
               aria-label="Atualizar dados de Dashboard"
               title="Atualizar"
             >
@@ -452,6 +492,48 @@ export function DashboardView(_props: Props) {
                 {money}
               </strong>
               <span className="ux-meta">em negociação</span>
+            </div>
+          </section>
+        )}
+        {data && messagesByDay.length > 0 && (
+          <section className="ux-panel" aria-label="Mensagens ao longo do tempo">
+            <div className="ux-panel-head">
+              <h2 className="ux-h2">Volume de mensagens</h2>
+              <span className="ux-meta">{period === "7d" ? "Últimos 7 dias" : period === "10d" ? "Últimos 10 dias" : period === "30d" ? "Últimos 30 dias" : "Últimos 90 dias"}</span>
+            </div>
+            <div className="h-64 w-full min-h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={messagesByDay} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: "#a3a3a3" }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: string) => {
+                      const d = new Date(v + "T00:00:00");
+                      return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+                    }}
+                    minTickGap={32}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#a3a3a3" }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    name="Mensagens"
+                    stroke="#25D366"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#25D366", stroke: "#0a0a0b", strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </section>
         )}

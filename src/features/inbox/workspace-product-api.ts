@@ -29,7 +29,24 @@ export interface DashboardMetrics {
   enabledAgents: number;
   automaticAgents: number;
 }
-export const loadDashboard = () => read<{ metrics: DashboardMetrics }>(apiFetch("/api/dashboard/"));
+
+export type DashboardPeriod = "7d" | "10d" | "30d" | "90d";
+
+export interface DashboardMessageDay {
+  date: string;
+  count: number;
+}
+
+export interface DashboardResponse {
+  metrics: DashboardMetrics;
+  period: string;
+  messagesByDay: DashboardMessageDay[];
+}
+
+export const loadDashboard = (period?: DashboardPeriod) => {
+  const params = period ? `?period=${period}` : "";
+  return read<DashboardResponse>(apiFetch(`/api/dashboard/${params}`));
+};
 
 export interface CrmStage {
   id: string;

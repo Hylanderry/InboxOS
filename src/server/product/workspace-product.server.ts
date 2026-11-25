@@ -85,33 +85,63 @@ async function ensureDefaultStages(workspaceId: string) {
   if (insertError && String(insertError.code ?? "") !== "23505") throw insertError;
 }
 
+/** Supported dashboard period presets. Custom ranges use ISO date strings. */
+type DashboardPeriod = "7d" | "10d" | "30d" | "90d";
+
+function parseDashboardPeriod(raw: string | null): { days: number; label: string } {
+  switch (raw) {
+    case "7d":
+      return { days: 7, label: "7d" };
+    case "10d":
+      return { days: 10, label: "10d" };
+    case "30d":
+      return { days: 30, label: "30d" };
+    case "90d":
+      return { days: 90, label: "90d" };
+    default:
+      return { days: 30, label: "30d" };
+  }
+}
+
 export async function getDashboard(request: Request) {
   const auth = await requirePermission(request, "workspace.read");
   if (auth instanceof Response) return auth;
   const client = await db();
   const workspaceId = auth.workspace.id;
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const url = new URL(request.url);
+  const periodParam = url.searchParams.get("period");
+  const period = parseDashboardPeriod(periodParam);
+  const since = new Date(Date.now() - period.days * 24 * 60 * 60 * 1000).toISOString();
   const now = new Date().toISOString();
 
-  const [instances, chats, messages, leads, followups, agents] = await Promise.all([
-    client.from("whatsapp_instances").select("status").eq("workspace_id", workspaceId),
-    client.from("chats").select("unread,archived").eq("workspace_id", workspaceId),
-    client
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("workspace_id", workspaceId)
-      .gte("created_at", since),
-    client.from("crm_leads").select("value_cents,currency").eq("workspace_id", workspaceId),
-    client
-      .from("follow_up_tasks")
-      .select("id,due_at,status")
-      .eq("workspace_id", workspaceId)
-      .eq("status", "pending"),
-    client
-      .from("automation_agents")
-      .select("id,enabled,reply_mode")
-      .eq("workspace_id", workspaceId),
-  ]);
+  const [instances, chats, messages, leads, followups, agents, messagesTimeline] =
+    await Promise.all([
+      client.from("whatsapp_instances").select("status").eq("workspace_id", workspaceId),
+      client.from("chats").select("unread,archived").eq("workspace_id", workspaceId),
+      client
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId)
+        .gte("created_at", since),
+      client.from("crm_leads").select("value_cents,currency").eq("workspace_id", workspaceId),
+      client
+        .from("follow_up_tasks")
+        .select("id,due_at,status")
+        .eq("workspace_id", workspaceId)
+        .eq("status", "pending"),
+      client
+        .from("automation_agents")
+        .select("id,enabled,reply_mode")
+        .eq("workspace_id", workspaceId),
+      // Time-series data for charts: message counts grouped by day
+      client
+        .from("messages")
+        .select("created_at")
+        .eq("workspace_id", workspaceId)
+        .gte("created_at", since)
+        .order("created_at", { ascending: true }),
+    ]);
 
   const errors = [
     instances.error,
@@ -120,6 +150,7 @@ export async function getDashboard(request: Request) {
     leads.error,
     followups.error,
     agents.error,
+    messagesTimeline.error,
   ].filter(Boolean);
   if (errors.length)
     return json({ error: safePublicError(errors[0], "Falha ao montar dashboard") }, 500);
@@ -135,6 +166,29 @@ export async function getDashboard(request: Request) {
     }, new Map<string, number>()),
     ([currency, valueCents]) => ({ currency, valueCents }),
   ).sort((a, b) => a.currency.localeCompare(b.currency));
+
+  // Build daily time-series from raw message timestamps
+  const timelineRows = messagesTimeline.data ?? [];
+  const dailyCounts = new Map<string, number>();
+  // Pre-fill all days in the period so the chart has no gaps
+  for (let i = 0; i < period.days; i++) {
+    const d = new Date(Date.now() - (period.days - 1 - i) * 24 * 60 * 60 * 1000);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    dailyCounts.set(key, 0);
+  }
+  for (const row of timelineRows) {
+    try {
+      const d = new Date(row.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      dailyCounts.set(key, (dailyCounts.get(key) ?? 0) + 1);
+    } catch {
+      // skip malformed dates
+    }
+  }
+  const messagesByDay = Array.from(dailyCounts.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, count]) => ({ date, count }));
+
   return json({
     metrics: {
       connectedInstances: (instances.data ?? []).filter((row) => row.status === "open").length,
@@ -151,6 +205,8 @@ export async function getDashboard(request: Request) {
         (row) => row.enabled && row.reply_mode === "automatic",
       ).length,
     },
+    period: period.label,
+    messagesByDay,
   });
 }
 
