@@ -153,51 +153,6 @@ function resolveSenderDisplay(
   };
 }
 
-/**
- * Renderiza reações do WhatsApp exclusivamente com ícones SVG Phosphor.
- * Elimina 100% dos emojis Unicode da interface respeitando o padrão visual limpo.
- */
-function renderReactionIcon(rawEmoji?: string | null) {
-  if (!rawEmoji) return <Sparkle size={13} weight="fill" className="text-amber-400 shrink-0" />;
-  if (rawEmoji.includes("👍"))
-    return <ThumbsUp size={13} weight="fill" className="text-amber-400 shrink-0" />;
-  if (
-    rawEmoji.includes("❤️") ||
-    rawEmoji.includes("❤") ||
-    rawEmoji.includes("💜") ||
-    rawEmoji.includes("💚") ||
-    rawEmoji.includes("💖") ||
-    rawEmoji.includes("💕") ||
-    rawEmoji.includes("💙")
-  ) {
-    return <Heart size={13} weight="fill" className="text-rose-500 shrink-0" />;
-  }
-  if (
-    rawEmoji.includes("😂") ||
-    rawEmoji.includes("🤣") ||
-    rawEmoji.includes("😆") ||
-    rawEmoji.includes("😹")
-  ) {
-    return <Smiley size={13} weight="fill" className="text-amber-400 shrink-0" />;
-  }
-  if (rawEmoji.includes("😮") || rawEmoji.includes("😲") || rawEmoji.includes("🤯")) {
-    return <SmileyMeh size={13} weight="fill" className="text-amber-400 shrink-0" />;
-  }
-  if (rawEmoji.includes("😢") || rawEmoji.includes("😭") || rawEmoji.includes("🥺")) {
-    return <SmileySad size={13} weight="fill" className="text-amber-400 shrink-0" />;
-  }
-  if (rawEmoji.includes("🙏"))
-    return <HandsPraying size={13} weight="fill" className="text-amber-400 shrink-0" />;
-  if (rawEmoji.includes("🔥"))
-    return <Fire size={13} weight="fill" className="text-orange-500 shrink-0" />;
-  if (rawEmoji.includes("👏"))
-    return <HandsClapping size={13} weight="fill" className="text-amber-400 shrink-0" />;
-  if (rawEmoji.includes("✅") || rawEmoji.includes("✔") || rawEmoji.includes("👌")) {
-    return <CheckCircle size={13} weight="fill" className="text-[var(--whatsapp)] shrink-0" />;
-  }
-  return <Sparkle size={13} weight="fill" className="text-amber-400 shrink-0" />;
-}
-
 function renderReactionIconSafe(rawEmoji?: string | null) {
   const code = typeof rawEmoji === "string" ? rawEmoji.codePointAt(0) : undefined;
   if (code === 0x1f44d)

@@ -90,13 +90,15 @@ test("presence upsert uses the actual live UNIQUE with instance_id, not instance
 test("presence snapshots carry the canonical instance id for collision-free client keys", () => {
   const events = source("routes/api/events/index.ts");
   const realtime = source("lib/realtimeSocket.ts");
-  const presence = source("features/inbox/hooks/usePresence.ts");
+  const presenceHook = source("features/inbox/hooks/usePresence.ts");
+  const presence = `${presenceHook}
+${source("features/inbox/hooks/presence-store.ts")}`;
   assert.match(events, /\.from\("whatsapp_presence"\)/);
   assert.match(events, /\.select\("phone,state,updated_at,instance_id,instance_name"\)/);
   assert.match(realtime, /instance_id\?: string \| null/);
   assert.match(
     presence,
-    /function presenceKey\(phone: string, instanceName\?: string \| null, instanceId\?: string \| null\)/,
+    /function presenceKey\(\s*phone: string,\s*instanceName\?: string \| null,\s*instanceId\?: string \| null,?\s*\)/,
   );
   assert.match(presence, /presenceKey\(normalizedPhone, normalizedInstance, instanceId\)/);
   assert.match(presence, /row\.instance_id \?\? undefined/);

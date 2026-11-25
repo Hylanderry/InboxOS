@@ -23,6 +23,28 @@
 
 ---
 
+## 🚨 SPRINT 0 — Isolamento de instâncias (incidente P0, bloqueia tudo)
+
+Plano completo: `docs/PLANO_ISOLAMENTO_INSTANCIAS.md`. Causa provável: a migration `20260915120000` e o trigger
+`bootstrap_first_workspace_owner` colocaram toda conta nova no workspace padrão `…0001`, onde fica a instância do dono.
+
+| # | Item | Resumo |
+|---|------|--------|
+| S0-0 | Diagnóstico read-only em produção | Contagens de membros do `…0001`, trigger e migrations aplicadas |
+| S0-1 | Contenção em produção | Backup + remover membros indevidos por lista explícita + rollback (exige autorização) |
+| I1 | Blindar workspace padrão | Trigger que recusa membership em `…0001` fora da allowlist; remover trigger de auto-membership |
+| I2 | RLS por membership | Todas as tabelas WhatsApp; teste negativo A→B |
+| I3 | Instância com dono único | Nome com prefixo do workspace; sem corrida ao criar |
+| I4 | Webhook/fila por instância | Token HMAC por instância; replay por `instance_id` |
+| I5 | Envio/leitura/mídia | `instanceId` obrigatório e validado; remover `ilike` legado |
+| I6 | Ciclo de vida | Purge remove instância na Evolution; `useInstances` reage à troca de workspace |
+| I7 | Auditoria contínua | Job diário de alerta + teste de contrato no CI |
+
+**Pré-requisito:** Supabase de staging + Evolution sandbox (o `.env` atual aponta para produção).
+**Aceite:** testes T1–T9 do plano de isolamento, com 2+ workspaces.
+
+---
+
 ## 🏗️ SPRINT 1 — Fundação (Crítico)
 
 ### A1. Corrigir duplicação de chats sob concorrência
@@ -193,6 +215,7 @@
 - **Fix:** Coletar pares `(id, newName)` e executar upsert em batch de 250 registros
 
 ### A5. Rate limiting por (user_id, action_type)
+- **Prioridade:** puxar para depois do Sprint 0 (mitiga abuso e enumeração de instâncias)
 - **Arquivo:** `src/server/middleware/auth.ts:88-108`
 - **Fix:** Buckets separados para endpoints críticos vs não-críticos; header `X-RateLimit-Remaining` na resposta
 

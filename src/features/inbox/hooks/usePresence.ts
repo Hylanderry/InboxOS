@@ -1,111 +1,88 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { subscribeInboxEvent } from "@/lib/realtimeSocket";
+import { createPresenceStore, presenceKey, type PresenceMap } from "./presence-store";
 
-type ActivePresence = "composing" | "recording";
-type PresenceMap = Record<string, ActivePresence>;
+const store = createPresenceStore();
 
-let globalPresences: PresenceMap = {};
-const listeners = new Set<(presences: PresenceMap) => void>();
-const expiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
+type PresenceRow = {
+  phone?: string;
+  state?: string;
+  updated_at?: string | null;
+  instance_id?: string | null;
+  instance_name?: string | null;
+};
 
-function publish(next: PresenceMap) {
-  globalPresences = next;
-  for (const listener of listeners) listener(next);
+// Uma única ligação com o realtime para toda a lista, ativa enquanto houver
+// pelo menos um componente observando (antes: 3 assinaturas por ConversationRow).
+let bridgeCleanup: (() => void) | null = null;
+
+function startBridge() {
+  const onWorkspaceChange = () => store.clear();
+  window.addEventListener("inboxos:workspace-change", onWorkspaceChange);
+  const unsubscribeChange = subscribeInboxEvent("whatsapp_presence:change", (event) => {
+    const row = event?.payload as PresenceRow | undefined;
+    if (!row) return;
+    const isDelete = String(event.event_type || "").endsWith(".delete");
+    store.update(
+      String(row.phone ?? ""),
+      isDelete ? "unavailable" : String(row.state ?? ""),
+      row.updated_at ?? undefined,
+      row.instance_name ?? undefined,
+      row.instance_id ?? undefined,
+    );
+  });
+  const unsubscribeSnapshot = subscribeInboxEvent("presence:change", (row) => {
+    store.update(
+      String(row?.phone ?? ""),
+      String(row?.state ?? ""),
+      row?.updated_at ?? undefined,
+      row?.instance_name ?? undefined,
+      row?.instance_id ?? undefined,
+    );
+  });
+  return () => {
+    window.removeEventListener("inboxos:workspace-change", onWorkspaceChange);
+    unsubscribeChange();
+    unsubscribeSnapshot();
+  };
 }
 
-function presenceKey(phone: string, instanceName?: string | null, instanceId?: string | null) {
-  const normalizedPhone = phone.replace(/\D/g, "");
-  const normalizedInstance = instanceId?.trim() || instanceName?.trim() || "";
-  return normalizedInstance ? `${normalizedInstance}:${normalizedPhone}` : normalizedPhone;
+function subscribe(listener: () => void) {
+  const unsubscribe = store.subscribe(listener);
+  if (!bridgeCleanup) bridgeCleanup = startBridge();
+  return () => {
+    unsubscribe();
+    if (store.listenerCount() === 0 && bridgeCleanup) {
+      bridgeCleanup();
+      bridgeCleanup = null;
+    }
+  };
 }
 
-function updatePresence(
-  phone: string,
-  state: string,
-  updatedAt?: string,
+/** Estado de presença de UM contato. Só re-renderiza quando esse estado muda. */
+export function usePresenceState(
+  phone?: string | null,
   instanceName?: string | null,
   instanceId?: string | null,
 ) {
-  const normalizedPhone = phone.replace(/\D/g, "");
-  const normalizedInstance = instanceName?.trim() || instanceId?.trim() || "";
-  // An unscoped presence event cannot be safely attributed to the active
-  // WhatsApp connection. Ignore it instead of putting a phone-only key in the
-  // shared client map where it could leak across instances/workspaces.
-  if (!normalizedPhone || !normalizedInstance) return;
-  const key = presenceKey(normalizedPhone, normalizedInstance, instanceId);
-
-  const previousTimer = expiryTimers.get(key);
-  if (previousTimer) clearTimeout(previousTimer);
-
-  const eventAge = updatedAt ? Date.now() - new Date(updatedAt).getTime() : 0;
-  if ((state !== "composing" && state !== "recording") || eventAge > 15_000) {
-    const { [key]: _removed, ...next } = globalPresences;
-    publish(next);
-    expiryTimers.delete(key);
-    return;
-  }
-
-  publish({ ...globalPresences, [key]: state });
-  const remaining = Math.max(250, 15_000 - Math.max(0, eventAge));
-  expiryTimers.set(
-    key,
-    setTimeout(() => {
-      const { [key]: _removed, ...next } = globalPresences;
-      publish(next);
-      expiryTimers.delete(key);
-    }, remaining),
+  const key =
+    phone && (instanceName?.trim() || instanceId?.trim())
+      ? presenceKey(phone, instanceName, instanceId)
+      : "";
+  return useSyncExternalStore(
+    subscribe,
+    () => (key ? store.getState(key) : undefined),
+    () => undefined,
   );
 }
 
+/** Mapa completo — usar só em componentes únicos (header/timeline), nunca por row. */
 export function usePresence() {
-  const [presences, setPresences] = useState<PresenceMap>(globalPresences);
-
-  useEffect(() => {
-    listeners.add(setPresences);
-    const clearWorkspacePresence = () => {
-      globalPresences = {};
-      for (const timer of expiryTimers.values()) clearTimeout(timer);
-      expiryTimers.clear();
-      publish({});
-    };
-    window.addEventListener("inboxos:workspace-change", clearWorkspacePresence);
-    const unsubscribe = subscribeInboxEvent("whatsapp_presence:change", (event) => {
-      const row = event?.payload as
-        | {
-            phone?: string;
-            state?: string;
-            updated_at?: string;
-            instance_id?: string;
-            instance_name?: string;
-          }
-        | undefined;
-      if (!row) return;
-      const isDelete = String(event.event_type || "").endsWith(".delete");
-      updatePresence(
-        String(row.phone ?? ""),
-        isDelete ? "unavailable" : String(row.state ?? ""),
-        row.updated_at,
-        row.instance_name ?? undefined,
-        row.instance_id ?? undefined,
-      );
-    });
-    const unsubscribeSnapshot = subscribeInboxEvent("presence:change", (row) => {
-      updatePresence(
-        String(row?.phone ?? ""),
-        String(row?.state ?? ""),
-        row?.updated_at ?? undefined,
-        row?.instance_name ?? undefined,
-        row?.instance_id ?? undefined,
-      );
-    });
-
-    return () => {
-      listeners.delete(setPresences);
-      window.removeEventListener("inboxos:workspace-change", clearWorkspacePresence);
-      unsubscribe();
-      unsubscribeSnapshot();
-    };
-  }, []);
+  const presences = useSyncExternalStore(
+    subscribe,
+    store.getSnapshot,
+    () => ({}) as PresenceMap,
+  );
 
   const isTyping = useCallback(
     (phone?: string | null, instanceName?: string | null, instanceId?: string | null) =>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { PushPin, Microphone, Users, User, WarningCircle } from "@phosphor-icons/react";
 import type { Conversation } from "../types";
 import { MediaTypeIcon } from "./MediaTypeIcon";
-import { usePresence } from "../hooks/usePresence";
+import { usePresenceState } from "../hooks/usePresence";
 import { sanitizeChatName, sanitizeMessagePreview } from "@/lib/emoji";
 import { formatPhoneLabel } from "../mappers/chatMapper";
 
@@ -21,13 +21,13 @@ export function ConversationRow({
 }: ConversationRowProps) {
   const [imgFailed, setImgFailed] = useState(false);
   useEffect(() => setImgFailed(false), [conversation.avatar]);
-  const { isTyping, isRecording } = usePresence();
-  const typing = isTyping(conversation.phone, conversation.instanceName, conversation.instanceId);
-  const recording = isRecording(
+  const presence = usePresenceState(
     conversation.phone,
     conversation.instanceName,
     conversation.instanceId,
   );
+  const typing = presence === "composing";
+  const recording = presence === "recording";
 
   const formattedPhone = formatPhoneLabel(conversation.phone);
   const cleanName = sanitizeChatName(conversation.name, conversation.isGroup, formattedPhone);
