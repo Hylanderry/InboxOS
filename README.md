@@ -96,8 +96,8 @@ InboxOS é uma plataforma SaaS premium que centraliza conversas de WhatsApp, CRM
 
 ```bash
 # Clonar repositório
-git clone https://github.com/hylanderry/inbox-os.git
-cd inbox-os
+git clone https://github.com/Hylanderry/InboxOS.git
+cd InboxOS
 
 # Instalar dependências
 npm install
@@ -121,6 +121,32 @@ O app estará disponível em `http://localhost:3000`.
 | `npm run lint` | Verificação de lint (ESLint) |
 | `npm test` | Suíte de testes (`node --test`) |
 | `npx tsc --noEmit` | Type-check TypeScript |
+
+### Ambientes
+
+| Arquivo | Uso |
+|---------|-----|
+| `.env` | Desenvolvimento local. **Deve apontar para staging**, nunca para produção. |
+| `.env.production.local` | Valores reais de produção. Não usar em dev nem em testes. |
+| `.env.example` | Modelo sem segredos (único `.env*` versionado). |
+
+> 🚫 Não rode o app local logado contra o Supabase de produção: a service role ignora RLS e a Evolution
+> compartilhada pode ter o webhook reescrito. Use um projeto Supabase de staging e uma instância Evolution sandbox.
+
+## Estrutura do Projeto
+
+```
+src/
+├── routes/          # Rotas TanStack (páginas e /api/*)
+├── features/        # Inbox, CRM, calendário, instâncias, mídia
+├── components/ui/   # Primitivos shadcn/Tailwind
+├── server/          # Lógica server-only (auth, admin, evolution, privacidade)
+├── integrations/    # Clientes Supabase (client / client.server / scoped-admin)
+└── lib/             # Utilitários compartilhados
+supabase/migrations/ # Migrations versionadas (não aplicar em produção sem plano de rollback)
+tests/               # Suíte Node (node --test)
+docs/                # Planos, handoffs, checklists e scripts SQL operacionais
+```
 
 ## Variáveis de Ambiente
 
@@ -149,8 +175,32 @@ Este projeto implementa múltiplas camadas de proteção:
 - **Anti-RE Build** — Filenames hashed, console/debugger removidos em produção, minificação agressiva
 - **Origin Validation** — `mutationOriginAllowed()` em todos os endpoints sensíveis
 - **Password History** — Bloqueio de reutilização das 3 últimas senhas
+- **Guardrail de service role** — `scopedAdmin(workspaceId)` limita toda query admin ao workspace; o lint avisa sobre `supabaseAdmin` direto
+- **ADM com guard obrigatório** — todo handler em `src/server/admin` exige `requireSystemAdmin` (verificado por teste)
+
+### Isolamento de instâncias WhatsApp
+
+Cada instância pertence a um único workspace e só é visível a membros explícitos dele. Um incidente de
+isolamento (contas novas herdando o workspace padrão) está em tratamento — veja
+[`docs/PLANO_ISOLAMENTO_INSTANCIAS.md`](./docs/PLANO_ISOLAMENTO_INSTANCIAS.md) e os scripts em
+[`docs/sql/`](./docs/sql). A migration de blindagem `20261125120000` ainda precisa ser validada em staging.
 
 Para reportar vulnerabilidades, consulte [SECURITY.md](./SECURITY.md).
+
+## Documentação
+
+| Documento | Conteúdo |
+|-----------|----------|
+| [`docs/PLANO_IMPLEMENTACAO_INBOXOS.md`](./docs/PLANO_IMPLEMENTACAO_INBOXOS.md) | Plano mestre por sprints (Sprint 0 = isolamento) |
+| [`docs/PLANO_ISOLAMENTO_INSTANCIAS.md`](./docs/PLANO_ISOLAMENTO_INSTANCIAS.md) | Incidente, contenção e correção estrutural |
+| [`docs/BACKLOG_AJUSTES_2026-11-17.md`](./docs/BACKLOG_AJUSTES_2026-11-17.md) | Backlog priorizado (infra, ADM, visual) |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Arquitetura |
+| [`docs/DEPLOY_CHECKLIST.md`](./docs/DEPLOY_CHECKLIST.md) | Checklist de deploy |
+
+## Qualidade
+
+Antes de abrir PR, rode `npm test`, `npx tsc --noEmit` e `npm run build`. A suíte deve ficar 100% verde.
+Mudanças visuais exigem verificação no navegador nas larguras 320, 360, 390, 768, 1024 e 1440.
 
 ## Licença
 
