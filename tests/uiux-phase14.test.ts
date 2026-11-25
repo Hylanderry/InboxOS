@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
+// Normaliza CRLF: em checkouts Windows (autocrlf) as regex ancoradas em \n falhavam.
+const source = (path: string) =>
+  readFileSync(resolve(process.cwd(), path), "utf8").replace(/\r\n/g, "\n");
 
 test("F14/UI01: desktop and sidebar search share the same filter state", () => {
   const code = source("src/features/inbox/components/InboxShell.tsx");

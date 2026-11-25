@@ -119,7 +119,10 @@ test("public platform branding is configurable without exposing a secret", () =>
   assert.match(source, /VITE_PLATFORM_BRAND_NAME/);
   assert.match(source, /Inbox OS/);
   assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY|EVOLUTION_API_KEY|RESEND_API_KEY/);
-  const env = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
+  const env = readFileSync(new URL("../.env.example", import.meta.url), "utf8").replace(
+    /\r\n/g,
+    "\n",
+  );
   assert.match(env, /^VITE_PLATFORM_BRAND_NAME=Inbox OS$/m);
   const errorPage = readFileSync(new URL("../src/lib/error-page.ts", import.meta.url), "utf8");
   assert.match(errorPage, /PLATFORM_BRAND_NAME/);
