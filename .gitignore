@@ -31,3 +31,6 @@ AGENTS.md
 .cursor/
 .windsurf/
 *.ai/
+
+# generated audit output (scripts/audit-*.mjs, validate-ui-updates.mjs)
+tests/e2e-artifacts/
