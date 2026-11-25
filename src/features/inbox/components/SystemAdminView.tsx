@@ -50,6 +50,7 @@ type WorkspaceInvite = {
 type AdminIntegration = {
   id: string;
   key: string;
+  provider?: string;
   name: string;
   base_url: string | null;
   enabled: boolean;
@@ -282,7 +283,56 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
     [integrationEnabled, setIntegrationEnabled] = useState(false);
   const [secretName, setSecretName] = useState("api_key"),
     [secretValue, setSecretValue] = useState("");
-  const [configJson, setConfigJson] = useState("{}");
+  // Configuração por campos (sem JSON cru): cada provedor mostra só o que faz sentido.
+  const [integrationProvider, setIntegrationProvider] = useState("evolution");
+  const [configDraft, setConfigDraft] = useState<Record<string, unknown>>({});
+  const [allowedModelsText, setAllowedModelsText] = useState("");
+  const [customTestPath, setCustomTestPath] = useState(""),
+    [customHeader, setCustomHeader] = useState(""),
+    [customPrefix, setCustomPrefix] = useState(""),
+    [customSecretKey, setCustomSecretKey] = useState("");
+  const loadConfigForm = (provider: string, config: Record<string, unknown>) => {
+    const text = (value: unknown) => (typeof value === "string" ? value : "");
+    setIntegrationProvider(provider);
+    setConfigDraft(config);
+    setAllowedModelsText(
+      Array.isArray(config["allowed_models"])
+        ? config["allowed_models"].filter((m): m is string => typeof m === "string").join("\n")
+        : "",
+    );
+    setCustomTestPath(text(config["test_path"]));
+    setCustomHeader(text(config["header"]));
+    setCustomPrefix(text(config["prefix"]));
+    setCustomSecretKey(text(config["secret_key"]));
+    setSecretName("api_key");
+  };
+  const buildConfig = (): Record<string, unknown> => {
+    // Parte da configuração existente para preservar chaves que esta tela não edita.
+    const next: Record<string, unknown> = { ...configDraft };
+    const setOrDrop = (key: string, value: string) => {
+      if (value.trim()) next[key] = value.trim();
+      else delete next[key];
+    };
+    if (integrationProvider === "groq" || integrationProvider === "openrouter") {
+      const models = [
+        ...new Set(
+          allowedModelsText
+            .split(/[\n,]+/)
+            .map((model) => model.trim())
+            .filter(Boolean),
+        ),
+      ];
+      if (models.length) next["allowed_models"] = models;
+      else delete next["allowed_models"];
+    }
+    if (integrationProvider === "custom") {
+      setOrDrop("test_path", customTestPath);
+      setOrDrop("header", customHeader);
+      setOrDrop("prefix", customPrefix);
+      setOrDrop("secret_key", customSecretKey);
+    }
+    return next;
+  };
   const [campaignName, setCampaignName] = useState(""),
     [campaignSubject, setCampaignSubject] = useState(""),
     [campaignFrom, setCampaignFrom] = useState(""),
@@ -859,7 +909,7 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
                       setIntegrationName(i.name);
                       setIntegrationUrl(i.base_url || "");
                       setIntegrationEnabled(i.enabled === true);
-                      setConfigJson(JSON.stringify(i.config || {}, null, 2));
+                      loadConfigForm(i.provider ?? "custom", i.config || {});
                     }}
                     className={`rounded-xl border p-3 text-left text-xs transition-colors ${integrationKey === i.key ? (isDarkMode ? "border-white/40 bg-white/[0.06]" : "border-black/30 bg-black/[0.03]") : rowBorderClass}`}
                   >
@@ -878,7 +928,7 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
                   setIntegrationName("");
                   setIntegrationUrl("");
                   setIntegrationEnabled(false);
-                  setConfigJson("{}");
+                  loadConfigForm("custom", {});
                 }}
               >
                 Adicionar integração custom
@@ -912,23 +962,49 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
                 />
                 Integração ativada
               </label>
-              <label className={`mt-2 grid gap-1 text-xs ${textMutedClass}`}>
-                Configuração JSON
-                <textarea
-                  className={`${inputClass} min-h-20`}
-                  value={configJson}
-                  onChange={(e) => setConfigJson(e.target.value)}
-                />
-              </label>
-              {integrationKey === "openrouter" && (
-                <p
-                  className={`mt-2 rounded-xl border ${rowBorderClass} p-3 text-xs ${textMutedClass}`}
-                >
-                  O catálogo fica sob controle do administrador. Informe somente IDs liberados em{" "}
-                  <code>allowed_models</code>, por exemplo{" "}
-                  <code>{'{"allowed_models":["provider/model"]}'}</code>. Workspaces não recebem a
-                  chave e não podem informar modelos fora desta lista.
-                </p>
+              {(integrationProvider === "groq" || integrationProvider === "openrouter") && (
+                <label className={`mt-2 grid gap-1 text-xs ${textMutedClass}`}>
+                  Modelos liberados (um por linha)
+                  <textarea
+                    className={`${inputClass} min-h-24 font-mono`}
+                    value={allowedModelsText}
+                    onChange={(e) => setAllowedModelsText(e.target.value)}
+                    placeholder={"provedor/modelo-a\nprovedor/modelo-b"}
+                    spellCheck={false}
+                  />
+                  <span className="text-[11px]">
+                    O catálogo fica sob controle do administrador: workspaces não recebem a chave e
+                    só podem escolher modelos desta lista.
+                  </span>
+                </label>
+              )}
+              {integrationProvider === "custom" && (
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <Field
+                    label="Caminho de teste"
+                    value={customTestPath}
+                    onChange={setCustomTestPath}
+                    placeholder="/v1/health"
+                  />
+                  <Field
+                    label="Nome do segredo usado no teste"
+                    value={customSecretKey}
+                    onChange={setCustomSecretKey}
+                    placeholder="api_key"
+                  />
+                  <Field
+                    label="Cabeçalho de autenticação"
+                    value={customHeader}
+                    onChange={setCustomHeader}
+                    placeholder="Authorization"
+                  />
+                  <Field
+                    label="Prefixo do valor"
+                    value={customPrefix}
+                    onChange={setCustomPrefix}
+                    placeholder="Bearer "
+                  />
+                </div>
               )}
               <button
                 disabled={loading}
@@ -945,14 +1021,14 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
                             baseUrl: integrationUrl || null,
                             provider: "custom",
                             enabled: integrationEnabled,
-                            config: JSON.parse(configJson),
+                            config: buildConfig(),
                           }
                         : {
                             key: integrationKey,
                             name: integrationName,
                             baseUrl: integrationUrl || null,
                             enabled: integrationEnabled,
-                            config: JSON.parse(configJson),
+                            config: buildConfig(),
                           },
                     );
                     setCreatingCustom(false);
@@ -978,11 +1054,24 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
                 Testar conexão
               </button>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                <Field
-                  label="Nome do segredo (api_key, webhook_token etc.)"
-                  value={secretName}
-                  onChange={setSecretName}
-                />
+                {integrationProvider === "custom" ? (
+                  <Field label="Nome do segredo" value={secretName} onChange={setSecretName} />
+                ) : (
+                  <label className={`grid gap-1 text-[11px] ${textMutedClass}`}>
+                    Segredo a rotacionar
+                    <AdminSelect
+                      isDarkMode={isDarkMode}
+                      value={secretName}
+                      onValueChange={setSecretName}
+                      ariaLabel="Segredo a rotacionar"
+                    >
+                      <SelectItem value="api_key">Chave de API</SelectItem>
+                      {integrationProvider === "evolution" && (
+                        <SelectItem value="webhook_token">Token de webhook</SelectItem>
+                      )}
+                    </AdminSelect>
+                  </label>
+                )}
                 <Field
                   label="Novo segredo (não será exibido novamente)"
                   type="password"

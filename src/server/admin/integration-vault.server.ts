@@ -9,7 +9,7 @@ type IntegrationPatch = {
   name?: string;
   baseUrl?: string | null;
   enabled?: boolean;
-  config?: Record<string, string | number | boolean | null>;
+  config?: Record<string, ConfigValue>;
 };
 const safeExternalHttps = (raw: string) => {
   try {
@@ -31,6 +31,17 @@ const safeExternalHttps = (raw: string) => {
   }
 };
 
+// `allowed_models` (catálogo liberado do OpenRouter/Groq) é uma LISTA de ids; antes o schema só
+// aceitava valores simples e a lista nunca podia ser salva pelo ADM.
+const configValueSchema = z.union([
+  z.string().max(500),
+  z.number(),
+  z.boolean(),
+  z.null(),
+  z.array(z.string().trim().min(1).max(200)).max(100),
+]);
+type ConfigValue = z.infer<typeof configValueSchema>;
+
 const integrationSchema = z.object({
   key: z.string().regex(secretKeyPattern),
   name: z.string().trim().min(2).max(120),
@@ -42,7 +53,7 @@ const integrationSchema = z.object({
     .nullable()
     .optional(),
   enabled: z.boolean().optional(),
-  config: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  config: z.record(z.string(), configValueSchema).optional(),
 });
 /** Secret remains on the server; never serialize plaintext to browser. */
 export async function resolveManagedIntegration(
@@ -149,9 +160,7 @@ export async function updateIntegration(request: Request, raw: unknown) {
       name: z.string().trim().min(2).max(120).optional(),
       baseUrl: z.string().url().refine(safeExternalHttps).nullable().optional(),
       enabled: z.boolean().optional(),
-      config: z
-        .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
-        .optional(),
+      config: z.record(z.string(), configValueSchema).optional(),
     })
     .refine((x) => Object.keys(x).length > 1)
     .safeParse(raw);
@@ -163,7 +172,7 @@ export async function updateIntegration(request: Request, raw: unknown) {
     name?: string;
     base_url?: string | null;
     enabled?: boolean;
-    config?: Record<string, string | number | boolean | null>;
+    config?: Record<string, ConfigValue>;
   } = { updated_by: a.user.id };
   if (v.name !== undefined) patch.name = v.name;
   if (v.baseUrl !== undefined) patch.base_url = v.baseUrl;

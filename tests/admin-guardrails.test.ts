@@ -41,3 +41,15 @@ test("ADM: System Admin é gerenciado por e-mail, sem expor UUID na interface", 
   assert.match(server, /Não é permitido remover o último superadmin ativo/);
   assert.match(server, /Não é permitido rebaixar\/suspender o próprio superadmin/);
 });
+
+test("ADM: integrações usam campos (sem JSON cru) e o catálogo de modelos pode ser salvo", () => {
+  const view = readFileSync("src/features/inbox/components/SystemAdminView.tsx", "utf8");
+  assert.doesNotMatch(view, /Configuração JSON/);
+  assert.doesNotMatch(view, /JSON\.parse\(configJson\)/);
+  assert.match(view, /Modelos liberados \(um por linha\)/);
+  assert.match(view, /Segredo a rotacionar/);
+  const vault = readFileSync("src/server/admin/integration-vault.server.ts", "utf8");
+  // allowed_models é lista: o schema precisa aceitar arrays de strings, nos dois caminhos (POST e PATCH)
+  assert.match(vault, /z\.array\(z\.string\(\)\.trim\(\)\.min\(1\)\.max\(200\)\)\.max\(100\)/);
+  assert.equal((vault.match(/z\.record\(z\.string\(\), configValueSchema\)/g) ?? []).length, 2);
+});
