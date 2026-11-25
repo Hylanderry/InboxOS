@@ -85,14 +85,21 @@ export const Route = createFileRoute("/api/messages/send")({
         // may exist in more than one Evolution instance in this workspace.
         let instanceName = (payload.instanceName ?? "").trim();
         if (!instanceName) {
-          const { data } = await supabaseAdmin
+          // Sem conexão explícita só é seguro inferir quando há exatamente uma ativa no
+          // workspace; com várias, escolher uma sozinho enviaria pelo número errado.
+          const { data: openInstances } = await supabaseAdmin
             .from("whatsapp_instances")
             .select("instance_name")
             .eq("workspace_id", auth.workspaceId)
             .eq("status", "open")
-            .limit(1)
-            .maybeSingle();
-          instanceName = data?.instance_name ?? "";
+            .limit(2);
+          if ((openInstances?.length ?? 0) > 1) {
+            return json(
+              { success: false, error: "Escolha a conexão de WhatsApp para enviar a mensagem" },
+              400,
+            );
+          }
+          instanceName = openInstances?.[0]?.instance_name ?? "";
         }
         if (!instanceName) {
           return json({ success: false, error: "Nenhuma conexão de WhatsApp disponível" }, 400);
@@ -100,13 +107,15 @@ export const Route = createFileRoute("/api/messages/send")({
 
         // Se não for grupo e o telefone for um LID (ex: 15 dígitos), tenta resolver no whatsapp_contacts
         if (!isGroup && (!isValidPhone(phone) || phone.length >= 15)) {
+          // O valor entra num filtro PostgREST: remover vírgulas/parênteses evita injeção de condições.
+          const safeRawJid = rawPhone.replace(/[^0-9A-Za-z@._-]/g, "");
           const { data: contactRow } = await supabaseAdmin
             .from("whatsapp_contacts")
             .select("phone, alternate_jid")
             .eq("workspace_id", auth.workspaceId)
             .eq("instance_name", instanceName)
             .or(
-              `remote_jid.eq.${rawPhone},remote_jid.eq.${phone}@lid,remote_jid.ilike.%${phone}%,alternate_jid.ilike.%${phone}%`,
+              `remote_jid.eq.${safeRawJid},remote_jid.eq.${phone}@lid,remote_jid.ilike.%${phone}%,alternate_jid.ilike.%${phone}%`,
             )
             .limit(1)
             .maybeSingle();
@@ -117,20 +126,6 @@ export const Route = createFileRoute("/api/messages/send")({
             const altClean = cleanPhone(contactRow.alternate_jid);
             if (isValidPhone(altClean)) phone = altClean;
           }
-        }
-
-        if (!instanceName) {
-          const { data } = await supabaseAdmin
-            .from("whatsapp_instances")
-            .select("instance_name")
-            .eq("workspace_id", auth.workspaceId)
-            .eq("status", "open")
-            .limit(1)
-            .maybeSingle();
-          instanceName = data?.instance_name ?? "";
-        }
-        if (!instanceName) {
-          return json({ success: false, error: "Nenhuma conexão de WhatsApp disponível" }, 400);
         }
 
         const { data: ownedInstance, error: instanceError } = await supabaseAdmin

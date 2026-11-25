@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { WhatsAppInstance } from "@/features/inbox/types";
 import { apiFetch } from "@/lib/api-fetch";
 import { subscribeInboxEvent } from "@/lib/realtimeSocket";
@@ -27,8 +27,12 @@ export function useInstances() {
   const [instances, setInstances] = useState<WhatsAppInstance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Incrementa a cada troca de workspace: respostas de requests anteriores são descartadas
+  // para nunca mostrar instâncias do workspace anterior.
+  const epochRef = useRef(0);
 
   const fetchInstances = useCallback(async (silent = false) => {
+    const epoch = epochRef.current;
     if (!silent) setIsLoading(true);
     setError(null);
     try {
@@ -39,6 +43,7 @@ export function useInstances() {
         throw new Error(`HTTP ${res.status}`);
       }
       const data = await res.json();
+      if (epoch !== epochRef.current) return;
       if (Array.isArray(data)) {
         // A disconnected Evolution session is removed server-side. Filter a
         // stale response too, so it never flashes back into the UI between
@@ -48,7 +53,7 @@ export function useInstances() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao carregar instâncias");
     } finally {
-      if (!silent) setIsLoading(false);
+      if (!silent && epoch === epochRef.current) setIsLoading(false);
     }
   }, []);
 
@@ -67,6 +72,13 @@ export function useInstances() {
   }, []);
 
   useEffect(() => {
+    const handleWorkspaceChange = () => {
+      epochRef.current += 1;
+      setInstances([]);
+      setError(null);
+      void fetchInstances();
+    };
+    window.addEventListener("inboxos:workspace-change", handleWorkspaceChange);
     void fetchInstances();
     const unsubscribe = subscribeInboxEvent("whatsapp_instances:change", () => {
       void fetchInstances(true);
@@ -84,6 +96,7 @@ export function useInstances() {
       clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("online", handleFocus);
+      window.removeEventListener("inboxos:workspace-change", handleWorkspaceChange);
     };
   }, [fetchInstances]);
 

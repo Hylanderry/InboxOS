@@ -27,7 +27,9 @@ export const Route = createFileRoute("/api/media/$")({
             .from("messages")
             .select("id")
             .eq("workspace_id", auth.workspaceId)
-            .ilike("media_url", `%${path}`)
+            // `_` e `%` são curingas em LIKE: escapar para o caminho casar literalmente
+            // (antes, ilike deixava `_` casar qualquer caractere e ignorava maiúsculas).
+            .like("media_url", `%${path.replace(/[\\%_]/g, "\\$&")}`)
             .limit(1)
             .maybeSingle();
           if (!ownedMessage) return new Response("Arquivo não encontrado", { status: 404 });
