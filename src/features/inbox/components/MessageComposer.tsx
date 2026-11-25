@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Paperclip,
   Microphone,
@@ -8,6 +8,7 @@ import {
   ArrowBendUpLeft,
   X,
   LockKey,
+  Lightbulb,
 } from "@phosphor-icons/react";
 import type { ChatMessage } from "../types";
 import { useAudioRecorder } from "@/features/media/hooks/useAudioRecorder";
@@ -64,6 +65,32 @@ export function MessageComposer({
   const [text, setText] = useState("");
   const [isAttachOpen, setIsAttachOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  // D1: Sugestões automáticas de follow-up baseadas em palavras-chave da conversa
+  const followUpSuggestions = useMemo(() => {
+    if (replyingTo?.text) {
+      const lower = replyingTo.text.toLowerCase();
+      const suggestions: string[] = [];
+      if (lower.includes("preço") || lower.includes("valor") || lower.includes("quanto custa")) {
+        suggestions.push("Posso te enviar uma proposta detalhada!");
+        suggestions.push("Temos condições especiais esta semana.");
+      }
+      if (lower.includes("prazo") || lower.includes("quando") || lower.includes("demora")) {
+        suggestions.push("O prazo estimado é de 3 a 5 dias úteis.");
+        suggestions.push("Consigo agilizar para entrega amanhã.");
+      }
+      if (lower.includes("obrigad") || lower.includes("valeu") || lower.includes("thanks")) {
+        suggestions.push("Fico à disposição se precisar de mais algo! 😊");
+        suggestions.push("Qualquer dúvida, é só chamar.");
+      }
+      if (lower.includes("agendar") || lower.includes("reunião") || lower.includes("visita")) {
+        suggestions.push("Que tal agendarmos para esta semana?");
+        suggestions.push("Tenho horários disponíveis amanhã às 14h.");
+      }
+      return suggestions.slice(0, 3); // Máximo de 3 sugestões
+    }
+    return [];
+  }, [replyingTo]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const docInputRef = useRef<HTMLInputElement | null>(null);
@@ -565,6 +592,27 @@ export function MessageComposer({
               >
                 <Paperclip size={19} weight="bold" />
               </button>
+
+              {/* D1: Sugestões automáticas de follow-up baseadas em contexto */}
+              {!isRecording && !replyingTo && text.length === 0 && followUpSuggestions.length > 0 && (
+                <div className="absolute bottom-full left-3 right-3 mb-2 flex flex-wrap gap-1.5 animate-smooth-in">
+                  {followUpSuggestions.map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setText(suggestion)}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all border ${
+                        isDarkMode
+                          ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20"
+                          : "bg-indigo-50 border-indigo-100 text-indigo-700 hover:bg-indigo-100"
+                      }`}
+                    >
+                      <Lightbulb size={12} weight="fill" />
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Campo de Texto Multilinha Estilo WhatsApp Web */}
               <textarea
