@@ -616,7 +616,10 @@ test("F16/UI31: feedback usa o tema do toggle e uma posição única", () => {
   assert.match(root, /<Toaster closeButton \/>/);
   assert.match(css, /\[data-sonner-toast\]\.inbox-toast/);
   assert.match(css, /\.inbox-feedback-error/);
-  assert.match(css, /:root\.dark \.inbox-feedback/);
+  // Tema escuro por tokens (uma superfície neutra nos dois temas, cor só no ícone).
+  assert.match(css, /:root\.dark \{[^}]*--feedback-surface/);
+  assert.match(css, /:root \{[^}]*--feedback-surface/);
+  assert.doesNotMatch(css, /\.inbox-feedback-error \{[^}]*background: rgba\(190, 24, 93/);
 });
 
 test("F16/UI32: alertas de IA e timeline seguem o feedback semântico do produto", () => {

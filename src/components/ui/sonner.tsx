@@ -11,10 +11,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
       {...props}
       theme={theme}
       position="top-right"
-      offset={{ top: 68, right: 20 }}
+      offset={{ top: 72, right: 20 }}
       mobileOffset={{ top: 64, left: 16, right: 16 }}
       richColors={false}
-      expand={false}
+      expand={true}
+      gap={10}
+      closeButton
       visibleToasts={4}
       className="toaster group"
       toastOptions={{

@@ -60,6 +60,7 @@ import {
 import { subscribeInboxEvent } from "@/lib/realtimeSocket";
 import { parseDelimitedCsv, validateClientImportCount } from "@/lib/csv";
 import { useResponsiveViewport } from "@/hooks/use-responsive-viewport";
+import { friendlyErrorText } from "@/lib/friendly-error";
 import { deriveViewDataState } from "../view-data-state";
 import { progressiveRenderLimit } from "../product-surface";
 import {
@@ -233,10 +234,10 @@ function DataSkeleton({ label }: { label: string; columns?: 2 | 3 | 5 }) {
 function ErrorBox({ text }: { text: string }) {
   return (
     <div role="alert" className="inbox-feedback inbox-feedback-error mb-3">
-      <WarningCircle size={17} weight="duotone" aria-hidden="true" />
+      <WarningCircle size={18} weight="fill" aria-hidden="true" />
       <div className="min-w-0">
         <p className="inbox-feedback-title">Não foi possível concluir</p>
-        <p className="inbox-feedback-description">{text}</p>
+        <p className="inbox-feedback-description">{friendlyErrorText(text)}</p>
       </div>
     </div>
   );

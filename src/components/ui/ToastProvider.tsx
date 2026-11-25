@@ -1,10 +1,8 @@
 import { toast } from "sonner";
+import { friendlyErrorText } from "@/lib/friendly-error";
 
 function feedbackDetail(value: string | undefined, fallback: string) {
-  const normalized = value?.trim();
-  if (!normalized) return fallback;
-  if (/^(http|status|error|failed|fetch|network|typeerror)\b/i.test(normalized)) return fallback;
-  return normalized.length > 180 ? `${normalized.slice(0, 177).trimEnd()}…` : normalized;
+  return friendlyErrorText(value, fallback);
 }
 
 function cleanTitle(value: string) {
