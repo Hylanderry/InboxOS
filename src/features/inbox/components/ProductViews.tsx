@@ -4132,6 +4132,7 @@ export function CalendarView({ isDarkMode }: Props) {
     endsAt: localDateTime(new Date(Date.now() + 90 * 60 * 1000)),
     leadId: "",
     agentId: "",
+    sendReminder: true, // G1: WhatsApp reminder enabled by default
   });
   const [calendarForm, setCalendarForm] = useState({
     name: "Agenda principal",
@@ -4217,6 +4218,7 @@ export function CalendarView({ isDarkMode }: Props) {
       endsAt: localDateTime(new Date(appointment.ends_at)),
       leadId: appointment.lead_id ?? "",
       agentId: appointment.agent_id ?? "",
+      sendReminder: true,
     });
     setAppointmentOpen(true);
   };
@@ -4565,6 +4567,7 @@ export function CalendarView({ isDarkMode }: Props) {
                       endsAt: new Date(form.endsAt).toISOString(),
                       leadId: form.leadId || null,
                       agentId: form.agentId || null,
+                      sendReminder: form.sendReminder, // G1
                     }).then(() => {
                       setEditingAppointmentId(null);
                       setAppointmentOpen(false);
@@ -4665,6 +4668,23 @@ export function CalendarView({ isDarkMode }: Props) {
                     ))}
                   </SurfaceSelect>
                 </UxField>
+                {/* G1: WhatsApp reminder toggle */}
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.06]">
+                  <input
+                    type="checkbox"
+                    checked={form.sendReminder}
+                    onChange={(e) => setForm({ ...form, sendReminder: e.target.checked })}
+                    className="h-4 w-4 rounded border-neutral-600 bg-transparent text-emerald-500 focus:ring-emerald-500/30"
+                  />
+                  <div className="min-w-0">
+                    <span className="block text-xs font-semibold text-neutral-200">
+                      Enviar lembrete por WhatsApp
+                    </span>
+                    <span className="block text-[11px] text-neutral-500">
+                      Mensagem automática 30min antes do horário
+                    </span>
+                  </div>
+                </label>
               </div>
             </form>
             <div className="ux-drawer-foot">

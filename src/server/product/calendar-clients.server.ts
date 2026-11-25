@@ -423,6 +423,50 @@ export async function mutateAppointment(request: Request, body: unknown) {
           .select("*")
           .single();
     if (result.error) throw result.error;
+
+    // G1: Schedule WhatsApp reminder 30min before appointment if requested
+    const sendReminder =
+      typeof body === "object" && body !== null && "sendReminder" in body
+        ? Boolean((body as Record<string, unknown>)["sendReminder"])
+        : false;
+    if (sendReminder && result.data?.lead_id && result.data?.starts_at) {
+      try {
+        const reminderAt = new Date(new Date(result.data.starts_at).getTime() - 30 * 60_000);
+        // Only schedule if reminder time is in the future
+        if (reminderAt.getTime() > Date.now()) {
+          const leadResult = await client
+            .from("crm_leads")
+            .select("phone_e164,name")
+            .eq("workspace_id", auth.workspace.id)
+            .eq("id", result.data.lead_id)
+            .maybeSingle();
+          if (leadResult.data?.phone_e164) {
+            const apptTime = new Date(result.data.starts_at).toLocaleString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            const reminderText = `⏰ Lembrete: seu compromisso "${result.data.title}" está marcado para ${apptTime}. Nos vemos em breve!`;
+            // Insert into outbound_messages queue for deferred sending
+            await client.from("outbound_messages").insert({
+              workspace_id: auth.workspace.id,
+              chat_id: result.data.chat_id ?? "",
+              remote_jid: leadResult.data.phone_e164.replace("+", "") + "@s.whatsapp.net",
+              instance_id: "", // Will be resolved by the outbound worker
+              client_message_id: crypto.randomUUID(),
+              payload: { text: reminderText, type: "text" },
+              status: "pending",
+              attempts: 0,
+            });
+          }
+        }
+      } catch (reminderErr) {
+        // Reminder scheduling failure should not block appointment save
+        logServerError("[calendar] reminder scheduling failed", reminderErr);
+      }
+    }
+
     return json({ appointment: result.data });
   } catch (error: unknown) {
     logServerError("[calendar] appointment mutation failed", error);
