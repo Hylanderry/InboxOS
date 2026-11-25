@@ -21,6 +21,7 @@ import {
   contactDisplayName,
   scopedIdentityKey,
 } from "@/server/evolution/contact-identity";
+import { TenantCache } from "@/server/evolution/tenant-cache";
 import { evolutionMessagePageBody } from "@/server/evolution/message-query";
 import { WHATSAPP_CONTACTS_ON_CONFLICT } from "@/server/evolution/schema-contract";
 import { isValidPhone, isBroadcastOrStatus } from "@/lib/conversationKey";
@@ -228,9 +229,9 @@ function extractQuotedMessage(
 /**
  * Cache em memória para resolução rápida de contatos e LIDs
  */
-const contactNameCache = new Map<string, string>();
-const contactPicCache = new Map<string, string>();
-const contactPhoneCache = new Map<string, string>();
+const contactNameCache = new TenantCache<string>();
+const contactPicCache = new TenantCache<string>();
+const contactPhoneCache = new TenantCache<string>();
 const lastContactRefresh = new Map<string, number>();
 
 export async function refreshContactsCache(
@@ -318,6 +319,11 @@ export async function refreshContactsCache(
       }
     }
     lastContactRefresh.set(refreshKey, now);
+    console.info("[sync-engine] contact cache refreshed", {
+      workspaceId,
+      instanceName,
+      names: contactNameCache.sizeOf(workspaceId),
+    });
   } catch (err) {
     logServerError("[sync-engine] contact refresh failed", err);
   }
