@@ -5254,7 +5254,13 @@ export function ClientsView({ isDarkMode }: Props) {
                               : "Manual"}
                         </span>
                       </span>
-                      <span role="cell" className="flex justify-end">
+                      <span role="cell" className="flex items-center justify-end gap-1.5">
+                        {/* F2: LTV indicator */}
+                        {client.value_cents > 0 && (
+                          <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400" title="Valor total negociado">
+                            {(client.value_cents / 100).toLocaleString("pt-BR", { style: "currency", currency: client.currency || "BRL" })}
+                          </span>
+                        )}
                         <button
                           type="button"
                           onClick={() => void toggleClientTimeline(client.id)}

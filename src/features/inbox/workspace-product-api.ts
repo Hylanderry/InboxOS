@@ -271,8 +271,19 @@ export interface ClientTag {
   name: string;
   color: string;
 }
+// F2: Rich client profile — extended fields stored in localStorage per lead
+export interface ClientProfileExtras {
+  birthday?: string; // ISO date YYYY-MM-DD
+  instagram?: string;
+  linkedin?: string;
+  website?: string;
+  preferredChannel?: "whatsapp" | "email" | "phone";
+  internalNotes?: string;
+}
 export interface WorkspaceClient extends CrmLead {
   tags: ClientTag[];
+  profileExtras?: ClientProfileExtras;
+  estimatedLtvCents?: number;
 }
 export const loadClients = (query = "", options: { sync?: boolean; signal?: AbortSignal } = {}) =>
   read<{
