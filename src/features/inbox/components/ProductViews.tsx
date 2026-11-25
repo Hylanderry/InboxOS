@@ -415,6 +415,44 @@ export function DashboardView(_props: Props) {
         view: "agentes",
       });
     }
+
+    // C3: Predictive insights — trend-based alerts derived from existing data
+    if (messagesByDay.length >= 7) {
+      const recent = messagesByDay.slice(-3);
+      const older = messagesByDay.slice(-7, -3);
+      const recentAvg = recent.reduce((s, d) => s + d.count, 0) / recent.length;
+      const olderAvg = older.length > 0 ? older.reduce((s, d) => s + d.count, 0) / older.length : 0;
+      if (olderAvg > 0 && recentAvg > olderAvg * 1.5) {
+        attention.push({
+          id: "volume-spike",
+          tone: "warning",
+          title: "Volume de mensagens acima da média",
+          description: `Últimos 3 dias com ${Math.round(((recentAvg - olderAvg) / olderAvg) * 100)}% mais mensagens que a semana anterior.`,
+          action: "Ver inbox",
+          view: "inbox",
+        });
+      }
+    }
+    if (data.avgResponseTimeMs != null && data.avgResponseTimeMs > 300_000) {
+      attention.push({
+        id: "slow-response",
+        tone: "warning",
+        title: "Tempo de resposta elevado",
+        description: `Média de ${data.avgResponseTimeMs < 3_600_000 ? `${Math.round(data.avgResponseTimeMs / 60_000)}min` : `${(data.avgResponseTimeMs / 3_600_000).toFixed(1)}h`} por resposta neste período.`,
+        action: "Ver inbox",
+        view: "inbox",
+      });
+    }
+    if (data.overdueFollowUps === 0 && data.pendingFollowUps > 5) {
+      attention.push({
+        id: "followup-backlog",
+        tone: undefined,
+        title: `${data.pendingFollowUps} follow-ups acumulados`,
+        description: "Nenhum atrasado, mas o volume pendente está alto. Considere redistribuir.",
+        action: "Ver follow-ups",
+        view: "follow-up",
+      });
+    }
   }
 
   return (
