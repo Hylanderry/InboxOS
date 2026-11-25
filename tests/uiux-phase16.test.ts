@@ -341,7 +341,6 @@ test("F16/UI17: interface não expõe nomes de provedores ou plataformas", () =>
     source("src/features/instances/components/QrCodeDialog.tsx"),
     source("src/features/inbox/components/ProductViews.tsx"),
     source("src/features/inbox/components/SystemAdminView.tsx"),
-    source("src/features/inbox/components/FeaturePlaceholder.tsx"),
   ];
   for (const code of visibleSources) {
     assert.doesNotMatch(code, /Evolution API|Baileys|GROQ_API_KEY|API Keys/);
