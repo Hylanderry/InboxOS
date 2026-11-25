@@ -15,6 +15,10 @@ import { AudioRecorderBar } from "@/features/media/components/AudioRecorder";
 import { WhatsAppToast } from "@/components/ui/ToastProvider";
 import { sanitizeSenderName } from "@/lib/emoji";
 
+// Draft cache em memória para preservar rascunhos entre trocas de conversa.
+// Evita dependência de key prop no pai e sobrevive a remounts acidentais.
+const draftCache = new Map<string, string>();
+
 interface MessageComposerProps {
   chatId: string;
   onSendMessage: (payload: {
@@ -75,6 +79,33 @@ export function MessageComposer({
 
   const { isRecording, recordingTimer, startRecording, stopRecording, cancelRecording } =
     useAudioRecorder();
+
+  // Persistir e restaurar rascunho por chatId ao trocar de conversa.
+  // Salva o texto atual antes de restaurar o draft do novo chat para não perder
+  // rascunhos não enviados ao navegar entre conversas.
+  useEffect(() => {
+    setText((prev) => {
+      // Salvar draft do chat anterior (se houver texto não vazio)
+      // O chatId anterior não está disponível aqui diretamente, então salvamos
+      // sempre que text muda via onChange e restauramos quando chatId muda.
+      return prev;
+    });
+  }, []);
+
+  // Restaurar draft quando chatId mudar
+  useEffect(() => {
+    const savedDraft = draftCache.get(chatId) ?? "";
+    setText(savedDraft);
+  }, [chatId]);
+
+  // Salvar draft no cache sempre que o texto mudar
+  useEffect(() => {
+    if (text.trim()) {
+      draftCache.set(chatId, text);
+    } else {
+      draftCache.delete(chatId);
+    }
+  }, [text, chatId]);
 
   useEffect(() => {
     if (!onPresence) return;

@@ -692,7 +692,6 @@ export function InboxShell() {
             {/* Área Central de Conversa Ativa */}
             {composition.showChatPane && activeChat ? (
               <div
-                key={activeChat.id}
                 className="flex-1 flex flex-col h-full overflow-hidden transition-colors"
               >
                 <ChatHeader
