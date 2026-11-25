@@ -831,8 +831,14 @@ test("requireAuth rejects revoked sessions and rate-limits protected mutations w
   assert.match(source, /token_hash/);
   assert.match(source, /appSessionTokenHash/);
   assert.match(source, /consume_auth_rate_limit/);
-  assert.match(source, /api-mutation/);
-  assert.match(source, /p_limit\s*:\s*300/);
+  assert.match(source, /mutationRateBucket/);
+  assert.match(source, /p_limit\s*:\s*bucket\.limit/);
+  // limite padrão (300/min) vive na política de buckets
+  const policy = readFileSync(
+    new URL("../src/server/middleware/rate-limit-policy.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(policy, /action:\s*"api-mutation"[\s\S]*?limit:\s*300/);
 });
 
 test("password recovery is anti-enumeration, grant-based and checks the last three password hashes", () => {

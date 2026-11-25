@@ -19,6 +19,7 @@ import { mutationOriginAllowed } from "./access-auth";
 import { appSessionTokenHash, parseSupabaseSessionClaims } from "../auth/session-token";
 import type { LiveAuthDatabase } from "../auth/live-auth-database";
 import { hashAuthValue } from "../auth/auth-crypto";
+import { mutationRateBucket } from "./rate-limit-policy";
 import { logServerError, logServerWarning } from "../logging.ts";
 export interface AuthenticatedUser {
   id: string;
@@ -87,25 +88,33 @@ export async function requireAuth(request: Request): Promise<UserAuthContext | R
     }
     if (!["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase())) {
       // Rate limiting must not depend on caller-controlled proxy headers.
-      const scope = hashAuthValue(secret, "api-mutation", user.id);
+      const bucket = mutationRateBucket(new URL(request.url).pathname);
+      const scope = hashAuthValue(secret, bucket.action, user.id);
       const { data: limited, error: limitError } = await db.rpc("consume_auth_rate_limit", {
-        p_action: "api-mutation",
+        p_action: bucket.action,
         p_scope_hash: scope,
-        p_limit: 300,
-        p_window_seconds: 60,
-        p_block_seconds: 60,
+        p_limit: bucket.limit,
+        p_window_seconds: bucket.windowSeconds,
+        p_block_seconds: bucket.blockSeconds,
       });
       if (limitError || (limited?.[0]?.allowed !== true && limited?.[0]?.allowed !== false)) {
         logServerError("[auth] mutation rate limit unavailable", limitError);
         return json({ error: "Limitador indisponível; tente novamente" }, 503);
-      } else if (limited[0].allowed === false)
-        return json(
+      } else if (limited[0].allowed === false) {
+        const retryAfter = Math.max(1, Number(limited[0].retry_after_seconds ?? 60));
+        return new Response(
+          JSON.stringify({ error: "Muitas requisições", retryAfterSeconds: retryAfter }),
           {
-            error: "Muitas requisições",
-            retryAfterSeconds: Number(limited[0].retry_after_seconds ?? 60),
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Retry-After": String(retryAfter),
+              "X-RateLimit-Limit": String(bucket.limit),
+              "X-RateLimit-Remaining": "0",
+            },
           },
-          429,
         );
+      }
     }
     return {
       user: user.email ? { id: user.id, email: user.email } : { id: user.id },

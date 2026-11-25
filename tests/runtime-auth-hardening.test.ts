@@ -4,7 +4,13 @@ import { readFileSync } from "node:fs";
 
 test("authenticated mutation throttling is not keyed by spoofable IP headers", () => {
   const source = readFileSync(new URL("../src/server/middleware/auth.ts", import.meta.url), "utf8");
-  assert.match(source, /hashAuthValue\(\s*secret\s*,\s*"api-mutation"\s*,\s*user\.id\s*\)/);
+  // O escopo continua sendo (segredo, ação do bucket, usuário): nunca IP/cabeçalhos do cliente.
+  assert.match(source, /hashAuthValue\(\s*secret\s*,\s*bucket\.action\s*,\s*user\.id\s*\)/);
+  const policy = readFileSync(
+    new URL("../src/server/middleware/rate-limit-policy.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(policy, /action:\s*"api-mutation"/);
   assert.doesNotMatch(source, /const clientIp=request\.headers\.get/);
 });
 
