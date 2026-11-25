@@ -120,6 +120,13 @@ mostrar um corpo que insere em `workspace_members`, a contenção da Fase 1 é o
 - Replay usa `workspace_id`/`instance_id` gravados no evento (`event-inbox.ts:120-139`).
 - Watchdog não reescreve webhook de instância que não pertence ao ambiente atual.
 
+> **Status I4 (implementado no código, 2026-11-25):** token por instância = HMAC-SHA256(segredo mestre,
+> nome da instância), configurado no webhook de cada instância e exigido no recebimento; replay interno
+> carrega e valida `workspace_id`/`instance_id`. **Rollout:** ao implantar, o watchdog reconfigura as instâncias
+> (detecta `auth` divergente). Enquanto houver instância antiga, o segredo global continua aceito com aviso no
+> log. Depois que todas estiverem migradas, definir `EVOLUTION_WEBHOOK_LEGACY_TOKEN=deny` na Vercel.
+> Pendente em I4: impedir que o watchdog reescreva webhook de instância que não pertence ao ambiente.
+
 ### I5. Envio, leitura e mídia
 - `messages/send.ts`: exigir `instanceId` explícito e validar que pertence ao workspace do usuário
   (hoje escolhe qualquer número conectado, `:86-96`).

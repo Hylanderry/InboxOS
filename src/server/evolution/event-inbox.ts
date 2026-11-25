@@ -127,6 +127,10 @@ export async function consumeEvolutionQueueMessage(
           "x-webhook-token": token,
           "x-inbox-queue-consumer": "1",
           "x-inbox-event-id": event.id,
+          // Identidade gravada no momento do recebimento: o consumidor recusa o replay se o
+          // nome da instância hoje resolver para outro workspace/instância.
+          "x-inbox-workspace-id": String(event.workspace_id ?? ""),
+          "x-inbox-instance-id": String(event.instance_id ?? ""),
           "x-inbox-sent-at": sentAt,
           "x-inbox-internal-signature": evolutionQueueConsumerSignature(
             event.id,

@@ -6,6 +6,7 @@ import {
   persistMessage,
   storeBase64Media,
   isValidManagedWebhookRequest,
+  verifyInstanceWebhookRequest,
   deleteMessageByExternalId,
   editMessageByExternalId,
   addReactionToMessage,
@@ -140,6 +141,22 @@ export const Route = createFileRoute("/api/public/webhooks/evolution")({
           return json({ ok: false, error: "Consumidor interno não autorizado" }, 401);
         }
 
+        const event =
+          typeof payload.event === "string" ? normalizeEvolutionEvent(payload.event) : null;
+        const instanceName = String(payload?.instance ?? payload?.instanceName ?? "").trim();
+        const data = payload?.data ?? {};
+
+        if (!event || !instanceName) {
+          return json({ ok: false, error: "Evento ou instância ausente" }, 400);
+        }
+
+        // O token precisa pertencer à instância declarada no corpo: antes de consumir cota
+        // e antes de qualquer consulta ao banco. Replays internos já são autenticados pela
+        // assinatura do corpo e usam o segredo global.
+        if (!isQueueConsumer && !(await verifyInstanceWebhookRequest(request, instanceName))) {
+          return json({ ok: false, error: "Não autorizado" }, 401);
+        }
+
         // Queue replays are already durable and authenticated above with a
         // body-bound signature. They must not consume the public Evolution
         // ingress quota a second time during a burst.
@@ -162,15 +179,6 @@ export const Route = createFileRoute("/api/public/webhooks/evolution")({
           }
         }
 
-        const event =
-          typeof payload.event === "string" ? normalizeEvolutionEvent(payload.event) : null;
-        const instanceName = String(payload?.instance ?? payload?.instanceName ?? "").trim();
-        const data = payload?.data ?? {};
-
-        if (!event || !instanceName) {
-          return json({ ok: false, error: "Evento ou instância ausente" }, 400);
-        }
-
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -190,6 +198,19 @@ export const Route = createFileRoute("/api/public/webhooks/evolution")({
             // Nunca associa automaticamente uma instância recebida pela internet
             // ao primeiro workspace. A instância precisa ser cadastrada pelo painel.
             return json({ ok: false, error: "Instância não cadastrada" }, 404);
+          }
+
+          // Replay interno: a instância resolvida pelo nome precisa ser exatamente a que
+          // recebeu o evento originalmente (nome reaproveitado por outro tenant = descarte).
+          if (isQueueConsumer) {
+            const expectedWorkspaceId = request.headers.get("x-inbox-workspace-id")?.trim();
+            const expectedInstanceId = request.headers.get("x-inbox-instance-id")?.trim();
+            if (
+              (expectedWorkspaceId && expectedWorkspaceId !== workspaceId) ||
+              (expectedInstanceId && expectedInstanceId !== instRow.id)
+            ) {
+              return json({ ok: true, ignored: "instance-identity-changed" }, 202);
+            }
           }
 
           // Snapshot/history callbacks can contain messages from long before the

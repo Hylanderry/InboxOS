@@ -16,6 +16,11 @@ import {
   secureTokenMatches,
 } from "@/server/evolution/webhook-config";
 import { contactDisplayName } from "@/server/evolution/contact-identity";
+import {
+  instanceWebhookToken,
+  isInstanceTokenShape,
+  matchWebhookCredential,
+} from "@/server/evolution/instance-webhook-token";
 import { buildMediaStoragePath } from "@/server/evolution/media-storage";
 import { isValidPhone, isLidIdentifier, isBroadcastOrStatus } from "@/lib/conversationKey";
 
@@ -110,15 +115,19 @@ export async function configureEvolutionWebhook(instanceName: string) {
   const { resolveManagedIntegration } = await import("@/server/admin/integration-vault.server");
   const managed = await resolveManagedIntegration("evolution");
   if (managed.disabled) throw new Error("Integração desativada no ADM");
-  const secret =
+  const masterSecret =
     managed.secrets["webhook_token"] || managed.secrets["api_key"] || webhookAuthSecret();
-  if (!secret) {
+  if (!masterSecret) {
     return {
       success: false,
       error: "Webhook sem segredo de autenticação",
       missingEvents: [] as string[],
     };
   }
+  // Cada instância recebe o PRÓPRIO token (derivado do segredo mestre + nome da instância).
+  // Instâncias ainda com o segredo global são detectadas por inspectStoredWebhook ("auth")
+  // e reescritas automaticamente aqui.
+  const secret = instanceWebhookToken(masterSecret, instanceName);
 
   const setWebhook = (legacyGroupEvent: boolean) =>
     evolutionFetch(`/webhook/set/${encodeURIComponent(instanceName)}`, {
@@ -985,7 +994,38 @@ export async function isValidManagedWebhookRequest(request: Request): Promise<bo
   // Credentials in query strings leak into access logs and tracing. Evolution
   // is configured to send this token in a request header instead.
   const provided = request.headers.get("x-webhook-token") || request.headers.get("apikey") || "";
-  return secureTokenMatches(provided, tokens);
+  // Portão barato (ainda sem saber a instância): segredo global legado OU um token com a forma
+  // de token por instância. A autorização real é feita por verifyInstanceWebhookRequest, assim
+  // que o nome da instância do evento é conhecido.
+  return secureTokenMatches(provided, tokens) || isInstanceTokenShape(provided);
+}
+
+/** Confirma que o token apresentado pertence à instância declarada no evento. */
+export async function verifyInstanceWebhookRequest(
+  request: Request,
+  instanceName: string,
+): Promise<boolean> {
+  const { resolveManagedIntegration } = await import("@/server/admin/integration-vault.server");
+  const managed = await resolveManagedIntegration("evolution");
+  if (managed.disabled) return false;
+  const provided = request.headers.get("x-webhook-token") || request.headers.get("apikey") || "";
+  const match = matchWebhookCredential({
+    provided,
+    instanceName,
+    masterSecrets: [
+      managed.secrets["webhook_token"],
+      managed.secrets["api_key"],
+      process.env["EVOLUTION_WEBHOOK_TOKEN"],
+      process.env["EVOLUTION_API_KEY"],
+    ],
+    // Migração: enquanto houver instâncias com o segredo global, aceitar. Depois que o
+    // watchdog reconfigurar todas, definir EVOLUTION_WEBHOOK_LEGACY_TOKEN=deny.
+    allowLegacy: process.env["EVOLUTION_WEBHOOK_LEGACY_TOKEN"] !== "deny",
+  });
+  if (match === "legacy") {
+    console.warn("[evolution-webhook] segredo global legado usado", { instanceName });
+  }
+  return match !== null;
 }
 export function publicWebhookUrl(): string {
   // Never configure preview callbacks against the production host.
