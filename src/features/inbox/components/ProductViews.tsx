@@ -4978,8 +4978,15 @@ export function ClientsView({ isDarkMode }: Props) {
     const dataRows = rows.slice(hasHeader ? 1 : 0);
     let imported = 0;
     let skipped = 0;
+    let duplicated = 0;
     await run(async () => {
       validateClientImportCount(dataRows.length);
+      // D2: Build a set of existing phone numbers for deduplication
+      const existingPhones = new Set(
+        clients
+          .map((c) => c.phone_e164?.replace(/[^+\d]/g, "") || "")
+          .filter(Boolean),
+      );
       const rowsToImport = dataRows;
       // Keep the import responsive without flooding the CRM API. Ten writes
       // at a time is fast enough for a user action and remains rate-limit safe.
@@ -4994,6 +5001,10 @@ export function ClientsView({ isDarkMode }: Props) {
                 : rawPhone.length >= 8
                   ? `+${rawPhone}`
                   : null;
+            // D2: Skip if phone already exists in client list
+            if (phoneE164 && existingPhones.has(phoneE164.replace(/[^+\d]/g, ""))) {
+              return "duplicate";
+            }
             try {
               await createLead({
                 name: row[0],
@@ -5001,18 +5012,22 @@ export function ClientsView({ isDarkMode }: Props) {
                 email: row[2] || null,
                 source: "import",
               });
-              return true;
+              // Track newly imported phones to avoid intra-batch duplicates
+              if (phoneE164) existingPhones.add(phoneE164.replace(/[^+\d]/g, ""));
+              return "imported";
             } catch {
-              return false;
+              return "error";
             }
           }),
         );
-        imported += results.filter(Boolean).length;
-        skipped += results.length - results.filter(Boolean).length;
+        imported += results.filter((r) => r === "imported").length;
+        duplicated += results.filter((r) => r === "duplicate").length;
+        skipped += results.filter((r) => r === "error").length;
       }
-      setImportSummary(
-        `${imported} importados${skipped ? ` · ${skipped} ignorados por dados inválidos` : ""}`,
-      );
+      const parts = [`${imported} importados`];
+      if (duplicated) parts.push(`${duplicated} duplicados ignorados`);
+      if (skipped) parts.push(`${skipped} com erro`);
+      setImportSummary(parts.join(" · "));
     }, "Importação concluída.");
   };
   const exportCsv = () => {
