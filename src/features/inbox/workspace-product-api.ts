@@ -298,6 +298,22 @@ export const saveClientTag = (payload: unknown) =>
 export const assignClientTags = (leadIds: string[], tagIds: string[]) =>
   mutate<{ success: boolean; assigned: number }>("/api/clients/", "PATCH", { leadIds, tagIds });
 
+// F1: Unified client timeline
+export interface ClientTimelineEvent {
+  id: string;
+  kind: "message" | "follow_up" | "appointment";
+  title: string;
+  description: string | null;
+  timestamp: string;
+  meta?: Record<string, unknown>;
+}
+export interface ClientTimelineResponse {
+  lead: { id: string; name: string | null; phone_e164: string | null };
+  events: ClientTimelineEvent[];
+}
+export const loadClientTimeline = (leadId: string) =>
+  read<ClientTimelineResponse>(apiFetch(`/api/clients/${encodeURIComponent(leadId)}/timeline`));
+
 export interface BillingDto {
   workspace_id: string;
   provider: string | null;

@@ -38,6 +38,9 @@ import {
   ArrowRight,
   ThumbsUp,
   ThumbsDown,
+  Clock,
+  CalendarBlank,
+  ChatCircleText,
 } from "@phosphor-icons/react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useNavigate } from "@tanstack/react-router";
@@ -116,6 +119,8 @@ import {
   type ClientTag,
   type WorkspaceClient,
   type KnowledgeDocument,
+  loadClientTimeline,
+  type ClientTimelineEvent,
 } from "../workspace-product-api";
 
 type Props = { isDarkMode: boolean };
@@ -4806,6 +4811,29 @@ export function ClientsView({ isDarkMode }: Props) {
   const [categoryFilter, setCategoryFilter] = useState<ClientCategoryFilter>("all");
   const [tagFilter, setTagFilter] = useState("");
   const [tagsOpen, setTagsOpen] = useState(false);
+  // F1: Unified client timeline — expanded per client
+  const [expandedTimelineId, setExpandedTimelineId] = useState<string | null>(null);
+  const [timelineEvents, setTimelineEvents] = useState<ClientTimelineEvent[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+
+  const toggleClientTimeline = useCallback(async (clientId: string) => {
+    if (expandedTimelineId === clientId) {
+      setExpandedTimelineId(null);
+      setTimelineEvents([]);
+      return;
+    }
+    setExpandedTimelineId(clientId);
+    setTimelineLoading(true);
+    try {
+      const data = await loadClientTimeline(clientId);
+      setTimelineEvents(data.events);
+    } catch {
+      setTimelineEvents([]);
+    } finally {
+      setTimelineLoading(false);
+    }
+  }, [expandedTimelineId]);
+
   // Loading cached CRM data first keeps the page usable when Evolution is
   // slow or temporarily unavailable. The explicit Atualizar action retries
   // the remote sync.
@@ -5226,6 +5254,21 @@ export function ClientsView({ isDarkMode }: Props) {
                               : "Manual"}
                         </span>
                       </span>
+                      <span role="cell" className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => void toggleClientTimeline(client.id)}
+                          className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                            expandedTimelineId === client.id
+                              ? "bg-white/10 text-white"
+                              : "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200"
+                          }`}
+                          aria-expanded={expandedTimelineId === client.id}
+                          aria-label={`Ver histórico de ${client.name}`}
+                        >
+                          {expandedTimelineId === client.id ? "Fechar" : "Histórico"}
+                        </button>
+                      </span>
                     </div>
                   );
                 })}
@@ -5240,6 +5283,46 @@ export function ClientsView({ isDarkMode }: Props) {
                     ? "Os contatos do WhatsApp aparecem aqui automaticamente. Você também pode importar um CSV ou cadastrar manualmente."
                     : "Ajuste a busca ou os filtros para ver outros clientes."}
                 </p>
+              </div>
+            )}
+            {/* F1: Expanded timeline panel — rendered after the list/empty block */}
+            {expandedTimelineId && visibleClients.some((c) => c.id === expandedTimelineId) && (
+              <div className="border-t border-white/[0.06] bg-white/[0.02] px-4 py-3 animate-smooth-in">
+                {timelineLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-neutral-400">
+                    <ArrowClockwise size={14} className="animate-spin" />
+                    <span>Carregando histórico…</span>
+                  </div>
+                ) : timelineEvents.length === 0 ? (
+                  <p className="text-xs text-neutral-500">Nenhum evento recente para este cliente.</p>
+                ) : (
+                  <ul className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {timelineEvents.map((evt) => (
+                      <li key={`${evt.kind}-${evt.id}`} className="flex items-start gap-3 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2">
+                        <span className={`mt-0.5 shrink-0 rounded-full p-1 ${
+                          evt.kind === "message" ? "bg-emerald-500/15 text-emerald-400"
+                            : evt.kind === "follow_up" ? "bg-amber-500/15 text-amber-400"
+                            : "bg-sky-500/15 text-sky-400"
+                        }`}>
+                          {evt.kind === "message" ? <ChatCircleText size={12} weight="fill" />
+                            : evt.kind === "follow_up" ? <Clock size={12} weight="fill" />
+                            : <CalendarBlank size={12} weight="fill" />}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="truncate text-xs font-semibold text-neutral-200">{evt.title}</p>
+                            <time className="shrink-0 text-[10px] text-neutral-500">
+                              {new Date(evt.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                            </time>
+                          </div>
+                          {evt.description && (
+                            <p className="mt-0.5 truncate text-[11px] text-neutral-400">{evt.description}</p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
           </section>
