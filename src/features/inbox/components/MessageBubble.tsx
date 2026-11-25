@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Checks,
   Check,
@@ -226,6 +226,58 @@ function renderReactionIconSafe(rawEmoji?: string | null) {
   return <Sparkle size={13} weight="fill" className="text-amber-400 shrink-0" />;
 }
 
+// Ações secundárias só ficam escondidas quando existe hover real (mouse).
+// Em touch ficam sempre visíveis; no teclado aparecem ao receber foco.
+const ACTION_REVEAL =
+  "[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/row:opacity-100 [@media(hover:hover)]:group-hover/sticker-row:opacity-100 [@media(hover:hover)]:group-focus-within/row:opacity-100 [@media(hover:hover)]:group-focus-within/sticker-row:opacity-100 focus-visible:opacity-100";
+// Área de toque ≥44px sem alterar o layout visual do ícone.
+const TOUCH_TARGET =
+  "relative before:absolute before:-inset-1 before:content-[''] [@media(pointer:coarse)]:before:-inset-3";
+
+const LONG_PRESS_MS = 450;
+const LONG_PRESS_MOVE_TOLERANCE = 10;
+
+/** Long-press em touch abre o menu de reação; mouse e teclado não são afetados. */
+function useLongPress(onLongPress: () => void) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const origin = useRef<{ x: number; y: number } | null>(null);
+
+  const cancel = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    origin.current = null;
+  };
+
+  useEffect(() => cancel, []);
+
+  return {
+    onTouchStart: (event: React.TouchEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.closest("a,button,audio,video,input,textarea,[role='button']")) return;
+      const touch = event.touches[0];
+      if (!touch) return;
+      origin.current = { x: touch.clientX, y: touch.clientY };
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        onLongPress();
+      }, LONG_PRESS_MS);
+    },
+    onTouchMove: (event: React.TouchEvent) => {
+      const start = origin.current;
+      const touch = event.touches[0];
+      if (
+        start &&
+        touch &&
+        Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > LONG_PRESS_MOVE_TOLERANCE
+      ) {
+        cancel();
+      }
+    },
+    onTouchEnd: cancel,
+    onTouchCancel: cancel,
+  };
+}
+
 function ReactionMenu({
   message,
   onReact,
@@ -241,12 +293,35 @@ function ReactionMenu({
   onToggle: () => void;
   options: string[];
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Fecha com Escape ou clique fora; devolve o foco ao gatilho.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      onToggle();
+      triggerRef.current?.focus();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) onToggle();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [open, onToggle]);
+
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={onToggle}
-        className={`p-1.5 rounded-full opacity-70 sm:opacity-0 sm:group-hover/row:opacity-100 sm:group-hover/sticker-row:opacity-100 transition-opacity ${
+        className={`${TOUCH_TARGET} p-1.5 rounded-full transition-opacity ${ACTION_REVEAL} ${
           isDarkMode
             ? "bg-[#202c33] text-neutral-300 hover:text-white hover:bg-[#2a3942]"
             : "bg-white text-neutral-600 hover:text-neutral-900 shadow-xs"
@@ -254,11 +329,14 @@ function ReactionMenu({
         title="Adicionar reação"
         aria-label="Adicionar reação"
         aria-expanded={open}
+        aria-haspopup="true"
       >
         <PlusCircle size={14} weight="bold" />
       </button>
       {open && (
         <div
+          role="group"
+          aria-label="Escolher reação"
           className={`absolute bottom-full right-0 z-30 mb-2 flex items-center gap-1 rounded-2xl border p-1.5 shadow-xl ${
             isDarkMode ? "border-white/10 bg-[#202c33]" : "border-neutral-200 bg-white"
           }`}
@@ -271,7 +349,7 @@ function ReactionMenu({
                 onToggle();
                 onReact(message, emoji);
               }}
-              className="grid h-8 w-8 place-items-center rounded-xl text-lg transition-transform hover:scale-125 hover:bg-black/10"
+              className="grid h-9 w-9 place-items-center rounded-xl text-lg transition-transform hover:scale-125 hover:bg-black/10 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
               aria-label={`Reagir com ${emoji}`}
             >
               {emoji}
@@ -283,7 +361,7 @@ function ReactionMenu({
               onToggle();
               onReact(message, "");
             }}
-            className="grid h-8 w-8 place-items-center rounded-xl text-xs text-neutral-500 hover:bg-black/10"
+            className="grid h-9 w-9 place-items-center rounded-xl text-xs text-neutral-500 hover:bg-black/10 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
             aria-label="Remover minha reação"
           >
             ×
@@ -378,6 +456,11 @@ export function MessageBubble({
   const [mediaFailed, setMediaFailed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [reactionMenuOpen, setReactionMenuOpen] = useState(false);
+  const longPress = useLongPress(() => {
+    if (onReact && !(message.type === "deleted" || message.text === "Mensagem apagada")) {
+      setReactionMenuOpen(true);
+    }
+  });
   const isMe = message.sender === "agent";
   const isFailed = message.status === "failed";
   const isDeleted = message.type === "deleted" || message.text === "Mensagem apagada";
@@ -435,6 +518,7 @@ export function MessageBubble({
   if (isSticker && !hasQuote && (message.mediaUrl || message.text)) {
     return (
       <div
+        {...longPress}
         className={`flex group/sticker-row animate-smooth-in ${isMe ? "justify-end" : "justify-start items-start gap-2.5"} ${isConsecutive ? "my-0.5" : "my-1"} relative`}
       >
         {/* Avatar fora da figurinha em grupos */}
@@ -525,12 +609,13 @@ export function MessageBubble({
                 <button
                   type="button"
                   onClick={() => onReply(message)}
-                  className={`p-1.5 rounded-full opacity-0 group-hover/sticker-row:opacity-100 transition-opacity ${
+                  className={`${TOUCH_TARGET} p-1.5 rounded-full transition-opacity ${ACTION_REVEAL} ${
                     isDarkMode
                       ? "bg-[#202c33] text-neutral-300 hover:text-white hover:bg-[#2a3942]"
                       : "bg-white text-neutral-600 hover:text-neutral-900 shadow-xs"
                   }`}
                   title="Responder figurinha"
+                  aria-label="Responder figurinha"
                 >
                   <ArrowBendUpLeft size={13} weight="bold" />
                 </button>
@@ -585,6 +670,7 @@ export function MessageBubble({
   // =========================================================================
   return (
     <div
+      {...longPress}
       className={`flex group/row animate-smooth-in ${isMe ? "justify-end" : "justify-start items-start gap-2.5"} ${isConsecutive ? "my-0.5" : "my-1"} relative`}
     >
       {/* Avatar do Participante fora da bolha (apenas na 1ª mensagem do bloco como no WhatsApp Web) */}
@@ -1032,12 +1118,13 @@ export function MessageBubble({
           <button
             type="button"
             onClick={() => onReply(message)}
-            className={`p-1.5 rounded-full opacity-0 group-hover/row:opacity-100 transition-opacity self-center shrink-0 ${
+            className={`${TOUCH_TARGET} p-1.5 rounded-full transition-opacity self-center shrink-0 ${ACTION_REVEAL} ${
               isDarkMode
                 ? "bg-[#202c33] text-neutral-300 hover:text-white hover:bg-[#2a3942]"
                 : "bg-white text-neutral-600 hover:text-neutral-900 shadow-xs"
             }`}
             title="Responder mensagem"
+            aria-label="Responder mensagem"
           >
             <ArrowBendUpLeft size={13} weight="bold" />
           </button>
