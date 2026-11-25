@@ -270,16 +270,33 @@ export function InboxShell() {
 
   const { instances, refetch: refetchInstances, deleteInstance } = useInstances();
 
-  // Seleciona o chat inicial automaticamente sem sobrepor escolhas do usuário
+  // Seleciona o chat inicial automaticamente SEM sobrepor escolha ativa do usuário.
+  // Só auto-seleciona quando: (1) desktop, (2) há conversas, (3) nenhum chat selecionado
+  // OU o chat selecionado deixou de existir na lista filtrada. Preserva seleção quando
+  // o chat ainda existe (ex.: após aplicar filtro que não exclui o chat ativo).
+  const previousSelectedChatIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (
-      viewport.isDesktop &&
-      conversations.length > 0 &&
-      (!selectedChatId ||
-        !conversations.some((conversation) => conversation.id === selectedChatId)) &&
-      conversations[0]?.id
-    ) {
-      setSelectedChatId(conversations[0].id);
+    if (!viewport.isDesktop || conversations.length === 0) return;
+
+    const selectedStillExists =
+      selectedChatId != null && conversations.some((c) => c.id === selectedChatId);
+
+    if (selectedChatId == null || !selectedStillExists) {
+      // Restaurar seleção anterior se ela voltou a aparecer na lista filtrada
+      const restoredFromPrevious =
+        previousSelectedChatIdRef.current != null &&
+        conversations.some((c) => c.id === previousSelectedChatIdRef.current);
+
+      if (restoredFromPrevious && previousSelectedChatIdRef.current !== selectedChatId) {
+        setSelectedChatId(previousSelectedChatIdRef.current);
+      } else if (conversations[0]?.id && conversations[0].id !== selectedChatId) {
+        setSelectedChatId(conversations[0].id);
+      }
+    }
+
+    // Atualizar ref com a seleção atual para restauração futura
+    if (selectedChatId != null) {
+      previousSelectedChatIdRef.current = selectedChatId;
     }
   }, [conversations, selectedChatId, viewport.isDesktop]);
 
