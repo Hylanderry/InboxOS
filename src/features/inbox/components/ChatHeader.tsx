@@ -52,9 +52,14 @@ export function ChatHeader({
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
   // Estado de erro de imagem precisa acompanhar mudanças de foto no mesmo chat.
   useEffect(() => setImgFailed(false), [conversation.avatar]);
+  // Focus trap + navegação por setas no menu dropdown (B6 — Sprint 1).
+  // Tab/Shift+Tab circulam entre os itens; ArrowUp/ArrowDown movem foco;
+  // Escape fecha e retorna foco ao trigger; clique fora fecha.
   useEffect(() => {
     if (!isMenuOpen) return;
-    menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    const menuItems = menuRef.current?.querySelectorAll<HTMLButtonElement>("button[role='menuitem']");
+    menuItems?.[0]?.focus();
+
     const dismissOutside = (event: PointerEvent) => {
       if (
         menuRef.current?.contains(event.target as Node) ||
@@ -63,17 +68,50 @@ export function ChatHeader({
         return;
       setIsMenuOpen(false);
     };
-    const dismissEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      setIsMenuOpen(false);
-      menuTriggerRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsMenuOpen(false);
+        menuTriggerRef.current?.focus();
+        return;
+      }
+
+      if (!menuItems || menuItems.length === 0) return;
+      const items = Array.from(menuItems);
+      const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+        items[nextIndex]?.focus();
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+        items[prevIndex]?.focus();
+      } else if (event.key === "Tab") {
+        event.preventDefault();
+        if (event.shiftKey) {
+          const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+          items[prevIndex]?.focus();
+        } else {
+          const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+          items[nextIndex]?.focus();
+        }
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        items[0]?.focus();
+      } else if (event.key === "End") {
+        event.preventDefault();
+        items[items.length - 1]?.focus();
+      }
     };
+
     document.addEventListener("pointerdown", dismissOutside);
-    document.addEventListener("keydown", dismissEscape);
+    menuRef.current?.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("pointerdown", dismissOutside);
-      document.removeEventListener("keydown", dismissEscape);
+      menuRef.current?.removeEventListener("keydown", handleKeyDown);
     };
   }, [isMenuOpen]);
 
@@ -358,7 +396,7 @@ export function ChatHeader({
               <div
                 id="chat-header-action-panel"
                 ref={menuRef}
-                role="group"
+                role="menu"
                 aria-label="Ações adicionais da conversa"
                 className={`absolute right-0 top-full mt-2 w-48 p-1.5 rounded-2xl border shadow-2xl z-50 animate-smooth-in ${
                   isDarkMode
@@ -368,6 +406,7 @@ export function ChatHeader({
               >
                 <button
                   type="button"
+                  role="menuitem"
                   onClick={() => {
                     onTogglePin();
                     setIsMenuOpen(false);
@@ -382,6 +421,7 @@ export function ChatHeader({
 
                 <button
                   type="button"
+                  role="menuitem"
                   onClick={() => {
                     setIsProfileOpen(true);
                     setIsMenuOpen(false);
@@ -397,6 +437,7 @@ export function ChatHeader({
                 {onOpenExport && (
                   <button
                     type="button"
+                    role="menuitem"
                     onClick={() => {
                       onOpenExport();
                       setIsMenuOpen(false);
@@ -413,6 +454,7 @@ export function ChatHeader({
                 {onToggleAi && (
                   <button
                     type="button"
+                    role="menuitem"
                     onClick={() => {
                       void onToggleAi(!conversation.aiPaused);
                       setIsMenuOpen(false);
@@ -429,6 +471,7 @@ export function ChatHeader({
                 {conversation.humanHandoff && onHandoverAction && (
                   <button
                     type="button"
+                    role="menuitem"
                     onClick={() => {
                       void onHandoverAction(
                         conversation.handoverStatus === "in_progress" ? "resolve" : "accept",
