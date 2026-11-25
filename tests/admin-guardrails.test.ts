@@ -29,3 +29,15 @@ test("ADM: Field e Box ficam no módulo (inputs não perdem foco a cada tecla)",
   assert.match(view, /^function Field\(/m);
   assert.match(view, /^function Box\(/m);
 });
+
+test("ADM: System Admin é gerenciado por e-mail, sem expor UUID na interface", () => {
+  const view = readFileSync("src/features/inbox/components/SystemAdminView.tsx", "utf8");
+  assert.match(view, /E-mail do usuário cadastrado/);
+  assert.doesNotMatch(view, /UUID do usuário/);
+  assert.doesNotMatch(view, /\{a\.user_id\} ·/);
+  const server = readFileSync("src/server/admin/admin-operations.server.ts", "utf8");
+  assert.match(server, /lookup_auth_user_by_email/);
+  // regras de proteção continuam valendo depois de resolver o usuário
+  assert.match(server, /Não é permitido remover o último superadmin ativo/);
+  assert.match(server, /Não é permitido rebaixar\/suspender o próprio superadmin/);
+});

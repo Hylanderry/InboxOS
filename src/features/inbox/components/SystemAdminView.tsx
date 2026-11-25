@@ -65,7 +65,7 @@ type NewsletterCampaign = {
   content: NewsletterBlock[];
 };
 type NewsletterSegment = { id: string; name: string };
-type SystemAdmin = { user_id: string; role: string; status: string };
+type SystemAdmin = { user_id: string; email?: string | null; role: string; status: string };
 type AuditEntry = {
   id: string | number;
   action: string;
@@ -270,7 +270,7 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
   const [invites, setInvites] = useState<WorkspaceInvite[]>([]),
     [inviteEmail, setInviteEmail] = useState(""),
     [inviteRole, setInviteRole] = useState("agent");
-  const [adminUserId, setAdminUserId] = useState(""),
+  const [adminEmail, setAdminEmail] = useState(""),
     [adminRole, setAdminRole] = useState("support"),
     [adminStatus, setAdminStatus] = useState("active");
   const [statusReason, setStatusReason] = useState("");
@@ -1390,21 +1390,23 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
                     key={a.user_id}
                     className={`min-w-0 break-all rounded-lg border ${rowBorderClass} p-3 text-left text-xs`}
                     onClick={() => {
-                      setAdminUserId(a.user_id);
+                      setAdminEmail(a.email ?? "");
                       setAdminRole(a.role);
                       setAdminStatus(a.status);
                     }}
                   >
-                    {a.user_id} · {a.role} · {a.status}
+                    {a.email ?? "Usuário sem e-mail"} · {a.role} · {a.status}
                   </button>
                 ))}
               </div>
             </Box>
             <Box title="Adicionar ou alterar System Admin">
               <Field
-                label="UUID do usuário cadastrado"
-                value={adminUserId}
-                onChange={setAdminUserId}
+                type="email"
+                label="E-mail do usuário cadastrado"
+                placeholder="pessoa@empresa.com"
+                value={adminEmail}
+                onChange={setAdminEmail}
               />
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <label className="grid gap-1 text-xs">
@@ -1437,7 +1439,7 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
               </div>
               <button
                 className={`${actionClass} mt-3`}
-                disabled={loading || !adminUserId}
+                disabled={loading || !adminEmail}
                 onClick={() =>
                   setPendingConfirmation({
                     title: "Alterar privilégio global?",
@@ -1448,7 +1450,7 @@ export function SystemAdminView({ isDarkMode = true }: { isDarkMode?: boolean })
                     execute: () =>
                       void run(async () => {
                         await call("system-admins/", "POST", {
-                          userId: adminUserId,
+                          email: adminEmail.trim(),
                           role: adminRole,
                           status: adminStatus,
                         });

@@ -301,23 +301,42 @@ export async function listSystemAdmins(request: Request) {
     .order("created_at", { ascending: true })
     .limit(100);
   if (error) return json({ error: "Falha ao listar administradores" }, 500);
-  return json({ admins: data ?? [] });
+  // A interface identifica administradores por e-mail, nunca por UUID cru.
+  const admins = await Promise.all(
+    (data ?? []).map(async (admin) => {
+      const user = await db.auth.admin.getUserById(admin.user_id);
+      return { ...admin, email: user.data.user?.email ?? null };
+    }),
+  );
+  return json({ admins });
 }
 export async function changeSystemAdmin(request: Request, raw: unknown) {
   const actor = await requireSystemAdmin(request, "admins");
   if (actor instanceof Response) return actor;
   const parsed = z
     .object({
-      userId: uuid,
+      userId: uuid.optional(),
+      email: z.string().trim().toLowerCase().email().max(254).optional(),
       role: z.enum(["superadmin", "operator", "support", "auditor"]),
       status: z.enum(["active", "suspended"]),
     })
+    // Informe o e-mail do usuário (preferido) ou o id; nunca os dois.
+    .refine((value) => Boolean(value.userId) !== Boolean(value.email))
     .safeParse(raw);
   if (!parsed.success) return json({ error: "Dados inválidos" }, 400);
-  const { userId, role, status } = parsed.data;
+  const { role, status } = parsed.data;
+  const db = await adminDb();
+  let userId = parsed.data.userId ?? "";
+  if (!userId && parsed.data.email) {
+    const { data: lookup, error: lookupError } = await db.rpc("lookup_auth_user_by_email", {
+      p_email: parsed.data.email,
+    });
+    if (lookupError) return json({ error: "Falha ao localizar usuário" }, 500);
+    userId = Array.isArray(lookup) ? String(lookup[0]?.user_id ?? "") : "";
+    if (!userId) return json({ error: "Usuário não encontrado" }, 404);
+  }
   if (userId === actor.user.id && (role !== "superadmin" || status !== "active"))
     return json({ error: "Não é permitido rebaixar/suspender o próprio superadmin" }, 403);
-  const db = await adminDb();
   const { data: old, error: oldError } = await db
     .from("system_admins")
     .select("role,status")
