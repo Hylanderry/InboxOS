@@ -265,6 +265,11 @@ body.dark {
    ANIMAÇÕES ULTRA-SUAVES & MICRO-INTERAÇÕES LUXO (Linear / Raycast Standard)
    ========================================================================= */
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 @keyframes smoothFadeIn {
   from {
     opacity: 0;
