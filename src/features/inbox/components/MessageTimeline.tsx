@@ -5,10 +5,12 @@ import {
   ChatCircleText,
   Microphone,
   WarningCircle,
+  WifiSlash,
 } from "@phosphor-icons/react";
 import type { ChatMessage } from "../types";
 import { MessageBubble } from "./MessageBubble";
 import { usePresence } from "../hooks/usePresence";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { stripEmojis } from "@/lib/emoji";
 
 interface MessageTimelineProps {
@@ -105,6 +107,7 @@ export function MessageTimeline({
   const { isTyping, isRecording } = usePresence();
   const typing = isTyping(activePhone, activeInstanceName, activeInstanceId);
   const recording = isRecording(activePhone, activeInstanceName, activeInstanceId);
+  const isOnline = useNetworkStatus();
 
   const handleLoadPrevious = () => {
     if (containerRef.current) {
@@ -161,6 +164,22 @@ export function MessageTimeline({
       }`}
     >
       <div className="mx-auto w-full max-w-[1080px]">
+        {/* B8: Banner de estado offline/desconectado */}
+        {!isOnline && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className={`mx-auto mb-3 flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-xs font-medium animate-smooth-in ${
+              isDarkMode
+                ? "border-red-500/20 bg-red-500/10 text-red-300"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            <WifiSlash size={16} weight="duotone" aria-hidden="true" />
+            <span>Conexão perdida — reconectando automaticamente…</span>
+          </div>
+        )}
+
         {error && (
           <div role="alert" className="inbox-feedback inbox-feedback-error mx-auto mb-3 max-w-xl">
             <WarningCircle size={17} weight="duotone" aria-hidden="true" />
