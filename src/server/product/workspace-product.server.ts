@@ -115,7 +115,7 @@ export async function getDashboard(request: Request) {
   const since = new Date(Date.now() - period.days * 24 * 60 * 60 * 1000).toISOString();
   const now = new Date().toISOString();
 
-  const [instances, chats, messages, leads, followups, agents, messagesTimeline] =
+  const [instances, chats, messages, leads, followups, agents, messagesTimeline, qualityStats] =
     await Promise.all([
       client.from("whatsapp_instances").select("status").eq("workspace_id", workspaceId),
       client.from("chats").select("unread,archived").eq("workspace_id", workspaceId),
@@ -141,6 +141,14 @@ export async function getDashboard(request: Request) {
         .eq("workspace_id", workspaceId)
         .gte("created_at", since)
         .order("created_at", { ascending: true }),
+      // C2: Quality metrics — sample recent messages to compute avg first-response time
+      client
+        .from("messages")
+        .select("chat_id,sender,created_at")
+        .eq("workspace_id", workspaceId)
+        .gte("created_at", since)
+        .order("created_at", { ascending: true })
+        .limit(5000),
     ]);
 
   const errors = [
@@ -151,6 +159,7 @@ export async function getDashboard(request: Request) {
     followups.error,
     agents.error,
     messagesTimeline.error,
+    qualityStats.error,
   ].filter(Boolean);
   if (errors.length)
     return json({ error: safePublicError(errors[0], "Falha ao montar dashboard") }, 500);
@@ -189,6 +198,36 @@ export async function getDashboard(request: Request) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, count]) => ({ date, count }));
 
+  // C2: Compute avg first-response time from sampled messages
+  // Group messages by chat, find inbound→outbound pairs, average the deltas
+  const qualityRows = qualityStats.data ?? [];
+  const chatMessages = new Map<string, Array<{ sender: string; ts: number }>>();
+  for (const row of qualityRows) {
+    const list = chatMessages.get(row.chat_id) ?? [];
+    try {
+      list.push({ sender: row.sender, ts: new Date(row.created_at).getTime() });
+    } catch {
+      // skip malformed
+    }
+    chatMessages.set(row.chat_id, list);
+  }
+  const responseTimes: number[] = [];
+  for (const [, msgs] of chatMessages) {
+    let lastInboundTs: number | null = null;
+    for (const msg of msgs) {
+      if (msg.sender !== "agent") {
+        lastInboundTs = msg.ts;
+      } else if (lastInboundTs !== null && msg.ts > lastInboundTs) {
+        responseTimes.push(msg.ts - lastInboundTs);
+        lastInboundTs = null; // reset to avoid double-counting
+      }
+    }
+  }
+  const avgResponseTimeMs =
+    responseTimes.length > 0
+      ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+      : null;
+
   return json({
     metrics: {
       connectedInstances: (instances.data ?? []).filter((row) => row.status === "open").length,
@@ -204,6 +243,7 @@ export async function getDashboard(request: Request) {
       automaticAgents: (agents.data ?? []).filter(
         (row) => row.enabled && row.reply_mode === "automatic",
       ).length,
+      avgResponseTimeMs,
     },
     period: period.label,
     messagesByDay,

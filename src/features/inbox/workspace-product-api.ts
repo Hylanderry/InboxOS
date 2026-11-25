@@ -28,6 +28,7 @@ export interface DashboardMetrics {
   overdueFollowUps: number;
   enabledAgents: number;
   automaticAgents: number;
+  avgResponseTimeMs: number | null;
 }
 
 export type DashboardPeriod = "7d" | "10d" | "30d" | "90d";

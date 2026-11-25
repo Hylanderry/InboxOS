@@ -493,6 +493,21 @@ export function DashboardView(_props: Props) {
               </strong>
               <span className="ux-meta">em negociação</span>
             </div>
+            <div className="ux-kpi">
+              <span className="ux-meta">Tempo médio de resposta</span>
+              <strong className="ux-kpi-value">
+                {data.avgResponseTimeMs != null
+                  ? data.avgResponseTimeMs < 60_000
+                    ? `${Math.round(data.avgResponseTimeMs / 1000)}s`
+                    : data.avgResponseTimeMs < 3_600_000
+                      ? `${Math.round(data.avgResponseTimeMs / 60_000)}min`
+                      : `${(data.avgResponseTimeMs / 3_600_000).toFixed(1)}h`
+                  : "—"}
+              </strong>
+              <span className="ux-meta">
+                {data.avgResponseTimeMs != null ? "média no período" : "sem dados suficientes"}
+              </span>
+            </div>
           </section>
         )}
         {data && messagesByDay.length > 0 && (
