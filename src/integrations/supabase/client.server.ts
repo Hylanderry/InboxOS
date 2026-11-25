@@ -3,6 +3,7 @@
 // Use this for admin operations in server functions and server routes only.
 // For user-authenticated queries (with RLS), use the auth middleware instead.
 import { createClient } from "@supabase/supabase-js";
+import { createScopedAdmin } from "./scoped-admin";
 import type { Database } from "./types";
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -70,3 +71,9 @@ export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdm
     return Reflect.get(_supabaseAdmin, prop, receiver);
   },
 });
+
+// Preferir este acessor: toda query fica limitada ao workspace informado.
+// Use `supabaseAdmin` direto apenas em operações cross-tenant legítimas (ADM, webhooks).
+export function scopedAdmin(workspaceId: string) {
+  return createScopedAdmin(supabaseAdmin, workspaceId);
+}

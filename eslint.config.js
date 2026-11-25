@@ -45,5 +45,21 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // Guardrail: supabaseAdmin ignora RLS. Código novo deve usar scopedAdmin(workspaceId).
+    // Usos cross-tenant legítimos (ADM, webhooks) devem justificar com eslint-disable.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/integrations/supabase/client.server.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "Identifier[name='supabaseAdmin']",
+          message:
+            "inboxos/no-unscoped-admin: supabaseAdmin ignora RLS. Use scopedAdmin(workspaceId) ou justifique o uso cross-tenant.",
+        },
+      ],
+    },
+  },
   eslintPluginPrettier,
 );
