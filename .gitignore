@@ -34,3 +34,7 @@ AGENTS.md
 
 # generated audit output (scripts/audit-*.mjs, validate-ui-updates.mjs)
 tests/e2e-artifacts/
+
+# AI planning traces
+.superpowers/
+docs/superpowers/
