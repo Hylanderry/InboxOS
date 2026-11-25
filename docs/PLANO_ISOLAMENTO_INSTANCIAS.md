@@ -133,6 +133,12 @@ mostrar um corpo que insere em `workspace_members`, a contenção da Fase 1 é o
 - `persist_inbox_message` buscar chat por `instance_id`, não `instance_name`.
 - `/api/media/$`: remover caminho legado `chat/` com `ilike` (`_` vira curinga).
 
+> **Status I5/I6 (2026-11-25):** envio e mídia endurecidos; `useInstances` reage à troca de workspace.
+> **Decisão registrada:** o purge disparado por estado `close` NÃO apaga a instância na Evolution. Um `close`
+> momentâneo de rede perderia a sessão para sempre. O reaproveitamento do nome por outro tenant já é
+> bloqueado na criação (409 "já existe na Evolution e não foi vinculada a este workspace"). Revisitar
+> com a Evolution sandbox (staging) antes de mudar esse comportamento.
+
 ### I6. Ciclo de vida
 - Purge de workspace apaga também a instância na Evolution (`instance-lifecycle.ts:197-202`).
 - `useInstances` limpa estado e refaz fetch ao receber `inboxos:workspace-change`
