@@ -650,6 +650,7 @@ export function SettingsView({ isDarkMode }: Props) {
   const [privacyAudit, setPrivacyAudit] = useState<PrivacyAuditDto[]>([]);
   const [consentHistory, setConsentHistory] = useState<ConsentHistoryDto[]>([]);
   const [billing, setBilling] = useState<BillingDto | null>(null);
+  const [billingLoading, setBillingLoading] = useState(billingUiEnabled);
   const [emailFlow, setEmailFlow] = useState<EmailFlow>({ step: "idle" });
   const [phoneFlow, setPhoneFlow] = useState<PhoneFlow>({
     step: "idle",
@@ -725,6 +726,7 @@ export function SettingsView({ isDarkMode }: Props) {
       setConsentHistory([]);
       return;
     }
+    if (billingUiEnabled) setBillingLoading(true);
     const billingPromise = billingUiEnabled
       ? loadBilling()
       : Promise.resolve({ billing: null as BillingDto | null, canManage: false });
@@ -750,6 +752,7 @@ export function SettingsView({ isDarkMode }: Props) {
     else setInvitations([]);
     if (billingResult.status === "fulfilled") setBilling(billingResult.value.billing);
     else setBilling(null);
+    setBillingLoading(false);
     const privacyPayload = privacyResult.status === "fulfilled" ? privacyResult.value : null;
     if (privacyPayload?.settings && typeof privacyPayload.settings === "object") {
       setPrivacySettings({
@@ -2228,33 +2231,54 @@ export function SettingsView({ isDarkMode }: Props) {
                   description="Estado de assinatura persistido no backend. A cobrança só será iniciada quando um provedor comercial for configurado."
                   isDarkMode={isDarkMode}
                 >
-                  <div className="grid gap-3 rounded-xl border border-current/5 p-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <div>
-                      <p className="text-[10px] font-semibold text-zinc-500">Status</p>
-                      <p className="mt-1 text-xs font-semibold">
-                        {billing?.status ?? "indisponível"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold text-zinc-500">Plano</p>
-                      <p className="mt-1 text-xs font-semibold">
-                        {billing?.plan_key ?? "não configurado"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold text-zinc-500">Provedor</p>
-                      <p className="mt-1 text-xs font-semibold">
-                        {billing?.provider ?? "não configurado"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold text-zinc-500">Período atual</p>
-                      <p className="mt-1 text-xs font-semibold">
-                        {billing?.current_period_end ? formatDate(billing.current_period_end) : "—"}
-                      </p>
-                    </div>
+                  <div
+                    className="grid gap-3 rounded-xl border border-current/5 p-3 sm:grid-cols-2 lg:grid-cols-4"
+                    aria-busy={billingLoading}
+                  >
+                    {billingLoading ? (
+                      <>
+                        <span className="sr-only" role="status">
+                          Carregando dados do plano
+                        </span>
+                        {[0, 1, 2, 3].map((item) => (
+                          <div key={item} aria-hidden="true" className="space-y-2">
+                            <div className="ux-skeleton h-2.5 w-14 rounded" />
+                            <div className="ux-skeleton h-3.5 w-24 rounded" />
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        <div className="ux-fade-in">
+                          <p className="text-[10px] font-semibold text-zinc-500">Status</p>
+                          <p className="mt-1 text-xs font-semibold">
+                            {billing?.status ?? "indisponível"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-zinc-500">Plano</p>
+                          <p className="mt-1 text-xs font-semibold">
+                            {billing?.plan_key ?? "não configurado"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-zinc-500">Provedor</p>
+                          <p className="mt-1 text-xs font-semibold">
+                            {billing?.provider ?? "não configurado"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-zinc-500">Período atual</p>
+                          <p className="mt-1 text-xs font-semibold">
+                            {billing?.current_period_end
+                              ? formatDate(billing.current_period_end)
+                              : "—"}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  {!billing?.provider && (
+                  {!billingLoading && !billing?.provider && (
                     <p className="mt-3 text-[10px] leading-relaxed text-zinc-500">
                       Nenhum checkout ou cobrança fictícia foi criado. O backend já mantém o
                       contrato de billing, mas a ativação financeira exige a definição do provedor,
