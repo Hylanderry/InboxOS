@@ -7,6 +7,33 @@ async function read<T>(responseTarget: Promise<Response> | Response): Promise<T>
   return body;
 }
 
+// Performance: lightweight stale-while-revalidate cache for view loaders.
+// Returns cached data instantly on re-mount, refreshes in background.
+const swrCache = new Map<string, { data: unknown; ts: number }>();
+const SWR_TTL = 30_000; // 30s fresh, serve stale beyond that while revalidating
+
+async function cachedRead<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
+  const entry = swrCache.get(key);
+  const now = Date.now();
+  if (entry && now - entry.ts < SWR_TTL) return entry.data as T;
+  try {
+    const data = await fetcher();
+    swrCache.set(key, { data, ts: now });
+    return data;
+  } catch (err) {
+    // Serve stale on network error if we have anything cached
+    if (entry) return entry.data as T;
+    throw err;
+  }
+}
+
+export function invalidateSwrCache(prefix?: string) {
+  if (!prefix) { swrCache.clear(); return; }
+  for (const key of swrCache.keys()) {
+    if (key.startsWith(prefix)) swrCache.delete(key);
+  }
+}
+
 async function mutate<T>(path: string, method: "POST" | "PATCH" | "DELETE", payload?: unknown) {
   const init: RequestInit = { method };
   if (payload !== undefined) {
@@ -46,7 +73,9 @@ export interface DashboardResponse {
 
 export const loadDashboard = (period?: DashboardPeriod) => {
   const params = period ? `?period=${period}` : "";
-  return read<DashboardResponse>(apiFetch(`/api/dashboard/${params}`));
+  return cachedRead<DashboardResponse>(`dashboard:${period ?? "default"}`, () =>
+    read<DashboardResponse>(apiFetch(`/api/dashboard/${params}`)),
+  );
 };
 
 export interface CrmStage {
@@ -76,7 +105,9 @@ export interface CrmLead {
   updated_at: string;
 }
 export const loadCrm = () =>
-  read<{ stages: CrmStage[]; leads: CrmLead[]; canManage: boolean }>(apiFetch("/api/crm/"));
+  cachedRead<{ stages: CrmStage[]; leads: CrmLead[]; canManage: boolean }>("crm", () =>
+    read<{ stages: CrmStage[]; leads: CrmLead[]; canManage: boolean }>(apiFetch("/api/crm/")),
+  );
 export const createLead = (payload: unknown) =>
   mutate<{ lead: CrmLead }>("/api/crm/", "POST", payload);
 export const updateLead = (payload: unknown) =>
@@ -103,7 +134,9 @@ export interface FollowUpTask {
   completed_at: string | null;
 }
 export const loadFollowUps = () =>
-  read<{ tasks: FollowUpTask[]; canManage: boolean }>(apiFetch("/api/follow-up/"));
+  cachedRead<{ tasks: FollowUpTask[]; canManage: boolean }>("followups", () =>
+    read<{ tasks: FollowUpTask[]; canManage: boolean }>(apiFetch("/api/follow-up/")),
+  );
 export const createFollowUp = (payload: unknown) =>
   mutate<{ task: FollowUpTask }>("/api/follow-up/", "POST", payload);
 export const updateFollowUp = (payload: unknown) =>
@@ -168,14 +201,23 @@ export interface AiProviderOption {
   models: string[];
 }
 export const loadAgents = () =>
-  read<{
+  cachedRead<{
     agents: AutomationAgent[];
     instances: AgentInstance[];
     runs: AutomationRun[];
     groqConfigured: boolean;
     aiConfigured: boolean;
     aiOptions: AiProviderOption[];
-  }>(apiFetch("/api/agents/"));
+  }>("agents", () =>
+    read<{
+      agents: AutomationAgent[];
+      instances: AgentInstance[];
+      runs: AutomationRun[];
+      groqConfigured: boolean;
+      aiConfigured: boolean;
+      aiOptions: AiProviderOption[];
+    }>(apiFetch("/api/agents/")),
+  );
 export const createAgent = (payload: unknown) =>
   mutate<{ agent: AutomationAgent }>("/api/agents/", "POST", payload);
 export const updateAgent = (payload: unknown) =>
@@ -245,11 +287,18 @@ export const loadCalendar = (from?: string, to?: string) => {
   const params = new URLSearchParams();
   if (from) params.set("from", from);
   if (to) params.set("to", to);
-  return read<{
+  const key = `calendar:${from ?? ""}:${to ?? ""}`;
+  return cachedRead<{
     calendars: CalendarConfig[];
     appointments: CalendarAppointment[];
     canManage: boolean;
-  }>(apiFetch(`/api/calendar/${params.toString() ? `?${params}` : ""}`));
+  }>(key, () =>
+    read<{
+      calendars: CalendarConfig[];
+      appointments: CalendarAppointment[];
+      canManage: boolean;
+    }>(apiFetch(`/api/calendar/${params.toString() ? `?${params}` : ""}`)),
+  );
 };
 export const saveCalendar = (payload: unknown) =>
   mutate<{ calendar: CalendarConfig }>(
@@ -285,21 +334,46 @@ export interface WorkspaceClient extends CrmLead {
   profileExtras?: ClientProfileExtras;
   estimatedLtvCents?: number;
 }
-export const loadClients = (query = "", options: { sync?: boolean; signal?: AbortSignal } = {}) =>
-  read<{
+export const loadClients = (query = "", options: { sync?: boolean; signal?: AbortSignal } = {}) => {
+  // Skip cache when a signal is provided (abortable requests should not be cached)
+  if (options.signal) {
+    return read<{
+      clients: WorkspaceClient[];
+      tags: ClientTag[];
+      canManage: boolean;
+      syncWarning?: string;
+    }>(
+      apiFetch(
+        `/api/clients/?${new URLSearchParams({
+          ...(query ? { q: query } : {}),
+          ...(options.sync === undefined ? {} : { sync: options.sync ? "1" : "0" }),
+        }).toString()}`,
+        { signal: options.signal },
+      ),
+    );
+  }
+  const key = `clients:${query}:${options.sync ?? ""}`;
+  return cachedRead<{
     clients: WorkspaceClient[];
     tags: ClientTag[];
     canManage: boolean;
     syncWarning?: string;
-  }>(
-    apiFetch(
-      `/api/clients/?${new URLSearchParams({
-        ...(query ? { q: query } : {}),
-        ...(options.sync === undefined ? {} : { sync: options.sync ? "1" : "0" }),
-      }).toString()}`,
-      options.signal ? { signal: options.signal } : undefined,
+  }>(key, () =>
+    read<{
+      clients: WorkspaceClient[];
+      tags: ClientTag[];
+      canManage: boolean;
+      syncWarning?: string;
+    }>(
+      apiFetch(
+        `/api/clients/?${new URLSearchParams({
+          ...(query ? { q: query } : {}),
+          ...(options.sync === undefined ? {} : { sync: options.sync ? "1" : "0" }),
+        }).toString()}`,
+      ),
     ),
   );
+};
 export const saveClientTag = (payload: unknown) =>
   mutate<{ tag: ClientTag }>(
     "/api/clients/",
