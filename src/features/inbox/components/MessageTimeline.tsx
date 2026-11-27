@@ -221,7 +221,7 @@ export function MessageTimeline({
         )}
 
         {isLoading && messages.length === 0 ? (
-          <div className="py-24 flex flex-col items-center justify-center text-center text-neutral-500 animate-smooth-in">
+          <div className="ux-delayed py-24 flex flex-col items-center justify-center text-center text-neutral-500">
             <ArrowsClockwise size={32} className="animate-spin text-neutral-400 mb-3 opacity-80" />
             <p className="text-xs font-semibold text-neutral-400">Carregando conversa...</p>
           </div>

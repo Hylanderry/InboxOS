@@ -9,6 +9,7 @@ import { AccountsSidebar } from "./AccountsSidebar";
 import { ConversationList } from "./ConversationList";
 import { ChatHeader } from "./ChatHeader";
 import { MessageTimeline } from "./MessageTimeline";
+import { prefetchViews } from "../view-snapshot-client";
 import { MessageComposer } from "./MessageComposer";
 import { shouldMarkChatRead } from "../read-policy";
 import {
@@ -40,6 +41,7 @@ import { resolveInboxComposition } from "../layout-state";
 import { useTheme } from "@/components/theme-context";
 import { PLATFORM_BRAND_NAME } from "@/lib/platform-brand";
 
+const loadConnectionManager = () => import("@/features/instances/components/ConnectionManager");
 const ConnectionManager = lazy(() =>
   import("@/features/instances/components/ConnectionManager").then((m) => ({
     default: m.ConnectionManager,
@@ -271,6 +273,12 @@ export function InboxShell() {
   } = useConversations({ enableProfileBackfill: currentView === "inbox" });
 
   const { instances, refetch: refetchInstances, deleteInstance } = useInstances();
+
+  // Telas prontas antes do clique: baixa o código das Conexões e aquece os dados.
+  useEffect(() => {
+    void loadConnectionManager().catch(() => {});
+    return prefetchViews();
+  }, []);
 
   // Seleciona o chat inicial automaticamente SEM sobrepor escolha ativa do usuário.
   // Só auto-seleciona quando: (1) desktop, (2) há conversas, (3) nenhum chat selecionado
@@ -664,13 +672,7 @@ export function InboxShell() {
         {/* 2. Tela de Conexões WhatsApp / Gerenciador Completo */}
         {currentView === "conexoes" && (
           <div className="flex-1 overflow-auto">
-            <Suspense
-              fallback={
-                <div className="flex flex-1 items-center justify-center p-12 text-sm text-neutral-400">
-                  Carregando conexões...
-                </div>
-              }
-            >
+            <Suspense fallback={null}>
               <ConnectionManager
                 instances={instances}
                 onSelectInstance={(name) => {

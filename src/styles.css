@@ -219,15 +219,17 @@ body.dark {
    ========================================================================= */
 
 /* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(140, 140, 150, 0.22) transparent;
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(140, 140, 150, 0.35) transparent;
+  }
 }
 
 /* WebKit (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -235,13 +237,16 @@ body.dark {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(140, 140, 150, 0.2);
+  background: rgba(140, 140, 150, 0.35);
+  border: 2px solid transparent;
+  background-clip: padding-box;
   border-radius: 9999px;
   transition: background-color 0.2s ease-in-out;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(140, 140, 150, 0.45);
+  background: rgba(140, 140, 150, 0.6);
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-button {
@@ -4563,7 +4568,8 @@ textarea.ux-input {
 .ux-segment:hover {
   color: var(--ux-ink);
 }
-.ux-segment[aria-selected="true"] {
+.ux-segment[aria-selected="true"],
+.ux-segment[aria-pressed="true"] {
   background: var(--ux-surface);
   color: var(--ux-ink);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
@@ -5412,5 +5418,60 @@ button.ux-chip:disabled {
   }
   .ux-fade-in {
     animation: none;
+  }
+}
+
+/* KPIs do Dashboard (5 itens): divisórias pelo vão da grade, sem célula órfã. */
+.ux-panel.ux-kpis {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  background: var(--ux-line);
+}
+.ux-kpis > .ux-kpi {
+  border: 0;
+  background: var(--ux-surface);
+}
+@media (max-width: 699px) {
+  .ux-kpis > .ux-kpi:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 700px) {
+  .ux-panel.ux-kpis {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .ux-kpis > .ux-kpi {
+    grid-column: span 2;
+  }
+  .ux-kpis > .ux-kpi:nth-child(4),
+  .ux-kpis > .ux-kpi:nth-child(5) {
+    grid-column: span 3;
+  }
+}
+@media (min-width: 1180px) {
+  .ux-panel.ux-kpis {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .ux-kpis > .ux-kpi:nth-child(n) {
+    grid-column: auto;
+  }
+}
+
+/* Indicadores de espera só aparecem se a resposta demorar mais que um piscar. */
+.ux-delayed {
+  animation: ux-delayed-in 160ms ease-out 450ms both;
+}
+@keyframes ux-delayed-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ux-delayed {
+    animation-duration: 1ms;
   }
 }

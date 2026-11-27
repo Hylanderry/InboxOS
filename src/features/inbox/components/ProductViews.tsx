@@ -74,6 +74,7 @@ import { parseDelimitedCsv, validateClientImportCount } from "@/lib/csv";
 import { useResponsiveViewport } from "@/hooks/use-responsive-viewport";
 import { friendlyErrorText } from "@/lib/friendly-error";
 import { deriveViewDataState } from "../view-data-state";
+import { viewLoaders, viewSnapshots, type ViewData } from "../view-snapshot-client";
 import { progressiveRenderLimit } from "../product-surface";
 import {
   LineChart,
@@ -326,8 +327,12 @@ const DASHBOARD_PERIODS: { value: DashboardPeriod; label: string }[] = [
 ];
 
 export function DashboardView(_props: Props) {
-  const [data, setData] = useState<DashboardMetrics | null>(null);
-  const [messagesByDay, setMessagesByDay] = useState<DashboardMessageDay[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"dashboard">>("dashboard:30d"));
+  const [data, setData] = useState<DashboardMetrics | null>(first?.metrics ?? null);
+  const [messagesByDay, setMessagesByDay] = useState<DashboardMessageDay[]>(
+    first?.messagesByDay ?? [],
+  );
+  const requestSequence = useRef(0);
   const [period, setPeriod] = useState<DashboardPeriod>("30d");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -338,18 +343,32 @@ export function DashboardView(_props: Props) {
   const refresh = useCallback((selectedPeriod: DashboardPeriod) => {
     setError("");
     setIsLoading(true);
+    const sequence = ++requestSequence.current;
+    const key = `dashboard:${selectedPeriod}`;
+    const saved = viewSnapshots.read<ViewData<"dashboard">>(key);
+    if (saved) {
+      setData(saved.metrics);
+      setMessagesByDay(saved.messagesByDay ?? []);
+    }
+    const remember = viewSnapshots.writer<ViewData<"dashboard">>(key);
     void loadDashboard(selectedPeriod)
       .then((x) => {
+        remember(x);
+        if (sequence !== requestSequence.current) return;
         setData(x.metrics);
         setMessagesByDay(x.messagesByDay ?? []);
         setUpdatedAt(new Date());
       })
       .catch((e) => {
+        viewSnapshots.clear();
+        if (sequence !== requestSequence.current) return;
         const message = errorMessage(e);
         setError(message);
         WhatsAppToast.networkError(message);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (sequence === requestSequence.current) setIsLoading(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -478,21 +497,13 @@ export function DashboardView(_props: Props) {
             <p className="ux-lead">Como está a operação do workspace agora.</p>
           </div>
           <div className="ux-actions">
-            <div
-              className="flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] p-0.5"
-              role="group"
-              aria-label="Período do dashboard"
-            >
+            <div className="ux-segmented" role="group" aria-label="Período do dashboard">
               {DASHBOARD_PERIODS.map((p) => (
                 <button
                   key={p.value}
                   type="button"
                   onClick={() => setPeriod(p.value)}
-                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-all ${
-                    period === p.value
-                      ? "bg-white/10 text-white shadow-sm"
-                      : "text-neutral-400 hover:text-neutral-200"
-                  }`}
+                  className="ux-segment"
                   aria-pressed={period === p.value}
                 >
                   {p.label}
@@ -519,7 +530,7 @@ export function DashboardView(_props: Props) {
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
           <div
-            className="ux-layout-rail animate-smooth-in"
+            className="ux-layout-rail ux-delayed"
             role="status"
             aria-label="Carregando dashboard"
           >
@@ -533,14 +544,14 @@ export function DashboardView(_props: Props) {
           </div>
         )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando indicadores...
           </p>
         )}
         {data && (
           <section className="ux-panel ux-kpis" aria-label="Indicadores principais">
             <div className="ux-kpi">
-              <span className="ux-meta">Mensagens em 24h</span>
+              <span className="ux-meta">Mensagens no período</span>
               <strong className="ux-kpi-value">{NUMBER_FORMAT.format(data.messages24h)}</strong>
               <span className="ux-meta">enviadas e recebidas</span>
             </div>
@@ -720,7 +731,7 @@ export function DashboardView(_props: Props) {
                     <dd>{NUMBER_FORMAT.format(data.unread)}</dd>
                   </div>
                   <div>
-                    <dt>Mensagens em 24h</dt>
+                    <dt>Mensagens no período</dt>
                     <dd>{NUMBER_FORMAT.format(data.messages24h)}</dd>
                   </div>
                 </dl>
@@ -809,11 +820,12 @@ function centsToInput(cents: number) {
 
 export function CrmView({ isDarkMode }: Props) {
   const viewport = useResponsiveViewport();
-  const [stages, setStages] = useState<CrmStage[]>([]);
-  const [leads, setLeads] = useState<CrmLead[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"crm">>("crm"));
+  const [stages, setStages] = useState<CrmStage[]>(first?.stages ?? []);
+  const [leads, setLeads] = useState<CrmLead[]>(first?.leads ?? []);
   const [canManage, setCanManage] = useState(false);
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ name: "", value: "" });
@@ -859,12 +871,15 @@ export function CrmView({ isDarkMode }: Props) {
     setIsLoading(true);
     try {
       setError("");
-      const x = await loadCrm();
+      const remember = viewSnapshots.writer<ViewData<"crm">>("crm");
+      const x = await viewLoaders.crm();
+      remember(x);
       setStages(x.stages);
       setLeads(x.leads);
       setCanManage(x.canManage);
       setHasLoaded(true);
     } catch (e: unknown) {
+      viewSnapshots.clear();
       const message = errorMessage(e);
       setError(message);
       WhatsAppToast.networkError(message);
@@ -1037,11 +1052,7 @@ export function CrmView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <div
-            className="space-y-4 animate-smooth-in"
-            role="status"
-            aria-label="Carregando pipeline"
-          >
+          <div className="space-y-4 ux-delayed" role="status" aria-label="Carregando pipeline">
             <div className="flex items-center justify-between">
               <SkeletonKpiCard />
               <SkeletonKpiCard />
@@ -1051,7 +1062,7 @@ export function CrmView({ isDarkMode }: Props) {
           </div>
         )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando pipeline...
           </p>
         )}
@@ -1897,11 +1908,12 @@ const FOLLOW_UP_BUCKET_ORDER = [
 ];
 
 export function FollowUpView({ isDarkMode }: Props) {
-  const [tasks, setTasks] = useState<FollowUpTask[]>([]);
-  const [leads, setLeads] = useState<CrmLead[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"followUps">>("followUps"));
+  const [tasks, setTasks] = useState<FollowUpTask[]>(first?.[0].tasks ?? []);
+  const [leads, setLeads] = useState<CrmLead[]>(first?.[1].clients ?? []);
   const [canManage, setCanManage] = useState(false);
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [pendingFollowUpDelete, setPendingFollowUpDelete] = useState<FollowUpTask | null>(null);
@@ -1922,12 +1934,16 @@ export function FollowUpView({ isDarkMode }: Props) {
     setIsLoading(true);
     try {
       setError("");
-      const [x, clients] = await Promise.all([loadFollowUps(), loadClients("", { sync: false })]);
+      const remember = viewSnapshots.writer<ViewData<"followUps">>("followUps");
+      const result = await viewLoaders.followUps();
+      remember(result);
+      const [x, clients] = result;
       setTasks(x.tasks);
       setLeads(clients.clients);
       setCanManage(x.canManage);
       setHasLoaded(true);
     } catch (e: unknown) {
+      viewSnapshots.clear();
       const message = errorMessage(e);
       setError(message);
       WhatsAppToast.networkError(message);
@@ -2045,15 +2061,11 @@ export function FollowUpView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <div
-            className="space-y-3 animate-smooth-in"
-            role="status"
-            aria-label="Carregando follow-ups"
-          >
+          <div className="space-y-3 ux-delayed" role="status" aria-label="Carregando follow-ups">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-3"
+                className="flex items-center gap-3 rounded-lg border border-[var(--ux-line)] bg-[var(--ux-surface)] px-4 py-3"
               >
                 <Skeleton className="h-5 w-5 rounded-full" />
                 <div className="flex-1 space-y-2">
@@ -2066,7 +2078,7 @@ export function FollowUpView({ isDarkMode }: Props) {
           </div>
         )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando follow-ups...
           </p>
         )}
@@ -2546,21 +2558,26 @@ function UxField({
 }
 
 export function AgentsView({ isDarkMode }: Props) {
-  const [agents, setAgents] = useState<AutomationAgent[]>([]);
-  const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"agents">>("agents"));
+  const [agents, setAgents] = useState<AutomationAgent[]>(first?.[0].agents ?? []);
+  const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>(
+    first?.[2].documents ?? [],
+  );
   const [knowledgeBusy, setKnowledgeBusy] = useState(false);
   const [knowledgeEditingId, setKnowledgeEditingId] = useState<string | null>(null);
   const [pendingKnowledgeDelete, setPendingKnowledgeDelete] = useState<KnowledgeDocument | null>(
     null,
   );
   const [knowledgeForm, setKnowledgeForm] = useState({ title: "", content: "", active: true });
-  const [instances, setInstances] = useState<AgentInstance[]>([]);
-  const [calendars, setCalendars] = useState<CalendarConfig[]>([]);
-  const [runs, setRuns] = useState<AutomationRun[]>([]);
-  const [aiConfigured, setAiConfigured] = useState(false);
-  const [aiOptions, setAiOptions] = useState<AiProviderOption[]>([]);
+  const [instances, setInstances] = useState<AgentInstance[]>(first?.[0].instances ?? []);
+  const [calendars, setCalendars] = useState<CalendarConfig[]>(first?.[1].calendars ?? []);
+  const [runs, setRuns] = useState<AutomationRun[]>(first?.[0].runs ?? []);
+  const [aiConfigured, setAiConfigured] = useState(
+    Boolean(first?.[0].aiConfigured || first?.[0].groqConfigured),
+  );
+  const [aiOptions, setAiOptions] = useState<AiProviderOption[]>(first?.[0].aiOptions ?? []);
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [testText, setTestText] = useState<Record<string, string>>({});
@@ -2584,6 +2601,13 @@ export function AgentsView({ isDarkMode }: Props) {
       return {};
     }
   });
+  // Edição liberada só depois da primeira resposta nova: salvar dado antigo apagaria o recente.
+  const freshRef = useRef(false);
+  const staleGuard = () => {
+    if (freshRef.current) return false;
+    WhatsAppToast.networkError("Ainda atualizando os dados. Tente de novo em instantes.");
+    return true;
+  };
   const editorTriggerRef = useRef<HTMLElement | null>(null);
   const editorDialogRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState({
@@ -2617,11 +2641,11 @@ export function AgentsView({ isDarkMode }: Props) {
     setIsLoading(true);
     try {
       setError("");
-      const [x, calendarData, knowledgeData] = await Promise.all([
-        loadAgents(),
-        loadCalendar().catch(() => ({ calendars: [], appointments: [], canManage: false })),
-        loadKnowledgeDocuments().catch(() => ({ documents: [] })),
-      ]);
+      const remember = viewSnapshots.writer<ViewData<"agents">>("agents");
+      const result = await viewLoaders.agents();
+      remember(result);
+      freshRef.current = true;
+      const [x, calendarData, knowledgeData] = result;
       setAgents(Array.isArray(x.agents) ? x.agents : []);
       setInstances(Array.isArray(x.instances) ? x.instances : []);
       setRuns(Array.isArray(x.runs) ? x.runs : []);
@@ -2642,6 +2666,7 @@ export function AgentsView({ isDarkMode }: Props) {
       setKnowledgeDocuments(Array.isArray(knowledgeData.documents) ? knowledgeData.documents : []);
       setHasLoaded(true);
     } catch (e: unknown) {
+      viewSnapshots.clear();
       const message = errorMessage(e);
       setError(message);
       WhatsAppToast.networkError(message);
@@ -2746,6 +2771,7 @@ export function AgentsView({ isDarkMode }: Props) {
   };
 
   const editAgent = (agent: AutomationAgent) => {
+    if (staleGuard()) return;
     const config = isAgentRuntimeConfig(agent.runtime_config) ? agent.runtime_config : null;
     setEditingId(agent.id);
     setForm({
@@ -2784,6 +2810,7 @@ export function AgentsView({ isDarkMode }: Props) {
   };
 
   const editKnowledgeDocument = (document: KnowledgeDocument) => {
+    if (staleGuard()) return;
     setKnowledgeEditingId(document.id);
     setKnowledgeForm({
       title: document.title,
@@ -2798,6 +2825,7 @@ export function AgentsView({ isDarkMode }: Props) {
   };
 
   const saveKnowledgeDocument = () => {
+    viewSnapshots.drop("agents");
     void (async () => {
       setKnowledgeBusy(true);
       try {
@@ -2827,6 +2855,7 @@ export function AgentsView({ isDarkMode }: Props) {
   };
 
   const removeKnowledgeDocument = (document: KnowledgeDocument) => {
+    viewSnapshots.drop("agents");
     void (async () => {
       setKnowledgeBusy(true);
       try {
@@ -2993,15 +3022,11 @@ export function AgentsView({ isDarkMode }: Props) {
         </header>
 
         {viewState === "initial" && (
-          <div
-            className="space-y-3 animate-smooth-in"
-            role="status"
-            aria-label="Carregando agentes"
-          >
+          <div className="space-y-3 ux-delayed" role="status" aria-label="Carregando agentes">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-4"
+                className="flex items-center gap-4 rounded-lg border border-[var(--ux-line)] bg-[var(--ux-surface)] px-4 py-4"
               >
                 <Skeleton className="h-10 w-10 rounded-full" />
                 <div className="flex-1 space-y-2">
@@ -3014,7 +3039,7 @@ export function AgentsView({ isDarkMode }: Props) {
           </div>
         )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando agentes...
           </p>
         )}
@@ -4183,13 +4208,16 @@ function timeLabel(value: string) {
 }
 
 export function CalendarView({ isDarkMode }: Props) {
-  const [calendars, setCalendars] = useState<CalendarConfig[]>([]);
-  const [appointments, setAppointments] = useState<CalendarAppointment[]>([]);
-  const [agents, setAgents] = useState<AutomationAgent[]>([]);
-  const [clients, setClients] = useState<WorkspaceClient[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"calendar">>("calendar"));
+  const [calendars, setCalendars] = useState<CalendarConfig[]>(first?.[0].calendars ?? []);
+  const [appointments, setAppointments] = useState<CalendarAppointment[]>(
+    first?.[0].appointments ?? [],
+  );
+  const [agents, setAgents] = useState<AutomationAgent[]>(first?.[1].agents ?? []);
+  const [clients, setClients] = useState<WorkspaceClient[]>(first?.[2].clients ?? []);
   const [canManage, setCanManage] = useState(false);
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editingAppointmentId, setEditingAppointmentId] = useState<string | null>(null);
@@ -4199,7 +4227,7 @@ export function CalendarView({ isDarkMode }: Props) {
   const [month, setMonth] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState(() => dayKey(new Date()));
   const [form, setForm] = useState({
-    calendarId: "",
+    calendarId: first?.[0].calendars[0]?.id ?? "",
     title: "",
     startsAt: localDateTime(new Date(Date.now() + 60 * 60 * 1000)),
     endsAt: localDateTime(new Date(Date.now() + 90 * 60 * 1000)),
@@ -4219,15 +4247,10 @@ export function CalendarView({ isDarkMode }: Props) {
     setIsLoading(true);
     try {
       setError("");
-      const [data, agentData, clientData] = await Promise.all([
-        loadCalendar(),
-        loadAgents(),
-        loadClients("", { sync: !clientsSynced.current }).catch(() => ({
-          clients: [],
-          tags: [],
-          canManage: false,
-        })),
-      ]);
+      const remember = viewSnapshots.writer<ViewData<"calendar">>("calendar");
+      const result = await viewLoaders.calendar(!clientsSynced.current);
+      remember(result);
+      const [data, agentData, clientData] = result;
       setCalendars(data.calendars);
       setAppointments(data.appointments);
       setCanManage(data.canManage);
@@ -4236,9 +4259,10 @@ export function CalendarView({ isDarkMode }: Props) {
       clientsSynced.current = true;
       setHasLoaded(true);
       const firstCalendar = data.calendars[0];
-      if (!form.calendarId && firstCalendar)
+      if (firstCalendar && !data.calendars.some((item) => item.id === form.calendarId))
         setForm((current) => ({ ...current, calendarId: firstCalendar.id }));
     } catch (errorValue: unknown) {
+      viewSnapshots.clear();
       const message = errorMessage(errorValue);
       setError(message);
       WhatsAppToast.networkError(message);
@@ -4354,15 +4378,11 @@ export function CalendarView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <div
-            className="space-y-3 animate-smooth-in"
-            role="status"
-            aria-label="Carregando calendário"
-          >
+          <div className="space-y-3 ux-delayed" role="status" aria-label="Carregando calendário">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-3"
+                className="flex items-center gap-4 rounded-lg border border-[var(--ux-line)] bg-[var(--ux-surface)] px-4 py-3"
               >
                 <Skeleton className="h-10 w-10 rounded-md" />
                 <div className="flex-1 space-y-2">
@@ -4375,7 +4395,7 @@ export function CalendarView({ isDarkMode }: Props) {
           </div>
         )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando calendário...
           </p>
         )}
@@ -4931,13 +4951,14 @@ export function CalendarView({ isDarkMode }: Props) {
 type ClientCategoryFilter = "all" | "saved_contact" | "potential_lead" | "manual";
 
 export function ClientsView({ isDarkMode }: Props) {
-  const [clients, setClients] = useState<WorkspaceClient[]>([]);
-  const [tags, setTags] = useState<ClientTag[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"clients">>("clients"));
+  const [clients, setClients] = useState<WorkspaceClient[]>(first?.clients ?? []);
+  const [tags, setTags] = useState<ClientTag[]>(first?.tags ?? []);
   const [selected, setSelected] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [newTag, setNewTag] = useState("");
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [importSummary, setImportSummary] = useState("");
@@ -4984,11 +5005,13 @@ export function ClientsView({ isDarkMode }: Props) {
       setIsLoading(true);
       try {
         setError("");
+        const remember = query ? null : viewSnapshots.writer<ViewData<"clients">>("clients");
         const data = await loadClients(query, {
           sync: initialSync.current,
           ...(signal ? { signal } : {}),
         });
         if (signal?.aborted || sequence !== requestSequence.current) return;
+        remember?.(data);
         setClients(data.clients);
         setTags(data.tags);
         setHasLoaded(true);
@@ -4996,6 +5019,7 @@ export function ClientsView({ isDarkMode }: Props) {
         initialSync.current = false;
       } catch (errorValue: unknown) {
         if (signal?.aborted || sequence !== requestSequence.current) return;
+        viewSnapshots.clear();
         const message = errorMessage(errorValue);
         setError(message);
         WhatsAppToast.networkError(message);
@@ -5202,18 +5226,14 @@ export function ClientsView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <div
-            className="space-y-2 animate-smooth-in"
-            role="status"
-            aria-label="Carregando clientes"
-          >
+          <div className="space-y-2 ux-delayed" role="status" aria-label="Carregando clientes">
             {Array.from({ length: 6 }).map((_, i) => (
               <SkeletonTableRow key={i} cols={5} />
             ))}
           </div>
         )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando clientes...
           </p>
         )}
@@ -5431,8 +5451,8 @@ export function ClientsView({ isDarkMode }: Props) {
                           onClick={() => void toggleClientTimeline(client.id)}
                           className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
                             expandedTimelineId === client.id
-                              ? "bg-white/10 text-white"
-                              : "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200"
+                              ? "bg-[var(--ux-press)] text-[var(--ux-ink)]"
+                              : "text-[var(--ux-muted)] hover:bg-[var(--ux-hover)] hover:text-[var(--ux-ink)]"
                           }`}
                           aria-expanded={expandedTimelineId === client.id}
                           aria-label={`Ver histórico de ${client.name}`}
@@ -5458,9 +5478,9 @@ export function ClientsView({ isDarkMode }: Props) {
             )}
             {/* F1: Expanded timeline panel — rendered after the list/empty block */}
             {expandedTimelineId && visibleClients.some((c) => c.id === expandedTimelineId) && (
-              <div className="border-t border-white/[0.06] bg-white/[0.02] px-4 py-3 animate-smooth-in">
+              <div className="border-t border-[var(--ux-line)] bg-[var(--ux-surface-2)] px-4 py-3">
                 {timelineLoading ? (
-                  <div className="flex items-center gap-2 text-xs text-neutral-400">
+                  <div className="ux-delayed flex items-center gap-2 text-xs text-[var(--ux-muted)]">
                     <ArrowClockwise size={14} className="animate-spin" />
                     <span>Carregando histórico…</span>
                   </div>
@@ -5473,7 +5493,7 @@ export function ClientsView({ isDarkMode }: Props) {
                     {timelineEvents.map((evt) => (
                       <li
                         key={`${evt.kind}-${evt.id}`}
-                        className="flex items-start gap-3 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2"
+                        className="flex items-start gap-3 rounded-lg border border-[var(--ux-line)] bg-[var(--ux-surface)] px-3 py-2"
                       >
                         <span
                           className={`mt-0.5 shrink-0 rounded-full p-1 ${
@@ -5494,7 +5514,7 @@ export function ClientsView({ isDarkMode }: Props) {
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-2">
-                            <p className="truncate text-xs font-semibold text-neutral-200">
+                            <p className="truncate text-xs font-semibold text-[var(--ux-ink)]">
                               {evt.title}
                             </p>
                             <time className="shrink-0 text-[10px] text-neutral-500">
