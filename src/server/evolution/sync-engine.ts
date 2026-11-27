@@ -670,30 +670,30 @@ export async function syncRecentMessages(
           .select("id, phone, name, profile_pic_url, is_group, remote_jid")
           .maybeSingle();
 
-      if (!chatErr && newChat) {
-        chat = newChat;
-        chatByPhone.set(phone, newChat);
+        if (!chatErr && newChat) {
+          chat = newChat;
+          chatByPhone.set(phone, newChat);
 
-        // Se ainda não tem foto, dispara busca em background
-        if (!newChat.profile_pic_url && !isGroup && !queuedPicturePhones.has(phone)) {
-          queuedPicturePhones.add(phone);
-          messagePictureJobs.push(() =>
-            fetchContactProfilePicture(instanceName, phone, undefined, undefined, workspaceId)
-              .then(async (pic) => {
-                if (pic && newChat.id) {
-                  await supabaseAdmin
-                    .from("chats")
-                    .update({ profile_pic_url: pic })
-                    .eq("id", newChat.id)
-                    .eq("workspace_id", workspaceId)
-                    .eq("instance_name", instanceName);
-                }
-              })
-              .catch(() => {}),
-          );
+          // Se ainda não tem foto, dispara busca em background
+          if (!newChat.profile_pic_url && !isGroup && !queuedPicturePhones.has(phone)) {
+            queuedPicturePhones.add(phone);
+            messagePictureJobs.push(() =>
+              fetchContactProfilePicture(instanceName, phone, undefined, undefined, workspaceId)
+                .then(async (pic) => {
+                  if (pic && newChat.id) {
+                    await supabaseAdmin
+                      .from("chats")
+                      .update({ profile_pic_url: pic })
+                      .eq("id", newChat.id)
+                      .eq("workspace_id", workspaceId)
+                      .eq("instance_name", instanceName);
+                  }
+                })
+                .catch(() => {}),
+            );
+          }
         }
       }
-    }
     }
 
     if (isGroup && chat && chat.remote_jid !== rawRemoteJid) {

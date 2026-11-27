@@ -423,6 +423,7 @@ export async function mutateAppointment(request: Request, body: unknown) {
           .select("*")
           .single();
     if (result.error) throw result.error;
+
     return json({ appointment: result.data });
   } catch (error: unknown) {
     logServerError("[calendar] appointment mutation failed", error);
@@ -532,6 +533,129 @@ export async function listClients(request: Request) {
   } catch (error: unknown) {
     logServerError("[clients] list failed", error);
     return json({ error: errorMessage(error, "Falha ao carregar clientes") }, 500);
+  }
+}
+
+// F1: Unified client timeline — aggregates messages, CRM events, follow-ups and appointments
+export async function getClientTimeline(request: Request, leadId: string) {
+  const auth = await requirePermission(request, "crm.read");
+  if (auth instanceof Response) return auth;
+  const canReadMessages = roleHasPermission(
+    auth.workspace.role,
+    "messages.read",
+    auth.workspace.permissions,
+  );
+  try {
+    const client = await db();
+    const [leadResult, messagesResult, followUpsResult, appointmentsResult] = await Promise.all([
+      client
+        .from("crm_leads")
+        .select("id,chat_id,phone_e164,name")
+        .eq("workspace_id", auth.workspace.id)
+        .eq("id", leadId)
+        .maybeSingle(),
+      // Mensagens do chat vinculado (90 dias, máx. 200), somente com messages.read
+      canReadMessages
+        ? client
+            .from("messages")
+            .select("id,sender,sender_name,text,type,created_at")
+            .eq("workspace_id", auth.workspace.id)
+            .in(
+              "chat_id",
+              (
+                await client
+                  .from("crm_leads")
+                  .select("chat_id")
+                  .eq("workspace_id", auth.workspace.id)
+                  .eq("id", leadId)
+                  .not("chat_id", "is", null)
+              ).data?.map((r) => r.chat_id) ?? [],
+            )
+            .gte("created_at", new Date(Date.now() - 90 * 86_400_000).toISOString())
+            .order("created_at", { ascending: false })
+            .limit(200)
+        : Promise.resolve({ data: [], error: null }),
+      client
+        .from("follow_up_tasks")
+        .select("id,title,status,due_at,completed_at,created_at")
+        .eq("workspace_id", auth.workspace.id)
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      client
+        .from("calendar_appointments")
+        .select("id,title,status,starts_at,ends_at,created_at")
+        .eq("workspace_id", auth.workspace.id)
+        .eq("lead_id", leadId)
+        .order("starts_at", { ascending: false })
+        .limit(50),
+    ]);
+    if (leadResult.error) throw leadResult.error;
+    if (!leadResult.data) {
+      return json({ error: "Cliente não encontrado" }, 404);
+    }
+    if (messagesResult.error) throw messagesResult.error;
+    if (followUpsResult.error) throw followUpsResult.error;
+    if (appointmentsResult.error) throw appointmentsResult.error;
+
+    type TimelineEvent = {
+      id: string;
+      kind: "message" | "follow_up" | "appointment";
+      title: string;
+      description: string | null;
+      timestamp: string;
+      meta?: Record<string, unknown>;
+    };
+
+    const events: TimelineEvent[] = [];
+
+    for (const msg of messagesResult.data ?? []) {
+      events.push({
+        id: msg.id,
+        kind: "message",
+        title: msg.sender === "agent" ? "Mensagem enviada" : "Mensagem recebida",
+        description: msg.text ? msg.text.slice(0, 200) : null,
+        timestamp: msg.created_at,
+        meta: { sender: msg.sender, type: msg.type },
+      });
+    }
+
+    for (const fu of followUpsResult.data ?? []) {
+      events.push({
+        id: fu.id,
+        kind: "follow_up",
+        title: fu.title || "Follow-up",
+        description: `Status: ${fu.status}${fu.due_at ? ` · Vence: ${new Date(fu.due_at).toLocaleDateString("pt-BR")}` : ""}`,
+        timestamp: fu.created_at,
+        meta: { status: fu.status, due_at: fu.due_at },
+      });
+    }
+
+    for (const appt of appointmentsResult.data ?? []) {
+      events.push({
+        id: appt.id,
+        kind: "appointment",
+        title: appt.title || "Agendamento",
+        description: `${appt.status} · ${new Date(appt.starts_at).toLocaleString("pt-BR")}`,
+        timestamp: appt.starts_at,
+        meta: { status: appt.status },
+      });
+    }
+
+    // Sort all events by timestamp descending
+    events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return json({
+      lead: {
+        id: leadResult.data.id,
+        name: leadResult.data.name,
+        phone_e164: leadResult.data.phone_e164,
+      },
+      events,
+    });
+  } catch (error: unknown) {
+    logServerError("[clients] timeline failed", error);
+    return json({ error: errorMessage(error, "Falha ao carregar timeline do cliente") }, 500);
   }
 }
 

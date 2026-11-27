@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 const STORAGE_KEY = "inboxos.active_workspace_id";
 let cache: string | null = null;
 let inflight: Promise<string | null> | null = null;
+let lastKnown: string | null = null;
 
 function stored() {
   return typeof window === "undefined" ? null : localStorage.getItem(STORAGE_KEY)?.trim() || null;
@@ -40,8 +41,15 @@ async function resolveCurrentWorkspace(): Promise<string | null> {
     ? preferred
     : null;
   const next = validPreferred ?? payload.activeWorkspaceId ?? payload.workspaces?.[0]?.id ?? null;
+  const previous = lastKnown ?? preferred;
   cache = next;
+  lastKnown = next;
   persist(next);
+  if (previous && next !== previous && typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("inboxos:workspace-change", { detail: { workspaceId: next } }),
+    );
+  }
   return next;
 }
 
@@ -53,6 +61,7 @@ export async function currentWorkspaceId(): Promise<string | null> {
 
 export function setCurrentWorkspaceId(value: string | null) {
   cache = value?.trim() || null;
+  lastKnown = cache;
   persist(cache);
   if (typeof window !== "undefined") {
     window.dispatchEvent(
@@ -64,5 +73,6 @@ export function setCurrentWorkspaceId(value: string | null) {
 export function clearCurrentWorkspaceCache() {
   cache = null;
   inflight = null;
+  lastKnown = null;
   persist(null);
 }

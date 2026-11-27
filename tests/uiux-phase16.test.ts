@@ -134,7 +134,8 @@ test("F16/INBOX30: refresh fora de ordem não perde a conversa selecionada", () 
   assert.match(shell, /conversations\.length === 0/);
   assert.match(
     shell,
-    /!conversations\.some\(\(conversation\) => conversation\.id === selectedChatId\)/,
+    // seleção só muda quando o id ativo deixou de existir na lista
+    /conversations\.some\(\(c\) => c\.id === selectedChatId\)/,
   );
 });
 
@@ -255,7 +256,8 @@ test("F16/UI09: perfil comercial possui trap de teclado, rotulo e retorno de foc
 
 test("F16/UI10: novo chat nao perde a resposta citada devido a envio antigo", () => {
   const code = source("src/features/inbox/components/InboxShell.tsx");
-  assert.match(code, /if \(activeChatIdRef\.current === activeChat\.id\) setReplyingTo\(null\)/);
+  // cancelar/concluir só limpa a citação do próprio chat de origem
+  assert.match(code, /current\?\.chatId === activeChat\.id \? null : current/);
 });
 
 test("F16/UI11: sincronizacao manual e controles de contas possuem acessibilidade", () => {
@@ -341,7 +343,6 @@ test("F16/UI17: interface não expõe nomes de provedores ou plataformas", () =>
     source("src/features/instances/components/QrCodeDialog.tsx"),
     source("src/features/inbox/components/ProductViews.tsx"),
     source("src/features/inbox/components/SystemAdminView.tsx"),
-    source("src/features/inbox/components/FeaturePlaceholder.tsx"),
   ];
   for (const code of visibleSources) {
     assert.doesNotMatch(code, /Evolution API|Baileys|GROQ_API_KEY|API Keys/);

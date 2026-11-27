@@ -3,10 +3,10 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PLATFORM_BRAND_NAME } from "@/lib/platform-brand";
 import { isWorkspaceView, type AppView } from "@/features/inbox/navigation";
-// Preload InboxShell immediately so it's ready by the time auth resolves
-const InboxShell = lazy(() =>
-  import("@/features/inbox/components/InboxShell").then((m) => ({ default: m.InboxShell })),
-);
+const loadInboxShell = () => import("@/features/inbox/components/InboxShell");
+// Baixa o app em paralelo com a checagem de sessão, para não esperar um depois do outro.
+if (typeof window !== "undefined") void loadInboxShell().catch(() => {});
+const InboxShell = lazy(() => loadInboxShell().then((m) => ({ default: m.InboxShell })));
 export const Route = createFileRoute("/")({
   ssr: false,
   validateSearch: (search): { view: Exclude<AppView, "admin"> } => ({

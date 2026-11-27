@@ -25,8 +25,11 @@ const ChartContext = React.createContext<ChartContextProps | null>(null);
 function useChart() {
   const context = React.useContext(ChartContext);
 
+  // Graceful fallback: return empty config instead of throwing when used
+  // outside ChartContainer. This prevents crashes during HMR/cache transitions
+  // and allows Recharts components to render with inline content props.
   if (!context) {
-    throw new Error("useChart must be used within a <ChartContainer />");
+    return { config: {} as ChartConfig };
   }
 
   return context;

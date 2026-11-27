@@ -290,7 +290,7 @@ export function ConversationList({
       {/* Lista de Conversas com Scroll Suave */}
       <div className="flex-1 overflow-y-auto smooth-scroll">
         {isLoading && conversations.length === 0 ? (
-          <div className="space-y-1 p-3" aria-label="Carregando conversas">
+          <div className="ux-delayed space-y-1 p-3" aria-label="Carregando conversas">
             {[0, 1, 2, 3, 4].map((item) => (
               <div
                 key={item}

@@ -44,6 +44,8 @@ export async function requireAuth(request: Request): Promise<UserAuthContext | R
     return json({ error: "Forbidden: origem da mutação não permitida" }, 403);
   const token = extractBearerToken(request);
   if (!token) return json({ error: "Unauthorized: autenticação necessária" }, 401);
+  // Token de sessão é sempre um JWT: o que não tem esse formato nem chega ao provedor.
+  if (token.split(".").length !== 3) return json({ error: "Unauthorized: sessão inválida" }, 401);
   try {
     const s = authClient();
     const {

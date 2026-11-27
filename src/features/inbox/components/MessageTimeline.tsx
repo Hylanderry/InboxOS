@@ -5,10 +5,12 @@ import {
   ChatCircleText,
   Microphone,
   WarningCircle,
+  WifiSlash,
 } from "@phosphor-icons/react";
 import type { ChatMessage } from "../types";
 import { MessageBubble } from "./MessageBubble";
 import { usePresence } from "../hooks/usePresence";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { stripEmojis } from "@/lib/emoji";
 
 interface MessageTimelineProps {
@@ -105,6 +107,7 @@ export function MessageTimeline({
   const { isTyping, isRecording } = usePresence();
   const typing = isTyping(activePhone, activeInstanceName, activeInstanceId);
   const recording = isRecording(activePhone, activeInstanceName, activeInstanceId);
+  const isOnline = useNetworkStatus();
 
   const handleLoadPrevious = () => {
     if (containerRef.current) {
@@ -161,6 +164,22 @@ export function MessageTimeline({
       }`}
     >
       <div className="mx-auto w-full max-w-[1080px]">
+        {/* B8: Banner de estado offline/desconectado */}
+        {!isOnline && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className={`mx-auto mb-3 flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-xs font-medium animate-smooth-in ${
+              isDarkMode
+                ? "border-red-500/20 bg-red-500/10 text-red-300"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            <WifiSlash size={16} weight="duotone" aria-hidden="true" />
+            <span>Conexão perdida — reconectando automaticamente…</span>
+          </div>
+        )}
+
         {error && (
           <div role="alert" className="inbox-feedback inbox-feedback-error mx-auto mb-3 max-w-xl">
             <WarningCircle size={17} weight="duotone" aria-hidden="true" />
@@ -202,7 +221,7 @@ export function MessageTimeline({
         )}
 
         {isLoading && messages.length === 0 ? (
-          <div className="py-24 flex flex-col items-center justify-center text-center text-neutral-500 animate-smooth-in">
+          <div className="ux-delayed py-24 flex flex-col items-center justify-center text-center text-neutral-500">
             <ArrowsClockwise size={32} className="animate-spin text-neutral-400 mb-3 opacity-80" />
             <p className="text-xs font-semibold text-neutral-400">Carregando conversa...</p>
           </div>
@@ -262,10 +281,23 @@ export function MessageTimeline({
           })
         )}
 
-        {/* Indicador de Digitação / Gravação de Áudio Flutuante (Estilo WhatsApp Web) */}
+        {/* Indicador de Digitação / Gravação de Áudio Flutuante (Estilo WhatsApp Web) — B7: aria-live */}
         {(typing || recording) && (
-          <div className="flex items-end gap-2.5 my-2 animate-smooth-in">
-            <div className="w-8 h-8 rounded-full overflow-hidden bg-[#17171a] flex items-center justify-center shrink-0 border border-white/10 shadow-sm">
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-end gap-2.5 my-2 animate-smooth-in"
+          >
+            {/* Texto acessível para leitores de tela (sr-only) */}
+            <span className="sr-only">
+              {recording
+                ? `${stripEmojis(activeName) || "Contato"} está gravando um áudio`
+                : `${stripEmojis(activeName) || "Contato"} está digitando`}
+            </span>
+            <div
+              className="w-8 h-8 rounded-full overflow-hidden bg-[#17171a] flex items-center justify-center shrink-0 border border-white/10 shadow-sm"
+              aria-hidden="true"
+            >
               {activeAvatar ? (
                 <img src={activeAvatar} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -283,10 +315,15 @@ export function MessageTimeline({
                   ? "bg-[#111113] border-white/[0.065] text-[var(--whatsapp)]"
                   : "bg-white border-black/[0.07] text-[var(--whatsapp)]"
               }`}
+              aria-hidden="true"
             >
               {recording ? (
                 <div className="flex items-center gap-2 text-xs font-semibold">
-                  <Microphone size={14} weight="fill" className="animate-pulse text-[var(--whatsapp)]" />
+                  <Microphone
+                    size={14}
+                    weight="fill"
+                    className="animate-pulse text-[var(--whatsapp)]"
+                  />
                   <span className="animate-pulse">gravando áudio...</span>
                 </div>
               ) : (

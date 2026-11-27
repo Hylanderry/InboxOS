@@ -980,6 +980,8 @@ export async function persistMessage(input: UpsertMessageInput) {
 
 /** Validates the current, server-managed Evolution webhook credential. */
 export async function isValidManagedWebhookRequest(request: Request): Promise<boolean> {
+  // Sem credencial: 401 imediato, sem tocar no cofre/banco.
+  if (!request.headers.get("x-webhook-token") && !request.headers.get("apikey")) return false;
   const { resolveManagedIntegration } = await import("@/server/admin/integration-vault.server");
   const managed = await resolveManagedIntegration("evolution");
   if (managed.disabled) return false;

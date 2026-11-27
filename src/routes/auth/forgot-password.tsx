@@ -4,7 +4,8 @@ import { AuthField, AuthShell, PasswordMeter } from "@/features/auth/components/
 import { TurnstileWidget } from "@/features/auth/components/TurnstileWidget";
 import { evaluatePassword, normalizeOtp } from "@/features/auth/auth-validation";
 
-const TURNSTILE_SITE_KEY = import.meta.env["VITE_CLOUDFLARE_TURNSTILE_SITE_KEY"] as string | undefined;
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_CLOUDFLARE_TURNSTILE_SITE_KEY"] as
+  string | undefined;
 
 export const Route = createFileRoute("/auth/forgot-password")({ component: Forgot });
 

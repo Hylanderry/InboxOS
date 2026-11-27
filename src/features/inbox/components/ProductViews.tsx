@@ -36,6 +36,11 @@ import {
   DotsThree,
   ArrowLeft,
   ArrowRight,
+  ThumbsUp,
+  ThumbsDown,
+  Clock,
+  CalendarBlank,
+  ChatCircleText,
 } from "@phosphor-icons/react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useNavigate } from "@tanstack/react-router";
@@ -49,6 +54,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { WhatsAppToast } from "@/components/ui/ToastProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  Skeleton,
+  SkeletonKpiCard,
+  SkeletonChart,
+  SkeletonPanel,
+  SkeletonTableRow,
+} from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -62,7 +74,17 @@ import { parseDelimitedCsv, validateClientImportCount } from "@/lib/csv";
 import { useResponsiveViewport } from "@/hooks/use-responsive-viewport";
 import { friendlyErrorText } from "@/lib/friendly-error";
 import { deriveViewDataState } from "../view-data-state";
+import { viewLoaders, viewSnapshots, type ViewData } from "../view-snapshot-client";
 import { progressiveRenderLimit } from "../product-surface";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from "recharts";
 import {
   createAgent,
   createFollowUp,
@@ -99,6 +121,8 @@ import {
   type AutomationRun,
   type CrmLead,
   type CrmStage,
+  type DashboardPeriod,
+  type DashboardMessageDay,
   type DashboardMetrics,
   type FollowUpTask,
   type CalendarAppointment,
@@ -106,6 +130,8 @@ import {
   type ClientTag,
   type WorkspaceClient,
   type KnowledgeDocument,
+  loadClientTimeline,
+  type ClientTimelineEvent,
 } from "../workspace-product-api";
 
 type Props = { isDarkMode: boolean };
@@ -293,31 +319,61 @@ type AttentionItem = {
   view: DashboardTarget;
 };
 
+const DASHBOARD_PERIODS: { value: DashboardPeriod; label: string }[] = [
+  { value: "7d", label: "7 dias" },
+  { value: "10d", label: "10 dias" },
+  { value: "30d", label: "30 dias" },
+  { value: "90d", label: "90 dias" },
+];
+
 export function DashboardView(_props: Props) {
-  const [data, setData] = useState<DashboardMetrics | null>(null);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"dashboard">>("dashboard:30d"));
+  const [data, setData] = useState<DashboardMetrics | null>(first?.metrics ?? null);
+  const [messagesByDay, setMessagesByDay] = useState<DashboardMessageDay[]>(
+    first?.messagesByDay ?? [],
+  );
+  const requestSequence = useRef(0);
+  const [period, setPeriod] = useState<DashboardPeriod>("30d");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const navigate = useNavigate();
   const go = (view: DashboardTarget) => void navigate({ to: "/", search: { view } });
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback((selectedPeriod: DashboardPeriod) => {
     setError("");
     setIsLoading(true);
-    void loadDashboard()
+    const sequence = ++requestSequence.current;
+    const key = `dashboard:${selectedPeriod}`;
+    const saved = viewSnapshots.read<ViewData<"dashboard">>(key);
+    if (saved) {
+      setData(saved.metrics);
+      setMessagesByDay(saved.messagesByDay ?? []);
+    }
+    const remember = viewSnapshots.writer<ViewData<"dashboard">>(key);
+    void loadDashboard(selectedPeriod)
       .then((x) => {
+        remember(x);
+        if (sequence !== requestSequence.current) return;
         setData(x.metrics);
+        setMessagesByDay(x.messagesByDay ?? []);
         setUpdatedAt(new Date());
       })
       .catch((e) => {
+        viewSnapshots.clear();
+        if (sequence !== requestSequence.current) return;
         const message = errorMessage(e);
         setError(message);
         WhatsAppToast.networkError(message);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (sequence === requestSequence.current) setIsLoading(false);
+      });
   }, []);
 
-  useEffect(refresh, [refresh]);
+  useEffect(() => {
+    refresh(period);
+  }, [period, refresh]);
 
   const money = useMemo(() => {
     if (!data) return "—";
@@ -392,6 +448,44 @@ export function DashboardView(_props: Props) {
         view: "agentes",
       });
     }
+
+    // C3: Predictive insights — trend-based alerts derived from existing data
+    if (messagesByDay.length >= 7) {
+      const recent = messagesByDay.slice(-3);
+      const older = messagesByDay.slice(-7, -3);
+      const recentAvg = recent.reduce((s, d) => s + d.count, 0) / recent.length;
+      const olderAvg = older.length > 0 ? older.reduce((s, d) => s + d.count, 0) / older.length : 0;
+      if (olderAvg > 0 && recentAvg > olderAvg * 1.5) {
+        attention.push({
+          id: "volume-spike",
+          tone: "warning",
+          title: "Volume de mensagens acima da média",
+          description: `Últimos 3 dias com ${Math.round(((recentAvg - olderAvg) / olderAvg) * 100)}% mais mensagens que a semana anterior.`,
+          action: "Ver inbox",
+          view: "inbox",
+        });
+      }
+    }
+    if (data.avgResponseTimeMs != null && data.avgResponseTimeMs > 300_000) {
+      attention.push({
+        id: "slow-response",
+        tone: "warning",
+        title: "Tempo de resposta elevado",
+        description: `Média de ${data.avgResponseTimeMs < 3_600_000 ? `${Math.round(data.avgResponseTimeMs / 60_000)}min` : `${(data.avgResponseTimeMs / 3_600_000).toFixed(1)}h`} por resposta neste período.`,
+        action: "Ver inbox",
+        view: "inbox",
+      });
+    }
+    if (data.overdueFollowUps === 0 && data.pendingFollowUps > 5) {
+      attention.push({
+        id: "followup-backlog",
+        tone: undefined,
+        title: `${data.pendingFollowUps} follow-ups acumulados`,
+        description: "Nenhum atrasado, mas o volume pendente está alto. Considere redistribuir.",
+        action: "Ver follow-ups",
+        view: "follow-up",
+      });
+    }
   }
 
   return (
@@ -403,6 +497,19 @@ export function DashboardView(_props: Props) {
             <p className="ux-lead">Como está a operação do workspace agora.</p>
           </div>
           <div className="ux-actions">
+            <div className="ux-segmented" role="group" aria-label="Período do dashboard">
+              {DASHBOARD_PERIODS.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => setPeriod(p.value)}
+                  className="ux-segment"
+                  aria-pressed={period === p.value}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
             {updatedAt && (
               <span className="ux-meta">
                 Atualizado às{" "}
@@ -412,7 +519,7 @@ export function DashboardView(_props: Props) {
             <button
               type="button"
               className="ux-icon-btn"
-              onClick={refresh}
+              onClick={() => refresh(period)}
               aria-label="Atualizar dados de Dashboard"
               title="Atualizar"
             >
@@ -422,17 +529,29 @@ export function DashboardView(_props: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <DataSkeleton label="Preparando indicadores do workspace" columns={5} />
+          <div
+            className="ux-layout-rail ux-delayed"
+            role="status"
+            aria-label="Carregando dashboard"
+          >
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonKpiCard key={i} />
+              ))}
+            </div>
+            <SkeletonPanel lines={4} className="mt-4" />
+            <SkeletonChart className="mt-4 h-64" />
+          </div>
         )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando indicadores...
           </p>
         )}
         {data && (
           <section className="ux-panel ux-kpis" aria-label="Indicadores principais">
             <div className="ux-kpi">
-              <span className="ux-meta">Mensagens em 24h</span>
+              <span className="ux-meta">Mensagens no período</span>
               <strong className="ux-kpi-value">{NUMBER_FORMAT.format(data.messages24h)}</strong>
               <span className="ux-meta">enviadas e recebidas</span>
             </div>
@@ -452,6 +571,93 @@ export function DashboardView(_props: Props) {
                 {money}
               </strong>
               <span className="ux-meta">em negociação</span>
+            </div>
+            <div className="ux-kpi">
+              <span className="ux-meta">Tempo médio de resposta</span>
+              <strong className="ux-kpi-value">
+                {data.avgResponseTimeMs != null
+                  ? data.avgResponseTimeMs < 60_000
+                    ? `${Math.round(data.avgResponseTimeMs / 1000)}s`
+                    : data.avgResponseTimeMs < 3_600_000
+                      ? `${Math.round(data.avgResponseTimeMs / 60_000)}min`
+                      : `${(data.avgResponseTimeMs / 3_600_000).toFixed(1)}h`
+                  : "—"}
+              </strong>
+              <span className="ux-meta">
+                {data.avgResponseTimeMs != null ? "média no período" : "sem dados suficientes"}
+              </span>
+            </div>
+          </section>
+        )}
+        {data && messagesByDay.length > 0 && (
+          <section className="ux-panel" aria-label="Mensagens ao longo do tempo">
+            <div className="ux-panel-head">
+              <h2 className="ux-h2">Volume de mensagens</h2>
+              <span className="ux-meta">
+                {period === "7d"
+                  ? "Últimos 7 dias"
+                  : period === "10d"
+                    ? "Últimos 10 dias"
+                    : period === "30d"
+                      ? "Últimos 30 dias"
+                      : "Últimos 90 dias"}
+              </span>
+            </div>
+            <div className="h-64 w-full min-h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={messagesByDay} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.06)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: "#a3a3a3" }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: string) => {
+                      const d = new Date(v + "T00:00:00");
+                      return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+                    }}
+                    minTickGap={32}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#a3a3a3" }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const dateStr = label
+                        ? new Date(label + "T00:00:00").toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "short",
+                          })
+                        : "";
+                      return (
+                        <div className="rounded-lg border border-white/10 bg-neutral-900/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
+                          <p className="mb-1 text-neutral-400">{dateStr}</p>
+                          <p className="font-semibold text-emerald-400">
+                            {payload[0]?.value ?? 0} mensagens
+                          </p>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    name="Mensagens"
+                    stroke="#25D366"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#25D366", stroke: "#0a0a0b", strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </section>
         )}
@@ -525,7 +731,7 @@ export function DashboardView(_props: Props) {
                     <dd>{NUMBER_FORMAT.format(data.unread)}</dd>
                   </div>
                   <div>
-                    <dt>Mensagens em 24h</dt>
+                    <dt>Mensagens no período</dt>
                     <dd>{NUMBER_FORMAT.format(data.messages24h)}</dd>
                   </div>
                 </dl>
@@ -614,11 +820,12 @@ function centsToInput(cents: number) {
 
 export function CrmView({ isDarkMode }: Props) {
   const viewport = useResponsiveViewport();
-  const [stages, setStages] = useState<CrmStage[]>([]);
-  const [leads, setLeads] = useState<CrmLead[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"crm">>("crm"));
+  const [stages, setStages] = useState<CrmStage[]>(first?.stages ?? []);
+  const [leads, setLeads] = useState<CrmLead[]>(first?.leads ?? []);
   const [canManage, setCanManage] = useState(false);
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ name: "", value: "" });
@@ -664,12 +871,15 @@ export function CrmView({ isDarkMode }: Props) {
     setIsLoading(true);
     try {
       setError("");
-      const x = await loadCrm();
+      const remember = viewSnapshots.writer<ViewData<"crm">>("crm");
+      const x = await viewLoaders.crm();
+      remember(x);
       setStages(x.stages);
       setLeads(x.leads);
       setCanManage(x.canManage);
       setHasLoaded(true);
     } catch (e: unknown) {
+      viewSnapshots.clear();
       const message = errorMessage(e);
       setError(message);
       WhatsAppToast.networkError(message);
@@ -842,10 +1052,17 @@ export function CrmView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <DataSkeleton label="Preparando pipeline comercial" columns={3} />
+          <div className="space-y-4 ux-delayed" role="status" aria-label="Carregando pipeline">
+            <div className="flex items-center justify-between">
+              <SkeletonKpiCard />
+              <SkeletonKpiCard />
+              <SkeletonKpiCard />
+            </div>
+            <SkeletonPanel lines={6} />
+          </div>
         )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando pipeline...
           </p>
         )}
@@ -1691,11 +1908,12 @@ const FOLLOW_UP_BUCKET_ORDER = [
 ];
 
 export function FollowUpView({ isDarkMode }: Props) {
-  const [tasks, setTasks] = useState<FollowUpTask[]>([]);
-  const [leads, setLeads] = useState<CrmLead[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"followUps">>("followUps"));
+  const [tasks, setTasks] = useState<FollowUpTask[]>(first?.[0].tasks ?? []);
+  const [leads, setLeads] = useState<CrmLead[]>(first?.[1].clients ?? []);
   const [canManage, setCanManage] = useState(false);
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [pendingFollowUpDelete, setPendingFollowUpDelete] = useState<FollowUpTask | null>(null);
@@ -1716,12 +1934,16 @@ export function FollowUpView({ isDarkMode }: Props) {
     setIsLoading(true);
     try {
       setError("");
-      const [x, clients] = await Promise.all([loadFollowUps(), loadClients("", { sync: false })]);
+      const remember = viewSnapshots.writer<ViewData<"followUps">>("followUps");
+      const result = await viewLoaders.followUps();
+      remember(result);
+      const [x, clients] = result;
       setTasks(x.tasks);
       setLeads(clients.clients);
       setCanManage(x.canManage);
       setHasLoaded(true);
     } catch (e: unknown) {
+      viewSnapshots.clear();
       const message = errorMessage(e);
       setError(message);
       WhatsAppToast.networkError(message);
@@ -1838,9 +2060,25 @@ export function FollowUpView({ isDarkMode }: Props) {
           </div>
         </header>
         {error && <ErrorBox text={error} />}
-        {viewState === "initial" && <DataSkeleton label="Preparando follow-ups" columns={2} />}
+        {viewState === "initial" && (
+          <div className="space-y-3 ux-delayed" role="status" aria-label="Carregando follow-ups">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-lg border border-[var(--ux-line)] bg-[var(--ux-surface)] px-4 py-3"
+              >
+                <Skeleton className="h-5 w-5 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+                <Skeleton className="h-8 w-20 rounded-md" />
+              </div>
+            ))}
+          </div>
+        )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando follow-ups...
           </p>
         )}
@@ -2320,21 +2558,26 @@ function UxField({
 }
 
 export function AgentsView({ isDarkMode }: Props) {
-  const [agents, setAgents] = useState<AutomationAgent[]>([]);
-  const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"agents">>("agents"));
+  const [agents, setAgents] = useState<AutomationAgent[]>(first?.[0].agents ?? []);
+  const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>(
+    first?.[2].documents ?? [],
+  );
   const [knowledgeBusy, setKnowledgeBusy] = useState(false);
   const [knowledgeEditingId, setKnowledgeEditingId] = useState<string | null>(null);
   const [pendingKnowledgeDelete, setPendingKnowledgeDelete] = useState<KnowledgeDocument | null>(
     null,
   );
   const [knowledgeForm, setKnowledgeForm] = useState({ title: "", content: "", active: true });
-  const [instances, setInstances] = useState<AgentInstance[]>([]);
-  const [calendars, setCalendars] = useState<CalendarConfig[]>([]);
-  const [runs, setRuns] = useState<AutomationRun[]>([]);
-  const [aiConfigured, setAiConfigured] = useState(false);
-  const [aiOptions, setAiOptions] = useState<AiProviderOption[]>([]);
+  const [instances, setInstances] = useState<AgentInstance[]>(first?.[0].instances ?? []);
+  const [calendars, setCalendars] = useState<CalendarConfig[]>(first?.[1].calendars ?? []);
+  const [runs, setRuns] = useState<AutomationRun[]>(first?.[0].runs ?? []);
+  const [aiConfigured, setAiConfigured] = useState(
+    Boolean(first?.[0].aiConfigured || first?.[0].groqConfigured),
+  );
+  const [aiOptions, setAiOptions] = useState<AiProviderOption[]>(first?.[0].aiOptions ?? []);
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [testText, setTestText] = useState<Record<string, string>>({});
@@ -2348,6 +2591,23 @@ export function AgentsView({ isDarkMode }: Props) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
   const [pendingAgentDeleteIds, setPendingAgentDeleteIds] = useState<string[] | null>(null);
+  // E1: Feedback loop — thumbs up/down per agent run (persisted in localStorage)
+  const [runFeedback, setRunFeedback] = useState<Record<string, "up" | "down">>(() => {
+    try {
+      const stored =
+        typeof window !== "undefined" ? localStorage.getItem("inboxos_run_feedback") : null;
+      return stored ? (JSON.parse(stored) as Record<string, "up" | "down">) : {};
+    } catch {
+      return {};
+    }
+  });
+  // Edição liberada só depois da primeira resposta nova: salvar dado antigo apagaria o recente.
+  const freshRef = useRef(false);
+  const staleGuard = () => {
+    if (freshRef.current) return false;
+    WhatsAppToast.networkError("Ainda atualizando os dados. Tente de novo em instantes.");
+    return true;
+  };
   const editorTriggerRef = useRef<HTMLElement | null>(null);
   const editorDialogRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState({
@@ -2381,11 +2641,11 @@ export function AgentsView({ isDarkMode }: Props) {
     setIsLoading(true);
     try {
       setError("");
-      const [x, calendarData, knowledgeData] = await Promise.all([
-        loadAgents(),
-        loadCalendar().catch(() => ({ calendars: [], appointments: [], canManage: false })),
-        loadKnowledgeDocuments().catch(() => ({ documents: [] })),
-      ]);
+      const remember = viewSnapshots.writer<ViewData<"agents">>("agents");
+      const result = await viewLoaders.agents();
+      remember(result);
+      freshRef.current = true;
+      const [x, calendarData, knowledgeData] = result;
       setAgents(Array.isArray(x.agents) ? x.agents : []);
       setInstances(Array.isArray(x.instances) ? x.instances : []);
       setRuns(Array.isArray(x.runs) ? x.runs : []);
@@ -2406,6 +2666,7 @@ export function AgentsView({ isDarkMode }: Props) {
       setKnowledgeDocuments(Array.isArray(knowledgeData.documents) ? knowledgeData.documents : []);
       setHasLoaded(true);
     } catch (e: unknown) {
+      viewSnapshots.clear();
       const message = errorMessage(e);
       setError(message);
       WhatsAppToast.networkError(message);
@@ -2424,6 +2685,24 @@ export function AgentsView({ isDarkMode }: Props) {
       editorDialogRef.current?.querySelector<HTMLElement>("input, textarea")?.focus(),
     );
   }, [editorOpen]);
+
+  // E1: Toggle feedback on an agent run and persist to localStorage
+  const toggleRunFeedback = useCallback((runId: string, value: "up" | "down") => {
+    setRunFeedback((prev) => {
+      const next = { ...prev };
+      if (next[runId] === value) {
+        delete next[runId]; // toggle off
+      } else {
+        next[runId] = value;
+      }
+      try {
+        localStorage.setItem("inboxos_run_feedback", JSON.stringify(next));
+      } catch {
+        // storage full or unavailable — ignore
+      }
+      return next;
+    });
+  }, []);
 
   const run = async (fn: () => Promise<unknown>, ok?: string) => {
     setBusy(true);
@@ -2492,6 +2771,7 @@ export function AgentsView({ isDarkMode }: Props) {
   };
 
   const editAgent = (agent: AutomationAgent) => {
+    if (staleGuard()) return;
     const config = isAgentRuntimeConfig(agent.runtime_config) ? agent.runtime_config : null;
     setEditingId(agent.id);
     setForm({
@@ -2530,6 +2810,7 @@ export function AgentsView({ isDarkMode }: Props) {
   };
 
   const editKnowledgeDocument = (document: KnowledgeDocument) => {
+    if (staleGuard()) return;
     setKnowledgeEditingId(document.id);
     setKnowledgeForm({
       title: document.title,
@@ -2544,6 +2825,7 @@ export function AgentsView({ isDarkMode }: Props) {
   };
 
   const saveKnowledgeDocument = () => {
+    viewSnapshots.drop("agents");
     void (async () => {
       setKnowledgeBusy(true);
       try {
@@ -2573,6 +2855,7 @@ export function AgentsView({ isDarkMode }: Props) {
   };
 
   const removeKnowledgeDocument = (document: KnowledgeDocument) => {
+    viewSnapshots.drop("agents");
     void (async () => {
       setKnowledgeBusy(true);
       try {
@@ -2738,9 +3021,25 @@ export function AgentsView({ isDarkMode }: Props) {
           </div>
         </header>
 
-        {viewState === "initial" && <DataSkeleton label="Preparando agentes" columns={2} />}
+        {viewState === "initial" && (
+          <div className="space-y-3 ux-delayed" role="status" aria-label="Carregando agentes">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 rounded-lg border border-[var(--ux-line)] bg-[var(--ux-surface)] px-4 py-4"
+              >
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+                <Skeleton className="h-8 w-16 rounded-md" />
+              </div>
+            ))}
+          </div>
+        )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando agentes...
           </p>
         )}
@@ -3209,6 +3508,46 @@ export function AgentsView({ isDarkMode }: Props) {
                               {runAgent ? ` · ${runAgent.name}` : ""} ·{" "}
                               {formatRunTime(r.started_at)}
                             </span>
+                          </div>
+                          <div
+                            className="flex shrink-0 items-center gap-0.5"
+                            role="group"
+                            aria-label={`Avaliar resposta do agente`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => toggleRunFeedback(r.id, "up")}
+                              className={`rounded-md p-1.5 transition-colors ${
+                                runFeedback[r.id] === "up"
+                                  ? "bg-emerald-500/20 text-emerald-400"
+                                  : "text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-300"
+                              }`}
+                              aria-pressed={runFeedback[r.id] === "up"}
+                              aria-label="Resposta útil"
+                              title="Resposta útil"
+                            >
+                              <ThumbsUp
+                                size={14}
+                                weight={runFeedback[r.id] === "up" ? "fill" : "regular"}
+                              />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleRunFeedback(r.id, "down")}
+                              className={`rounded-md p-1.5 transition-colors ${
+                                runFeedback[r.id] === "down"
+                                  ? "bg-red-500/20 text-red-400"
+                                  : "text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-300"
+                              }`}
+                              aria-pressed={runFeedback[r.id] === "down"}
+                              aria-label="Resposta ruim"
+                              title="Resposta ruim"
+                            >
+                              <ThumbsDown
+                                size={14}
+                                weight={runFeedback[r.id] === "down" ? "fill" : "regular"}
+                              />
+                            </button>
                           </div>
                         </li>
                       );
@@ -3869,13 +4208,16 @@ function timeLabel(value: string) {
 }
 
 export function CalendarView({ isDarkMode }: Props) {
-  const [calendars, setCalendars] = useState<CalendarConfig[]>([]);
-  const [appointments, setAppointments] = useState<CalendarAppointment[]>([]);
-  const [agents, setAgents] = useState<AutomationAgent[]>([]);
-  const [clients, setClients] = useState<WorkspaceClient[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"calendar">>("calendar"));
+  const [calendars, setCalendars] = useState<CalendarConfig[]>(first?.[0].calendars ?? []);
+  const [appointments, setAppointments] = useState<CalendarAppointment[]>(
+    first?.[0].appointments ?? [],
+  );
+  const [agents, setAgents] = useState<AutomationAgent[]>(first?.[1].agents ?? []);
+  const [clients, setClients] = useState<WorkspaceClient[]>(first?.[2].clients ?? []);
   const [canManage, setCanManage] = useState(false);
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editingAppointmentId, setEditingAppointmentId] = useState<string | null>(null);
@@ -3885,7 +4227,7 @@ export function CalendarView({ isDarkMode }: Props) {
   const [month, setMonth] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState(() => dayKey(new Date()));
   const [form, setForm] = useState({
-    calendarId: "",
+    calendarId: first?.[0].calendars[0]?.id ?? "",
     title: "",
     startsAt: localDateTime(new Date(Date.now() + 60 * 60 * 1000)),
     endsAt: localDateTime(new Date(Date.now() + 90 * 60 * 1000)),
@@ -3905,15 +4247,10 @@ export function CalendarView({ isDarkMode }: Props) {
     setIsLoading(true);
     try {
       setError("");
-      const [data, agentData, clientData] = await Promise.all([
-        loadCalendar(),
-        loadAgents(),
-        loadClients("", { sync: !clientsSynced.current }).catch(() => ({
-          clients: [],
-          tags: [],
-          canManage: false,
-        })),
-      ]);
+      const remember = viewSnapshots.writer<ViewData<"calendar">>("calendar");
+      const result = await viewLoaders.calendar(!clientsSynced.current);
+      remember(result);
+      const [data, agentData, clientData] = result;
       setCalendars(data.calendars);
       setAppointments(data.appointments);
       setCanManage(data.canManage);
@@ -3922,9 +4259,10 @@ export function CalendarView({ isDarkMode }: Props) {
       clientsSynced.current = true;
       setHasLoaded(true);
       const firstCalendar = data.calendars[0];
-      if (!form.calendarId && firstCalendar)
+      if (firstCalendar && !data.calendars.some((item) => item.id === form.calendarId))
         setForm((current) => ({ ...current, calendarId: firstCalendar.id }));
     } catch (errorValue: unknown) {
+      viewSnapshots.clear();
       const message = errorMessage(errorValue);
       setError(message);
       WhatsAppToast.networkError(message);
@@ -4039,9 +4377,25 @@ export function CalendarView({ isDarkMode }: Props) {
           </div>
         </header>
         {error && <ErrorBox text={error} />}
-        {viewState === "initial" && <DataSkeleton label="Preparando calendário" columns={2} />}
+        {viewState === "initial" && (
+          <div className="space-y-3 ux-delayed" role="status" aria-label="Carregando calendário">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 rounded-lg border border-[var(--ux-line)] bg-[var(--ux-surface)] px-4 py-3"
+              >
+                <Skeleton className="h-10 w-10 rounded-md" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-2/5" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando calendário...
           </p>
         )}
@@ -4597,13 +4951,14 @@ export function CalendarView({ isDarkMode }: Props) {
 type ClientCategoryFilter = "all" | "saved_contact" | "potential_lead" | "manual";
 
 export function ClientsView({ isDarkMode }: Props) {
-  const [clients, setClients] = useState<WorkspaceClient[]>([]);
-  const [tags, setTags] = useState<ClientTag[]>([]);
+  const [first] = useState(() => viewSnapshots.read<ViewData<"clients">>("clients"));
+  const [clients, setClients] = useState<WorkspaceClient[]>(first?.clients ?? []);
+  const [tags, setTags] = useState<ClientTag[]>(first?.tags ?? []);
   const [selected, setSelected] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [newTag, setNewTag] = useState("");
   const [error, setError] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(first));
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [importSummary, setImportSummary] = useState("");
@@ -4612,6 +4967,32 @@ export function ClientsView({ isDarkMode }: Props) {
   const [categoryFilter, setCategoryFilter] = useState<ClientCategoryFilter>("all");
   const [tagFilter, setTagFilter] = useState("");
   const [tagsOpen, setTagsOpen] = useState(false);
+  // F1: Unified client timeline — expanded per client
+  const [expandedTimelineId, setExpandedTimelineId] = useState<string | null>(null);
+  const [timelineEvents, setTimelineEvents] = useState<ClientTimelineEvent[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+
+  const toggleClientTimeline = useCallback(
+    async (clientId: string) => {
+      if (expandedTimelineId === clientId) {
+        setExpandedTimelineId(null);
+        setTimelineEvents([]);
+        return;
+      }
+      setExpandedTimelineId(clientId);
+      setTimelineLoading(true);
+      try {
+        const data = await loadClientTimeline(clientId);
+        setTimelineEvents(data.events);
+      } catch {
+        setTimelineEvents([]);
+      } finally {
+        setTimelineLoading(false);
+      }
+    },
+    [expandedTimelineId],
+  );
+
   // Loading cached CRM data first keeps the page usable when Evolution is
   // slow or temporarily unavailable. The explicit Atualizar action retries
   // the remote sync.
@@ -4624,11 +5005,13 @@ export function ClientsView({ isDarkMode }: Props) {
       setIsLoading(true);
       try {
         setError("");
+        const remember = query ? null : viewSnapshots.writer<ViewData<"clients">>("clients");
         const data = await loadClients(query, {
           sync: initialSync.current,
           ...(signal ? { signal } : {}),
         });
         if (signal?.aborted || sequence !== requestSequence.current) return;
+        remember?.(data);
         setClients(data.clients);
         setTags(data.tags);
         setHasLoaded(true);
@@ -4636,6 +5019,7 @@ export function ClientsView({ isDarkMode }: Props) {
         initialSync.current = false;
       } catch (errorValue: unknown) {
         if (signal?.aborted || sequence !== requestSequence.current) return;
+        viewSnapshots.clear();
         const message = errorMessage(errorValue);
         setError(message);
         WhatsAppToast.networkError(message);
@@ -4681,8 +5065,13 @@ export function ClientsView({ isDarkMode }: Props) {
     const dataRows = rows.slice(hasHeader ? 1 : 0);
     let imported = 0;
     let skipped = 0;
+    let duplicated = 0;
     await run(async () => {
       validateClientImportCount(dataRows.length);
+      // D2: Build a set of existing phone numbers for deduplication
+      const existingPhones = new Set(
+        clients.map((c) => c.phone_e164?.replace(/[^+\d]/g, "") || "").filter(Boolean),
+      );
       const rowsToImport = dataRows;
       // Keep the import responsive without flooding the CRM API. Ten writes
       // at a time is fast enough for a user action and remains rate-limit safe.
@@ -4697,6 +5086,10 @@ export function ClientsView({ isDarkMode }: Props) {
                 : rawPhone.length >= 8
                   ? `+${rawPhone}`
                   : null;
+            // D2: Skip if phone already exists in client list
+            if (phoneE164 && existingPhones.has(phoneE164.replace(/[^+\d]/g, ""))) {
+              return "duplicate";
+            }
             try {
               await createLead({
                 name: row[0],
@@ -4704,18 +5097,22 @@ export function ClientsView({ isDarkMode }: Props) {
                 email: row[2] || null,
                 source: "import",
               });
-              return true;
+              // Track newly imported phones to avoid intra-batch duplicates
+              if (phoneE164) existingPhones.add(phoneE164.replace(/[^+\d]/g, ""));
+              return "imported";
             } catch {
-              return false;
+              return "error";
             }
           }),
         );
-        imported += results.filter(Boolean).length;
-        skipped += results.length - results.filter(Boolean).length;
+        imported += results.filter((r) => r === "imported").length;
+        duplicated += results.filter((r) => r === "duplicate").length;
+        skipped += results.filter((r) => r === "error").length;
       }
-      setImportSummary(
-        `${imported} importados${skipped ? ` · ${skipped} ignorados por dados inválidos` : ""}`,
-      );
+      const parts = [`${imported} importados`];
+      if (duplicated) parts.push(`${duplicated} duplicados ignorados`);
+      if (skipped) parts.push(`${skipped} com erro`);
+      setImportSummary(parts.join(" · "));
     }, "Importação concluída.");
   };
   const exportCsv = () => {
@@ -4829,10 +5226,14 @@ export function ClientsView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <DataSkeleton label="Preparando clientes do workspace" columns={2} />
+          <div className="space-y-2 ux-delayed" role="status" aria-label="Carregando clientes">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonTableRow key={i} cols={5} />
+            ))}
+          </div>
         )}
         {viewState === "refreshing" && (
-          <p data-state="refreshing" role="status" className="ux-meta">
+          <p data-state="refreshing" role="status" className="sr-only">
             Atualizando clientes...
           </p>
         )}
@@ -5032,6 +5433,33 @@ export function ClientsView({ isDarkMode }: Props) {
                               : "Manual"}
                         </span>
                       </span>
+                      <span role="cell" className="flex items-center justify-end gap-1.5">
+                        {/* F2: LTV indicator */}
+                        {client.value_cents > 0 && (
+                          <span
+                            className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400"
+                            title="Valor total negociado"
+                          >
+                            {(client.value_cents / 100).toLocaleString("pt-BR", {
+                              style: "currency",
+                              currency: client.currency || "BRL",
+                            })}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => void toggleClientTimeline(client.id)}
+                          className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                            expandedTimelineId === client.id
+                              ? "bg-[var(--ux-press)] text-[var(--ux-ink)]"
+                              : "text-[var(--ux-muted)] hover:bg-[var(--ux-hover)] hover:text-[var(--ux-ink)]"
+                          }`}
+                          aria-expanded={expandedTimelineId === client.id}
+                          aria-label={`Ver histórico de ${client.name}`}
+                        >
+                          {expandedTimelineId === client.id ? "Fechar" : "Histórico"}
+                        </button>
+                      </span>
                     </div>
                   );
                 })}
@@ -5046,6 +5474,66 @@ export function ClientsView({ isDarkMode }: Props) {
                     ? "Os contatos do WhatsApp aparecem aqui automaticamente. Você também pode importar um CSV ou cadastrar manualmente."
                     : "Ajuste a busca ou os filtros para ver outros clientes."}
                 </p>
+              </div>
+            )}
+            {/* F1: Expanded timeline panel — rendered after the list/empty block */}
+            {expandedTimelineId && visibleClients.some((c) => c.id === expandedTimelineId) && (
+              <div className="border-t border-[var(--ux-line)] bg-[var(--ux-surface-2)] px-4 py-3">
+                {timelineLoading ? (
+                  <div className="ux-delayed flex items-center gap-2 text-xs text-[var(--ux-muted)]">
+                    <ArrowClockwise size={14} className="animate-spin" />
+                    <span>Carregando histórico…</span>
+                  </div>
+                ) : timelineEvents.length === 0 ? (
+                  <p className="text-xs text-neutral-500">
+                    Nenhum evento recente para este cliente.
+                  </p>
+                ) : (
+                  <ul className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {timelineEvents.map((evt) => (
+                      <li
+                        key={`${evt.kind}-${evt.id}`}
+                        className="flex items-start gap-3 rounded-lg border border-[var(--ux-line)] bg-[var(--ux-surface)] px-3 py-2"
+                      >
+                        <span
+                          className={`mt-0.5 shrink-0 rounded-full p-1 ${
+                            evt.kind === "message"
+                              ? "bg-emerald-500/15 text-emerald-400"
+                              : evt.kind === "follow_up"
+                                ? "bg-amber-500/15 text-amber-400"
+                                : "bg-sky-500/15 text-sky-400"
+                          }`}
+                        >
+                          {evt.kind === "message" ? (
+                            <ChatCircleText size={12} weight="fill" />
+                          ) : evt.kind === "follow_up" ? (
+                            <Clock size={12} weight="fill" />
+                          ) : (
+                            <CalendarBlank size={12} weight="fill" />
+                          )}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="truncate text-xs font-semibold text-[var(--ux-ink)]">
+                              {evt.title}
+                            </p>
+                            <time className="shrink-0 text-[10px] text-neutral-500">
+                              {new Date(evt.timestamp).toLocaleDateString("pt-BR", {
+                                day: "2-digit",
+                                month: "short",
+                              })}
+                            </time>
+                          </div>
+                          {evt.description && (
+                            <p className="mt-0.5 truncate text-[11px] text-neutral-400">
+                              {evt.description}
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
           </section>

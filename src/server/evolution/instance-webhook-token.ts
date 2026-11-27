@@ -15,9 +15,7 @@ const PREFIX = "inboxos-evolution-webhook-v1:";
 const SHAPE = /^[0-9a-f]{64}$/;
 
 export function instanceWebhookToken(masterSecret: string, instanceName: string): string {
-  return createHmac("sha256", masterSecret)
-    .update(`${PREFIX}${instanceName.trim()}`)
-    .digest("hex");
+  return createHmac("sha256", masterSecret).update(`${PREFIX}${instanceName.trim()}`).digest("hex");
 }
 
 export function isInstanceTokenShape(value: string | null | undefined): boolean {

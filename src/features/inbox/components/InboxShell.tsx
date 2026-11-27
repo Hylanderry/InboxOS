@@ -9,6 +9,7 @@ import { AccountsSidebar } from "./AccountsSidebar";
 import { ConversationList } from "./ConversationList";
 import { ChatHeader } from "./ChatHeader";
 import { MessageTimeline } from "./MessageTimeline";
+import { prefetchViews } from "../view-snapshot-client";
 import { MessageComposer } from "./MessageComposer";
 import { shouldMarkChatRead } from "../read-policy";
 import {
@@ -18,6 +19,7 @@ import {
   Sun,
   Moon,
   CaretDown,
+  X,
 } from "@phosphor-icons/react";
 import { useResponsiveViewport } from "@/hooks/use-responsive-viewport";
 import { useNavigate, useSearch } from "@tanstack/react-router";
@@ -39,6 +41,7 @@ import { resolveInboxComposition } from "../layout-state";
 import { useTheme } from "@/components/theme-context";
 import { PLATFORM_BRAND_NAME } from "@/lib/platform-brand";
 
+const loadConnectionManager = () => import("@/features/instances/components/ConnectionManager");
 const ConnectionManager = lazy(() =>
   import("@/features/instances/components/ConnectionManager").then((m) => ({
     default: m.ConnectionManager,
@@ -77,6 +80,16 @@ export function InboxShell() {
     faviconUrl: string | null;
   }>({ logoLightUrl: null, logoDarkUrl: null, faviconUrl: null });
   const brandObjectUrlsRef = useRef<string[]>([]);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Focar no input quando o overlay de busca mobile abrir
+  useEffect(() => {
+    if (isMobileSearchOpen && mobileSearchInputRef.current) {
+      mobileSearchInputRef.current.focus();
+    }
+  }, [isMobileSearchOpen]);
+
   useEffect(() => {
     let active = true;
     void apiFetch("/api/admin/me/", {}, { workspace: false })
@@ -210,7 +223,9 @@ export function InboxShell() {
   // the empty-state in that interval feels like the click was lost and also
   // resets the message timeline unnecessarily.
   const selectedChatSnapshotRef = useRef<Conversation | null>(null);
-  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [replyState, setReplyState] = useState<{ chatId: string; message: ChatMessage } | null>(
+    null,
+  );
   const { isDarkMode, toggleTheme, themeLoaded } = useTheme();
   useEffect(() => {
     setCurrentView(searchView);
@@ -259,16 +274,39 @@ export function InboxShell() {
 
   const { instances, refetch: refetchInstances, deleteInstance } = useInstances();
 
-  // Seleciona o chat inicial automaticamente sem sobrepor escolhas do usuário
+  // Telas prontas antes do clique: baixa o código das Conexões e aquece os dados.
   useEffect(() => {
-    if (
-      viewport.isDesktop &&
-      conversations.length > 0 &&
-      (!selectedChatId ||
-        !conversations.some((conversation) => conversation.id === selectedChatId)) &&
-      conversations[0]?.id
-    ) {
-      setSelectedChatId(conversations[0].id);
+    void loadConnectionManager().catch(() => {});
+    return prefetchViews();
+  }, []);
+
+  // Seleciona o chat inicial automaticamente SEM sobrepor escolha ativa do usuário.
+  // Só auto-seleciona quando: (1) desktop, (2) há conversas, (3) nenhum chat selecionado
+  // OU o chat selecionado deixou de existir na lista filtrada. Preserva seleção quando
+  // o chat ainda existe (ex.: após aplicar filtro que não exclui o chat ativo).
+  const previousSelectedChatIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!viewport.isDesktop || conversations.length === 0) return;
+
+    const selectedStillExists =
+      selectedChatId != null && conversations.some((c) => c.id === selectedChatId);
+
+    if (selectedChatId == null || !selectedStillExists) {
+      // Restaurar seleção anterior se ela voltou a aparecer na lista filtrada
+      const restoredFromPrevious =
+        previousSelectedChatIdRef.current != null &&
+        conversations.some((c) => c.id === previousSelectedChatIdRef.current);
+
+      if (restoredFromPrevious && previousSelectedChatIdRef.current !== selectedChatId) {
+        setSelectedChatId(previousSelectedChatIdRef.current);
+      } else if (conversations[0]?.id && conversations[0].id !== selectedChatId) {
+        setSelectedChatId(conversations[0].id);
+      }
+    }
+
+    // Atualizar ref com a seleção atual para restauração futura
+    if (selectedChatId != null) {
+      previousSelectedChatIdRef.current = selectedChatId;
     }
   }, [conversations, selectedChatId, viewport.isDesktop]);
 
@@ -292,9 +330,12 @@ export function InboxShell() {
   activeChatIdRef.current = activeChat?.id ?? null;
   const visibleReadChatRef = useRef<string | null>(null);
 
+  // A citação só vale na conversa onde foi criada (seleção automática, busca ou troca de workspace).
+  const replyingTo = replyState && replyState.chatId === activeChat?.id ? replyState.message : null;
+
   const handleSelectChat = (id: string) => {
     setSelectedChatId(id);
-    setReplyingTo(null);
+    setReplyState(null);
     const selected = conversations.find((conversation) => conversation.id === id);
     if ((selected?.unread ?? 0) > 0) void markChatRead(id);
   };
@@ -500,7 +541,7 @@ export function InboxShell() {
 
             {/* Lado Direito: Busca Global, Toggle de Tema e Perfil OP */}
             <div className="flex items-center gap-2.5 shrink-0">
-              {/* Campo de Busca Global */}
+              {/* Campo de Busca Global — Desktop */}
               {currentView === "inbox" && (
                 <div
                   className={`hidden items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors lg:flex ${
@@ -519,6 +560,22 @@ export function InboxShell() {
                     className="w-44 bg-transparent text-xs placeholder-neutral-500 focus:outline-none"
                   />
                 </div>
+              )}
+
+              {/* Botão de Busca — Mobile/Tablet (< lg) */}
+              {currentView === "inbox" && (
+                <button
+                  type="button"
+                  onClick={() => setIsMobileSearchOpen(true)}
+                  className={`lg:hidden p-2 rounded-lg transition-colors ${
+                    isDarkMode
+                      ? "text-neutral-500 hover:text-white hover:bg-white/[0.055]"
+                      : "text-neutral-500 hover:text-neutral-950 hover:bg-black/[0.04]"
+                  }`}
+                  aria-label="Abrir busca"
+                >
+                  <MagnifyingGlass size={17} />
+                </button>
               )}
 
               {/* Alternador de Tema */}
@@ -615,13 +672,7 @@ export function InboxShell() {
         {/* 2. Tela de Conexões WhatsApp / Gerenciador Completo */}
         {currentView === "conexoes" && (
           <div className="flex-1 overflow-auto">
-            <Suspense
-              fallback={
-                <div className="flex flex-1 items-center justify-center p-12 text-sm text-neutral-400">
-                  Carregando conexões...
-                </div>
-              }
-            >
+            <Suspense fallback={null}>
               <ConnectionManager
                 instances={instances}
                 onSelectInstance={(name) => {
@@ -664,6 +715,7 @@ export function InboxShell() {
 
             {/* Área Central de Conversa Ativa */}
             {composition.showChatPane && activeChat ? (
+              // key por conversa: envio, gravação e anexo nunca atravessam para outro contato.
               <div
                 key={activeChat.id}
                 className="flex-1 flex flex-col h-full overflow-hidden transition-colors"
@@ -691,7 +743,7 @@ export function InboxShell() {
                   hasMore={hasMoreMessages}
                   onLoadPrevious={loadPreviousMessages}
                   onPreviewMedia={setPreviewMedia}
-                  onReply={setReplyingTo}
+                  onReply={(message) => setReplyState({ chatId: activeChat.id, message })}
                   onReact={(message, emoji) => void reactToMessage(message, emoji)}
                   isDarkMode={isDarkMode}
                   isGroup={activeChat.isGroup}
@@ -710,7 +762,9 @@ export function InboxShell() {
                   onCancelReply={() => {
                     // Um envio do chat anterior pode concluir depois da troca de conversa.
                     // Não apagar a citação que o usuário já escolheu no chat atual.
-                    if (activeChatIdRef.current === activeChat.id) setReplyingTo(null);
+                    setReplyState((current) =>
+                      current?.chatId === activeChat.id ? null : current,
+                    );
                   }}
                   isDarkMode={isDarkMode}
                   isGroup={activeChat.isGroup}
@@ -777,6 +831,106 @@ export function InboxShell() {
         <Suspense fallback={null}>
           <MediaPreviewModal media={previewMedia} onClose={() => setPreviewMedia(null)} />
         </Suspense>
+      )}
+
+      {/* Overlay de Busca Mobile/Tablet (< lg) */}
+      {isMobileSearchOpen && currentView === "inbox" && (
+        <div
+          className={`fixed inset-0 z-50 flex flex-col lg:hidden ${
+            isDarkMode ? "bg-neutral-950/98" : "bg-white/98"
+          }`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Buscar conversas"
+        >
+          {/* Header do overlay */}
+          <div
+            className={`flex items-center gap-3 px-4 py-3 border-b ${
+              isDarkMode ? "border-white/[0.07] bg-neutral-950" : "border-black/[0.07] bg-white"
+            }`}
+          >
+            <MagnifyingGlass size={18} className="shrink-0 text-neutral-500" />
+            <input
+              ref={mobileSearchInputRef}
+              type="text"
+              placeholder="Buscar conversas..."
+              value={filters.searchQuery}
+              onChange={(e) => updateFilters({ searchQuery: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setIsMobileSearchOpen(false);
+              }}
+              className={`flex-1 bg-transparent text-sm focus:outline-none ${
+                isDarkMode
+                  ? "text-white placeholder-neutral-500"
+                  : "text-neutral-900 placeholder-neutral-500"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileSearchOpen(false);
+                updateFilters({ searchQuery: "" });
+              }}
+              className={`p-2 rounded-lg transition-colors ${
+                isDarkMode
+                  ? "text-neutral-500 hover:text-white hover:bg-white/[0.055]"
+                  : "text-neutral-500 hover:text-neutral-950 hover:bg-black/[0.04]"
+              }`}
+              aria-label="Fechar busca"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Resultados filtrados inline */}
+          <div className="flex-1 overflow-y-auto">
+            {filters.searchQuery.trim() ? (
+              conversations.filter((c) => {
+                const q = filters.searchQuery.toLowerCase();
+                return (
+                  c.name?.toLowerCase().includes(q) ||
+                  c.phone?.includes(q) ||
+                  c.lastMessage?.toLowerCase().includes(q)
+                );
+              }).length > 0 ? (
+                <ConversationList
+                  conversations={conversations.filter((c) => {
+                    const q = filters.searchQuery.toLowerCase();
+                    return (
+                      c.name?.toLowerCase().includes(q) ||
+                      c.phone?.includes(q) ||
+                      c.lastMessage?.toLowerCase().includes(q)
+                    );
+                  })}
+                  selectedChatId={selectedChatId}
+                  onSelectChat={(id: string) => {
+                    setSelectedChatId(id);
+                    setIsMobileSearchOpen(false);
+                  }}
+                  filters={filters}
+                  onUpdateFilters={updateFilters}
+                  isDarkMode={isDarkMode}
+                  layout="mobile"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                  <MagnifyingGlass size={40} className="mb-3 text-neutral-500/30" />
+                  <p className="text-sm font-medium text-neutral-500">
+                    Nenhuma conversa encontrada
+                  </p>
+                  <p className="text-xs text-neutral-600 mt-1">
+                    Tente buscar por nome, telefone ou mensagem
+                  </p>
+                </div>
+              )
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <MagnifyingGlass size={40} className="mb-3 text-neutral-500/30" />
+                <p className="text-sm font-medium text-neutral-500">Digite para buscar conversas</p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

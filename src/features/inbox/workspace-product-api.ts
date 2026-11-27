@@ -28,8 +28,26 @@ export interface DashboardMetrics {
   overdueFollowUps: number;
   enabledAgents: number;
   automaticAgents: number;
+  avgResponseTimeMs: number | null;
 }
-export const loadDashboard = () => read<{ metrics: DashboardMetrics }>(apiFetch("/api/dashboard/"));
+
+export type DashboardPeriod = "7d" | "10d" | "30d" | "90d";
+
+export interface DashboardMessageDay {
+  date: string;
+  count: number;
+}
+
+export interface DashboardResponse {
+  metrics: DashboardMetrics;
+  period: string;
+  messagesByDay: DashboardMessageDay[];
+}
+
+export const loadDashboard = (period?: DashboardPeriod) => {
+  const params = period ? `?period=${period}` : "";
+  return read<DashboardResponse>(apiFetch(`/api/dashboard/${params}`));
+};
 
 export interface CrmStage {
   id: string;
@@ -253,11 +271,39 @@ export interface ClientTag {
   name: string;
   color: string;
 }
+// F2: Rich client profile — extended fields stored in localStorage per lead
+export interface ClientProfileExtras {
+  birthday?: string; // ISO date YYYY-MM-DD
+  instagram?: string;
+  linkedin?: string;
+  website?: string;
+  preferredChannel?: "whatsapp" | "email" | "phone";
+  internalNotes?: string;
+}
 export interface WorkspaceClient extends CrmLead {
   tags: ClientTag[];
+  profileExtras?: ClientProfileExtras;
+  estimatedLtvCents?: number;
 }
-export const loadClients = (query = "", options: { sync?: boolean; signal?: AbortSignal } = {}) =>
-  read<{
+export const loadClients = (query = "", options: { sync?: boolean; signal?: AbortSignal } = {}) => {
+  // Skip cache when a signal is provided (abortable requests should not be cached)
+  if (options.signal) {
+    return read<{
+      clients: WorkspaceClient[];
+      tags: ClientTag[];
+      canManage: boolean;
+      syncWarning?: string;
+    }>(
+      apiFetch(
+        `/api/clients/?${new URLSearchParams({
+          ...(query ? { q: query } : {}),
+          ...(options.sync === undefined ? {} : { sync: options.sync ? "1" : "0" }),
+        }).toString()}`,
+        { signal: options.signal },
+      ),
+    );
+  }
+  return read<{
     clients: WorkspaceClient[];
     tags: ClientTag[];
     canManage: boolean;
@@ -268,9 +314,9 @@ export const loadClients = (query = "", options: { sync?: boolean; signal?: Abor
         ...(query ? { q: query } : {}),
         ...(options.sync === undefined ? {} : { sync: options.sync ? "1" : "0" }),
       }).toString()}`,
-      options.signal ? { signal: options.signal } : undefined,
     ),
   );
+};
 export const saveClientTag = (payload: unknown) =>
   mutate<{ tag: ClientTag }>(
     "/api/clients/",
@@ -279,6 +325,22 @@ export const saveClientTag = (payload: unknown) =>
   );
 export const assignClientTags = (leadIds: string[], tagIds: string[]) =>
   mutate<{ success: boolean; assigned: number }>("/api/clients/", "PATCH", { leadIds, tagIds });
+
+// F1: Unified client timeline
+export interface ClientTimelineEvent {
+  id: string;
+  kind: "message" | "follow_up" | "appointment";
+  title: string;
+  description: string | null;
+  timestamp: string;
+  meta?: Record<string, unknown>;
+}
+export interface ClientTimelineResponse {
+  lead: { id: string; name: string | null; phone_e164: string | null };
+  events: ClientTimelineEvent[];
+}
+export const loadClientTimeline = (leadId: string) =>
+  read<ClientTimelineResponse>(apiFetch(`/api/clients/${encodeURIComponent(leadId)}/timeline`));
 
 export interface BillingDto {
   workspace_id: string;

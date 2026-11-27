@@ -78,11 +78,7 @@ export function usePresenceState(
 
 /** Mapa completo — usar só em componentes únicos (header/timeline), nunca por row. */
 export function usePresence() {
-  const presences = useSyncExternalStore(
-    subscribe,
-    store.getSnapshot,
-    () => ({}) as PresenceMap,
-  );
+  const presences = useSyncExternalStore(subscribe, store.getSnapshot, () => ({}) as PresenceMap);
 
   const isTyping = useCallback(
     (phone?: string | null, instanceName?: string | null, instanceId?: string | null) =>
