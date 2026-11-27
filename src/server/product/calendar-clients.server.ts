@@ -424,49 +424,6 @@ export async function mutateAppointment(request: Request, body: unknown) {
           .single();
     if (result.error) throw result.error;
 
-    // G1: Schedule WhatsApp reminder 30min before appointment if requested
-    const sendReminder =
-      typeof body === "object" && body !== null && "sendReminder" in body
-        ? Boolean((body as Record<string, unknown>)["sendReminder"])
-        : false;
-    if (sendReminder && result.data?.lead_id && result.data?.starts_at) {
-      try {
-        const reminderAt = new Date(new Date(result.data.starts_at).getTime() - 30 * 60_000);
-        // Only schedule if reminder time is in the future
-        if (reminderAt.getTime() > Date.now()) {
-          const leadResult = await client
-            .from("crm_leads")
-            .select("phone_e164,name")
-            .eq("workspace_id", auth.workspace.id)
-            .eq("id", result.data.lead_id)
-            .maybeSingle();
-          if (leadResult.data?.phone_e164) {
-            const apptTime = new Date(result.data.starts_at).toLocaleString("pt-BR", {
-              day: "2-digit",
-              month: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-            const reminderText = `⏰ Lembrete: seu compromisso "${result.data.title}" está marcado para ${apptTime}. Nos vemos em breve!`;
-            // Insert into outbound_messages queue for deferred sending
-            await client.from("outbound_messages").insert({
-              workspace_id: auth.workspace.id,
-              chat_id: result.data.chat_id ?? "",
-              remote_jid: leadResult.data.phone_e164.replace("+", "") + "@s.whatsapp.net",
-              instance_id: "", // Will be resolved by the outbound worker
-              client_message_id: crypto.randomUUID(),
-              payload: { text: reminderText, type: "text" },
-              status: "pending",
-              attempts: 0,
-            });
-          }
-        }
-      } catch (reminderErr) {
-        // Reminder scheduling failure should not block appointment save
-        logServerError("[calendar] reminder scheduling failed", reminderErr);
-      }
-    }
-
     return json({ appointment: result.data });
   } catch (error: unknown) {
     logServerError("[calendar] appointment mutation failed", error);
@@ -583,6 +540,11 @@ export async function listClients(request: Request) {
 export async function getClientTimeline(request: Request, leadId: string) {
   const auth = await requirePermission(request, "crm.read");
   if (auth instanceof Response) return auth;
+  const canReadMessages = roleHasPermission(
+    auth.workspace.role,
+    "messages.read",
+    auth.workspace.permissions,
+  );
   try {
     const client = await db();
     const [leadResult, messagesResult, followUpsResult, appointmentsResult] = await Promise.all([
@@ -592,26 +554,27 @@ export async function getClientTimeline(request: Request, leadId: string) {
         .eq("workspace_id", auth.workspace.id)
         .eq("id", leadId)
         .maybeSingle(),
-      // Messages from the chat linked to this lead (last 90 days, max 200)
-      client
-        .from("messages")
-        .select("id,sender,sender_name,text,type,created_at")
-        .eq("workspace_id", auth.workspace.id)
-        .in(
-          "chat_id",
-          // Subquery: find chat_id from lead
-          (
-            await client
-              .from("crm_leads")
-              .select("chat_id")
-              .eq("workspace_id", auth.workspace.id)
-              .eq("id", leadId)
-              .not("chat_id", "is", null)
-          ).data?.map((r) => r.chat_id) ?? [],
-        )
-        .gte("created_at", new Date(Date.now() - 90 * 86_400_000).toISOString())
-        .order("created_at", { ascending: false })
-        .limit(200),
+      // Mensagens do chat vinculado (90 dias, máx. 200), somente com messages.read
+      canReadMessages
+        ? client
+            .from("messages")
+            .select("id,sender,sender_name,text,type,created_at")
+            .eq("workspace_id", auth.workspace.id)
+            .in(
+              "chat_id",
+              (
+                await client
+                  .from("crm_leads")
+                  .select("chat_id")
+                  .eq("workspace_id", auth.workspace.id)
+                  .eq("id", leadId)
+                  .not("chat_id", "is", null)
+              ).data?.map((r) => r.chat_id) ?? [],
+            )
+            .gte("created_at", new Date(Date.now() - 90 * 86_400_000).toISOString())
+            .order("created_at", { ascending: false })
+            .limit(200)
+        : Promise.resolve({ data: [], error: null }),
       client
         .from("follow_up_tasks")
         .select("id,title,status,due_at,completed_at,created_at")
@@ -683,7 +646,11 @@ export async function getClientTimeline(request: Request, leadId: string) {
     events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     return json({
-      lead: { id: leadResult.data.id, name: leadResult.data.name, phone_e164: leadResult.data.phone_e164 },
+      lead: {
+        id: leadResult.data.id,
+        name: leadResult.data.name,
+        phone_e164: leadResult.data.phone_e164,
+      },
       events,
     });
   } catch (error: unknown) {

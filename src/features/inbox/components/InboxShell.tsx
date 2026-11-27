@@ -221,7 +221,9 @@ export function InboxShell() {
   // the empty-state in that interval feels like the click was lost and also
   // resets the message timeline unnecessarily.
   const selectedChatSnapshotRef = useRef<Conversation | null>(null);
-  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [replyState, setReplyState] = useState<{ chatId: string; message: ChatMessage } | null>(
+    null,
+  );
   const { isDarkMode, toggleTheme, themeLoaded } = useTheme();
   useEffect(() => {
     setCurrentView(searchView);
@@ -320,9 +322,12 @@ export function InboxShell() {
   activeChatIdRef.current = activeChat?.id ?? null;
   const visibleReadChatRef = useRef<string | null>(null);
 
+  // A citação só vale na conversa onde foi criada (seleção automática, busca ou troca de workspace).
+  const replyingTo = replyState && replyState.chatId === activeChat?.id ? replyState.message : null;
+
   const handleSelectChat = (id: string) => {
     setSelectedChatId(id);
-    setReplyingTo(null);
+    setReplyState(null);
     const selected = conversations.find((conversation) => conversation.id === id);
     if ((selected?.unread ?? 0) > 0) void markChatRead(id);
   };
@@ -708,7 +713,9 @@ export function InboxShell() {
 
             {/* Área Central de Conversa Ativa */}
             {composition.showChatPane && activeChat ? (
+              // key por conversa: envio, gravação e anexo nunca atravessam para outro contato.
               <div
+                key={activeChat.id}
                 className="flex-1 flex flex-col h-full overflow-hidden transition-colors"
               >
                 <ChatHeader
@@ -734,7 +741,7 @@ export function InboxShell() {
                   hasMore={hasMoreMessages}
                   onLoadPrevious={loadPreviousMessages}
                   onPreviewMedia={setPreviewMedia}
-                  onReply={setReplyingTo}
+                  onReply={(message) => setReplyState({ chatId: activeChat.id, message })}
                   onReact={(message, emoji) => void reactToMessage(message, emoji)}
                   isDarkMode={isDarkMode}
                   isGroup={activeChat.isGroup}
@@ -753,7 +760,9 @@ export function InboxShell() {
                   onCancelReply={() => {
                     // Um envio do chat anterior pode concluir depois da troca de conversa.
                     // Não apagar a citação que o usuário já escolheu no chat atual.
-                    if (activeChatIdRef.current === activeChat.id) setReplyingTo(null);
+                    setReplyState((current) =>
+                      current?.chatId === activeChat.id ? null : current,
+                    );
                   }}
                   isDarkMode={isDarkMode}
                   isGroup={activeChat.isGroup}
@@ -835,9 +844,7 @@ export function InboxShell() {
           {/* Header do overlay */}
           <div
             className={`flex items-center gap-3 px-4 py-3 border-b ${
-              isDarkMode
-                ? "border-white/[0.07] bg-neutral-950"
-                : "border-black/[0.07] bg-white"
+              isDarkMode ? "border-white/[0.07] bg-neutral-950" : "border-black/[0.07] bg-white"
             }`}
           >
             <MagnifyingGlass size={18} className="shrink-0 text-neutral-500" />
@@ -917,9 +924,7 @@ export function InboxShell() {
             ) : (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                 <MagnifyingGlass size={40} className="mb-3 text-neutral-500/30" />
-                <p className="text-sm font-medium text-neutral-500">
-                  Digite para buscar conversas
-                </p>
+                <p className="text-sm font-medium text-neutral-500">Digite para buscar conversas</p>
               </div>
             )}
           </div>

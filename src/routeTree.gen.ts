@@ -100,6 +100,7 @@ import { Route as ApiChatsIdReadRouteImport } from './routes/api/chats/$id/read'
 import { Route as ApiChatsPhonePauseRouteImport } from './routes/api/chats/$phone/pause'
 import { Route as ApiChatsPhonePresenceRouteImport } from './routes/api/chats/$phone/presence'
 import { Route as ApiChatsPhoneResumeRouteImport } from './routes/api/chats/$phone/resume'
+import { Route as ApiClientsIdTimelineRouteImport } from './routes/api/clients/$id/timeline'
 import { Route as ApiInstancesNameIndexRouteImport } from './routes/api/instances/$name/index'
 import { Route as ApiInstancesNameQrcodeRouteImport } from './routes/api/instances/$name/qrcode'
 import { Route as ApiPrivacyExportIdRouteImport } from './routes/api/privacy/export/$id'
@@ -581,6 +582,11 @@ const ApiChatsPhoneResumeRoute = ApiChatsPhoneResumeRouteImport.update({
   path: '/api/chats/$phone/resume',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiClientsIdTimelineRoute = ApiClientsIdTimelineRouteImport.update({
+  id: '/api/clients/$id/timeline',
+  path: '/api/clients/$id/timeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiInstancesNameIndexRoute = ApiInstancesNameIndexRouteImport.update({
   id: '/api/instances/$name/',
   path: '/api/instances/$name/',
@@ -768,6 +774,7 @@ export interface FileRoutesByFullPath {
   '/api/chats/$phone/pause': typeof ApiChatsPhonePauseRoute
   '/api/chats/$phone/presence': typeof ApiChatsPhonePresenceRoute
   '/api/chats/$phone/resume': typeof ApiChatsPhoneResumeRoute
+  '/api/clients/$id/timeline': typeof ApiClientsIdTimelineRoute
   '/api/instances/$name/qrcode': typeof ApiInstancesNameQrcodeRoute
   '/api/privacy/export/$id': typeof ApiPrivacyExportIdRoute
   '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRoute
@@ -879,6 +886,7 @@ export interface FileRoutesByTo {
   '/api/chats/$phone/pause': typeof ApiChatsPhonePauseRoute
   '/api/chats/$phone/presence': typeof ApiChatsPhonePresenceRoute
   '/api/chats/$phone/resume': typeof ApiChatsPhoneResumeRoute
+  '/api/clients/$id/timeline': typeof ApiClientsIdTimelineRoute
   '/api/instances/$name/qrcode': typeof ApiInstancesNameQrcodeRoute
   '/api/privacy/export/$id': typeof ApiPrivacyExportIdRoute
   '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRoute
@@ -991,6 +999,7 @@ export interface FileRoutesById {
   '/api/chats/$phone/pause': typeof ApiChatsPhonePauseRoute
   '/api/chats/$phone/presence': typeof ApiChatsPhonePresenceRoute
   '/api/chats/$phone/resume': typeof ApiChatsPhoneResumeRoute
+  '/api/clients/$id/timeline': typeof ApiClientsIdTimelineRoute
   '/api/instances/$name/qrcode': typeof ApiInstancesNameQrcodeRoute
   '/api/privacy/export/$id': typeof ApiPrivacyExportIdRoute
   '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRoute
@@ -1104,6 +1113,7 @@ export interface FileRouteTypes {
     | '/api/chats/$phone/pause'
     | '/api/chats/$phone/presence'
     | '/api/chats/$phone/resume'
+    | '/api/clients/$id/timeline'
     | '/api/instances/$name/qrcode'
     | '/api/privacy/export/$id'
     | '/api/public/webhooks/evolution'
@@ -1215,6 +1225,7 @@ export interface FileRouteTypes {
     | '/api/chats/$phone/pause'
     | '/api/chats/$phone/presence'
     | '/api/chats/$phone/resume'
+    | '/api/clients/$id/timeline'
     | '/api/instances/$name/qrcode'
     | '/api/privacy/export/$id'
     | '/api/public/webhooks/evolution'
@@ -1326,6 +1337,7 @@ export interface FileRouteTypes {
     | '/api/chats/$phone/pause'
     | '/api/chats/$phone/presence'
     | '/api/chats/$phone/resume'
+    | '/api/clients/$id/timeline'
     | '/api/instances/$name/qrcode'
     | '/api/privacy/export/$id'
     | '/api/public/webhooks/evolution'
@@ -1438,6 +1450,7 @@ export interface RootRouteChildren {
   ApiChatsPhonePauseRoute: typeof ApiChatsPhonePauseRoute
   ApiChatsPhonePresenceRoute: typeof ApiChatsPhonePresenceRoute
   ApiChatsPhoneResumeRoute: typeof ApiChatsPhoneResumeRoute
+  ApiClientsIdTimelineRoute: typeof ApiClientsIdTimelineRoute
   ApiInstancesNameQrcodeRoute: typeof ApiInstancesNameQrcodeRoute
   ApiPublicWebhooksEvolutionRoute: typeof ApiPublicWebhooksEvolutionRoute
   ApiWorkspacesInvitationsAcceptRoute: typeof ApiWorkspacesInvitationsAcceptRoute
@@ -2107,6 +2120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatsPhoneResumeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/clients/$id/timeline': {
+      id: '/api/clients/$id/timeline'
+      path: '/api/clients/$id/timeline'
+      fullPath: '/api/clients/$id/timeline'
+      preLoaderRoute: typeof ApiClientsIdTimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/instances/$name/': {
       id: '/api/instances/$name/'
       path: '/api/instances/$name'
@@ -2328,6 +2348,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatsPhonePauseRoute: ApiChatsPhonePauseRoute,
   ApiChatsPhonePresenceRoute: ApiChatsPhonePresenceRoute,
   ApiChatsPhoneResumeRoute: ApiChatsPhoneResumeRoute,
+  ApiClientsIdTimelineRoute: ApiClientsIdTimelineRoute,
   ApiInstancesNameQrcodeRoute: ApiInstancesNameQrcodeRoute,
   ApiPublicWebhooksEvolutionRoute: ApiPublicWebhooksEvolutionRoute,
   ApiWorkspacesInvitationsAcceptRoute: ApiWorkspacesInvitationsAcceptRoute,

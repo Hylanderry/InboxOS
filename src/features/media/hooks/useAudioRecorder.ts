@@ -39,9 +39,13 @@ export function useAudioRecorder() {
     }
   }, []);
 
+  const mountedRef = useRef(true);
+
   // Garante limpeza na desmontagem
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       clearTimer();
       stopTracks();
     };
@@ -54,6 +58,10 @@ export function useAudioRecorder() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      if (!mountedRef.current) {
+        stopTracks();
+        return true;
+      }
 
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"

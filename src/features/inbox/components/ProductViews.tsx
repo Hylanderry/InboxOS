@@ -54,7 +54,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { WhatsAppToast } from "@/components/ui/ToastProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Skeleton, SkeletonKpiCard, SkeletonChart, SkeletonPanel, SkeletonTableRow } from "@/components/ui/skeleton";
+import {
+  Skeleton,
+  SkeletonKpiCard,
+  SkeletonChart,
+  SkeletonPanel,
+  SkeletonTableRow,
+} from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -70,11 +76,14 @@ import { friendlyErrorText } from "@/lib/friendly-error";
 import { deriveViewDataState } from "../view-data-state";
 import { progressiveRenderLimit } from "../product-surface";
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from "recharts";
 import {
   createAgent,
   createFollowUp,
@@ -326,25 +335,22 @@ export function DashboardView(_props: Props) {
   const navigate = useNavigate();
   const go = (view: DashboardTarget) => void navigate({ to: "/", search: { view } });
 
-  const refresh = useCallback(
-    (selectedPeriod: DashboardPeriod) => {
-      setError("");
-      setIsLoading(true);
-      void loadDashboard(selectedPeriod)
-        .then((x) => {
-          setData(x.metrics);
-          setMessagesByDay(x.messagesByDay ?? []);
-          setUpdatedAt(new Date());
-        })
-        .catch((e) => {
-          const message = errorMessage(e);
-          setError(message);
-          WhatsAppToast.networkError(message);
-        })
-        .finally(() => setIsLoading(false));
-    },
-    [],
-  );
+  const refresh = useCallback((selectedPeriod: DashboardPeriod) => {
+    setError("");
+    setIsLoading(true);
+    void loadDashboard(selectedPeriod)
+      .then((x) => {
+        setData(x.metrics);
+        setMessagesByDay(x.messagesByDay ?? []);
+        setUpdatedAt(new Date());
+      })
+      .catch((e) => {
+        const message = errorMessage(e);
+        setError(message);
+        WhatsAppToast.networkError(message);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
 
   useEffect(() => {
     refresh(period);
@@ -472,7 +478,11 @@ export function DashboardView(_props: Props) {
             <p className="ux-lead">Como está a operação do workspace agora.</p>
           </div>
           <div className="ux-actions">
-            <div className="flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] p-0.5" role="group" aria-label="Período do dashboard">
+            <div
+              className="flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] p-0.5"
+              role="group"
+              aria-label="Período do dashboard"
+            >
               {DASHBOARD_PERIODS.map((p) => (
                 <button
                   key={p.value}
@@ -508,7 +518,11 @@ export function DashboardView(_props: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <div className="ux-layout-rail animate-smooth-in" role="status" aria-label="Carregando dashboard">
+          <div
+            className="ux-layout-rail animate-smooth-in"
+            role="status"
+            aria-label="Carregando dashboard"
+          >
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {Array.from({ length: 5 }).map((_, i) => (
                 <SkeletonKpiCard key={i} />
@@ -568,12 +582,24 @@ export function DashboardView(_props: Props) {
           <section className="ux-panel" aria-label="Mensagens ao longo do tempo">
             <div className="ux-panel-head">
               <h2 className="ux-h2">Volume de mensagens</h2>
-              <span className="ux-meta">{period === "7d" ? "Últimos 7 dias" : period === "10d" ? "Últimos 10 dias" : period === "30d" ? "Últimos 30 dias" : "Últimos 90 dias"}</span>
+              <span className="ux-meta">
+                {period === "7d"
+                  ? "Últimos 7 dias"
+                  : period === "10d"
+                    ? "Últimos 10 dias"
+                    : period === "30d"
+                      ? "Últimos 30 dias"
+                      : "Últimos 90 dias"}
+              </span>
             </div>
             <div className="h-64 w-full min-h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={messagesByDay} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.06)"
+                    vertical={false}
+                  />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 11, fill: "#a3a3a3" }}
@@ -591,7 +617,25 @@ export function DashboardView(_props: Props) {
                     axisLine={false}
                     allowDecimals={false}
                   />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const dateStr = label
+                        ? new Date(label + "T00:00:00").toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "short",
+                          })
+                        : "";
+                      return (
+                        <div className="rounded-lg border border-white/10 bg-neutral-900/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm">
+                          <p className="mb-1 text-neutral-400">{dateStr}</p>
+                          <p className="font-semibold text-emerald-400">
+                            {payload[0]?.value ?? 0} mensagens
+                          </p>
+                        </div>
+                      );
+                    }}
+                  />
                   <Line
                     type="monotone"
                     dataKey="count"
@@ -993,7 +1037,11 @@ export function CrmView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <div className="space-y-4 animate-smooth-in" role="status" aria-label="Carregando pipeline">
+          <div
+            className="space-y-4 animate-smooth-in"
+            role="status"
+            aria-label="Carregando pipeline"
+          >
             <div className="flex items-center justify-between">
               <SkeletonKpiCard />
               <SkeletonKpiCard />
@@ -1997,9 +2045,16 @@ export function FollowUpView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <div className="space-y-3 animate-smooth-in" role="status" aria-label="Carregando follow-ups">
+          <div
+            className="space-y-3 animate-smooth-in"
+            role="status"
+            aria-label="Carregando follow-ups"
+          >
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-3"
+              >
                 <Skeleton className="h-5 w-5 rounded-full" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-3/4" />
@@ -2522,7 +2577,8 @@ export function AgentsView({ isDarkMode }: Props) {
   // E1: Feedback loop — thumbs up/down per agent run (persisted in localStorage)
   const [runFeedback, setRunFeedback] = useState<Record<string, "up" | "down">>(() => {
     try {
-      const stored = typeof window !== "undefined" ? localStorage.getItem("inboxos_run_feedback") : null;
+      const stored =
+        typeof window !== "undefined" ? localStorage.getItem("inboxos_run_feedback") : null;
       return stored ? (JSON.parse(stored) as Record<string, "up" | "down">) : {};
     } catch {
       return {};
@@ -2937,9 +2993,16 @@ export function AgentsView({ isDarkMode }: Props) {
         </header>
 
         {viewState === "initial" && (
-          <div className="space-y-3 animate-smooth-in" role="status" aria-label="Carregando agentes">
+          <div
+            className="space-y-3 animate-smooth-in"
+            role="status"
+            aria-label="Carregando agentes"
+          >
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-4">
+              <div
+                key={i}
+                className="flex items-center gap-4 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-4"
+              >
                 <Skeleton className="h-10 w-10 rounded-full" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-1/3" />
@@ -3421,7 +3484,11 @@ export function AgentsView({ isDarkMode }: Props) {
                               {formatRunTime(r.started_at)}
                             </span>
                           </div>
-                          <div className="flex shrink-0 items-center gap-0.5" role="group" aria-label={`Avaliar resposta do agente`}>
+                          <div
+                            className="flex shrink-0 items-center gap-0.5"
+                            role="group"
+                            aria-label={`Avaliar resposta do agente`}
+                          >
                             <button
                               type="button"
                               onClick={() => toggleRunFeedback(r.id, "up")}
@@ -3434,7 +3501,10 @@ export function AgentsView({ isDarkMode }: Props) {
                               aria-label="Resposta útil"
                               title="Resposta útil"
                             >
-                              <ThumbsUp size={14} weight={runFeedback[r.id] === "up" ? "fill" : "regular"} />
+                              <ThumbsUp
+                                size={14}
+                                weight={runFeedback[r.id] === "up" ? "fill" : "regular"}
+                              />
                             </button>
                             <button
                               type="button"
@@ -3448,7 +3518,10 @@ export function AgentsView({ isDarkMode }: Props) {
                               aria-label="Resposta ruim"
                               title="Resposta ruim"
                             >
-                              <ThumbsDown size={14} weight={runFeedback[r.id] === "down" ? "fill" : "regular"} />
+                              <ThumbsDown
+                                size={14}
+                                weight={runFeedback[r.id] === "down" ? "fill" : "regular"}
+                              />
                             </button>
                           </div>
                         </li>
@@ -4132,7 +4205,6 @@ export function CalendarView({ isDarkMode }: Props) {
     endsAt: localDateTime(new Date(Date.now() + 90 * 60 * 1000)),
     leadId: "",
     agentId: "",
-    sendReminder: true, // G1: WhatsApp reminder enabled by default
   });
   const [calendarForm, setCalendarForm] = useState({
     name: "Agenda principal",
@@ -4218,7 +4290,6 @@ export function CalendarView({ isDarkMode }: Props) {
       endsAt: localDateTime(new Date(appointment.ends_at)),
       leadId: appointment.lead_id ?? "",
       agentId: appointment.agent_id ?? "",
-      sendReminder: true,
     });
     setAppointmentOpen(true);
   };
@@ -4283,9 +4354,16 @@ export function CalendarView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <div className="space-y-3 animate-smooth-in" role="status" aria-label="Carregando calendário">
+          <div
+            className="space-y-3 animate-smooth-in"
+            role="status"
+            aria-label="Carregando calendário"
+          >
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+              <div
+                key={i}
+                className="flex items-center gap-4 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-3"
+              >
                 <Skeleton className="h-10 w-10 rounded-md" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-2/5" />
@@ -4567,7 +4645,6 @@ export function CalendarView({ isDarkMode }: Props) {
                       endsAt: new Date(form.endsAt).toISOString(),
                       leadId: form.leadId || null,
                       agentId: form.agentId || null,
-                      sendReminder: form.sendReminder, // G1
                     }).then(() => {
                       setEditingAppointmentId(null);
                       setAppointmentOpen(false);
@@ -4668,23 +4745,6 @@ export function CalendarView({ isDarkMode }: Props) {
                     ))}
                   </SurfaceSelect>
                 </UxField>
-                {/* G1: WhatsApp reminder toggle */}
-                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.06]">
-                  <input
-                    type="checkbox"
-                    checked={form.sendReminder}
-                    onChange={(e) => setForm({ ...form, sendReminder: e.target.checked })}
-                    className="h-4 w-4 rounded border-neutral-600 bg-transparent text-emerald-500 focus:ring-emerald-500/30"
-                  />
-                  <div className="min-w-0">
-                    <span className="block text-xs font-semibold text-neutral-200">
-                      Enviar lembrete por WhatsApp
-                    </span>
-                    <span className="block text-[11px] text-neutral-500">
-                      Mensagem automática 30min antes do horário
-                    </span>
-                  </div>
-                </label>
               </div>
             </form>
             <div className="ux-drawer-foot">
@@ -4891,23 +4951,26 @@ export function ClientsView({ isDarkMode }: Props) {
   const [timelineEvents, setTimelineEvents] = useState<ClientTimelineEvent[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
 
-  const toggleClientTimeline = useCallback(async (clientId: string) => {
-    if (expandedTimelineId === clientId) {
-      setExpandedTimelineId(null);
-      setTimelineEvents([]);
-      return;
-    }
-    setExpandedTimelineId(clientId);
-    setTimelineLoading(true);
-    try {
-      const data = await loadClientTimeline(clientId);
-      setTimelineEvents(data.events);
-    } catch {
-      setTimelineEvents([]);
-    } finally {
-      setTimelineLoading(false);
-    }
-  }, [expandedTimelineId]);
+  const toggleClientTimeline = useCallback(
+    async (clientId: string) => {
+      if (expandedTimelineId === clientId) {
+        setExpandedTimelineId(null);
+        setTimelineEvents([]);
+        return;
+      }
+      setExpandedTimelineId(clientId);
+      setTimelineLoading(true);
+      try {
+        const data = await loadClientTimeline(clientId);
+        setTimelineEvents(data.events);
+      } catch {
+        setTimelineEvents([]);
+      } finally {
+        setTimelineLoading(false);
+      }
+    },
+    [expandedTimelineId],
+  );
 
   // Loading cached CRM data first keeps the page usable when Evolution is
   // slow or temporarily unavailable. The explicit Atualizar action retries
@@ -4983,9 +5046,7 @@ export function ClientsView({ isDarkMode }: Props) {
       validateClientImportCount(dataRows.length);
       // D2: Build a set of existing phone numbers for deduplication
       const existingPhones = new Set(
-        clients
-          .map((c) => c.phone_e164?.replace(/[^+\d]/g, "") || "")
-          .filter(Boolean),
+        clients.map((c) => c.phone_e164?.replace(/[^+\d]/g, "") || "").filter(Boolean),
       );
       const rowsToImport = dataRows;
       // Keep the import responsive without flooding the CRM API. Ten writes
@@ -5141,7 +5202,11 @@ export function ClientsView({ isDarkMode }: Props) {
         </header>
         {error && <ErrorBox text={error} />}
         {viewState === "initial" && (
-          <div className="space-y-2 animate-smooth-in" role="status" aria-label="Carregando clientes">
+          <div
+            className="space-y-2 animate-smooth-in"
+            role="status"
+            aria-label="Carregando clientes"
+          >
             {Array.from({ length: 6 }).map((_, i) => (
               <SkeletonTableRow key={i} cols={5} />
             ))}
@@ -5351,8 +5416,14 @@ export function ClientsView({ isDarkMode }: Props) {
                       <span role="cell" className="flex items-center justify-end gap-1.5">
                         {/* F2: LTV indicator */}
                         {client.value_cents > 0 && (
-                          <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400" title="Valor total negociado">
-                            {(client.value_cents / 100).toLocaleString("pt-BR", { style: "currency", currency: client.currency || "BRL" })}
+                          <span
+                            className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400"
+                            title="Valor total negociado"
+                          >
+                            {(client.value_cents / 100).toLocaleString("pt-BR", {
+                              style: "currency",
+                              currency: client.currency || "BRL",
+                            })}
                           </span>
                         )}
                         <button
@@ -5394,29 +5465,49 @@ export function ClientsView({ isDarkMode }: Props) {
                     <span>Carregando histórico…</span>
                   </div>
                 ) : timelineEvents.length === 0 ? (
-                  <p className="text-xs text-neutral-500">Nenhum evento recente para este cliente.</p>
+                  <p className="text-xs text-neutral-500">
+                    Nenhum evento recente para este cliente.
+                  </p>
                 ) : (
                   <ul className="space-y-2 max-h-64 overflow-y-auto pr-1">
                     {timelineEvents.map((evt) => (
-                      <li key={`${evt.kind}-${evt.id}`} className="flex items-start gap-3 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2">
-                        <span className={`mt-0.5 shrink-0 rounded-full p-1 ${
-                          evt.kind === "message" ? "bg-emerald-500/15 text-emerald-400"
-                            : evt.kind === "follow_up" ? "bg-amber-500/15 text-amber-400"
-                            : "bg-sky-500/15 text-sky-400"
-                        }`}>
-                          {evt.kind === "message" ? <ChatCircleText size={12} weight="fill" />
-                            : evt.kind === "follow_up" ? <Clock size={12} weight="fill" />
-                            : <CalendarBlank size={12} weight="fill" />}
+                      <li
+                        key={`${evt.kind}-${evt.id}`}
+                        className="flex items-start gap-3 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2"
+                      >
+                        <span
+                          className={`mt-0.5 shrink-0 rounded-full p-1 ${
+                            evt.kind === "message"
+                              ? "bg-emerald-500/15 text-emerald-400"
+                              : evt.kind === "follow_up"
+                                ? "bg-amber-500/15 text-amber-400"
+                                : "bg-sky-500/15 text-sky-400"
+                          }`}
+                        >
+                          {evt.kind === "message" ? (
+                            <ChatCircleText size={12} weight="fill" />
+                          ) : evt.kind === "follow_up" ? (
+                            <Clock size={12} weight="fill" />
+                          ) : (
+                            <CalendarBlank size={12} weight="fill" />
+                          )}
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-2">
-                            <p className="truncate text-xs font-semibold text-neutral-200">{evt.title}</p>
+                            <p className="truncate text-xs font-semibold text-neutral-200">
+                              {evt.title}
+                            </p>
                             <time className="shrink-0 text-[10px] text-neutral-500">
-                              {new Date(evt.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                              {new Date(evt.timestamp).toLocaleDateString("pt-BR", {
+                                day: "2-digit",
+                                month: "short",
+                              })}
                             </time>
                           </div>
                           {evt.description && (
-                            <p className="mt-0.5 truncate text-[11px] text-neutral-400">{evt.description}</p>
+                            <p className="mt-0.5 truncate text-[11px] text-neutral-400">
+                              {evt.description}
+                            </p>
                           )}
                         </div>
                       </li>

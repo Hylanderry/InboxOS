@@ -19,6 +19,20 @@ import { sanitizeSenderName } from "@/lib/emoji";
 // Draft cache em memória para preservar rascunhos entre trocas de conversa.
 // Evita dependência de key prop no pai e sobrevive a remounts acidentais.
 const draftCache = new Map<string, string>();
+// Composer montado de cada conversa: o resultado de um envio antigo precisa alcançar a
+// instância atual, mesmo que o operador tenha saído e voltado.
+const draftSetters = new Map<string, (update: (current: string) => string) => void>();
+
+function settleDraft(chatId: string, sent: string, delivered: boolean) {
+  const cached = draftCache.get(chatId);
+  if (delivered) {
+    if (cached?.trim() === sent) draftCache.delete(chatId);
+    draftSetters.get(chatId)?.((current) => (current.trim() === sent ? "" : current));
+  } else {
+    if (!cached) draftCache.set(chatId, sent);
+    draftSetters.get(chatId)?.((current) => (current.trim() ? current : sent));
+  }
+}
 
 interface MessageComposerProps {
   chatId: string;
@@ -62,7 +76,8 @@ export function MessageComposer({
   isAnnouncement = false,
   isAdmin = false,
 }: MessageComposerProps) {
-  const [text, setText] = useState("");
+  // O pai remonta o composer por conversa (key), então o rascunho entra já no estado inicial.
+  const [text, setText] = useState(() => draftCache.get(chatId) ?? "");
   const [isAttachOpen, setIsAttachOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
@@ -107,22 +122,11 @@ export function MessageComposer({
   const { isRecording, recordingTimer, startRecording, stopRecording, cancelRecording } =
     useAudioRecorder();
 
-  // Persistir e restaurar rascunho por chatId ao trocar de conversa.
-  // Salva o texto atual antes de restaurar o draft do novo chat para não perder
-  // rascunhos não enviados ao navegar entre conversas.
   useEffect(() => {
-    setText((prev) => {
-      // Salvar draft do chat anterior (se houver texto não vazio)
-      // O chatId anterior não está disponível aqui diretamente, então salvamos
-      // sempre que text muda via onChange e restauramos quando chatId muda.
-      return prev;
-    });
-  }, []);
-
-  // Restaurar draft quando chatId mudar
-  useEffect(() => {
-    const savedDraft = draftCache.get(chatId) ?? "";
-    setText(savedDraft);
+    draftSetters.set(chatId, setText);
+    return () => {
+      if (draftSetters.get(chatId) === setText) draftSetters.delete(chatId);
+    };
   }, [chatId]);
 
   // Salvar draft no cache sempre que o texto mudar
@@ -161,7 +165,16 @@ export function MessageComposer({
     }, 2500);
   };
 
-  useEffect(() => () => clearPresenceTimer(), []);
+  // Ao sair da conversa, avisa "parou" ao contato desta conversa se ainda digitava/gravava.
+  const onPresenceRef = useRef(onPresence);
+  onPresenceRef.current = onPresence;
+  useEffect(
+    () => () => {
+      if (presenceTimerRef.current || wasRecordingRef.current) onPresenceRef.current?.("paused");
+      clearPresenceTimer();
+    },
+    [],
+  );
 
   // Foco automático no input ao selecionar uma mensagem para responder
   useEffect(() => {
@@ -223,8 +236,13 @@ export function MessageComposer({
         }
       : {};
 
+    // Sai do cache já no envio: trocando de conversa antes da resposta, o texto enviado
+    // não pode reaparecer e ser enviado de novo.
+    draftCache.delete(chatId);
+    let delivered = false;
     try {
       const ok = await onSendMessage({ text: clean, type: "text", ...quotedPayload });
+      delivered = ok;
       if (ok) {
         // Não apagar um novo rascunho digitado enquanto o request estava pendente.
         setText((current) => (current.trim() === clean ? "" : current));
@@ -236,6 +254,8 @@ export function MessageComposer({
     } catch {
       WhatsAppToast.networkError("Não foi possível enviar a mensagem. Tente novamente.");
     } finally {
+      // Limpa (sucesso) ou devolve (falha) o rascunho, sem sobrescrever algo digitado depois.
+      settleDraft(chatId, clean, delivered);
       // Mesmo em falha de rede o usuário pode corrigir o texto e tentar de novo.
       sendInFlightRef.current = false;
       setIsSending(false);
@@ -594,25 +614,28 @@ export function MessageComposer({
               </button>
 
               {/* D1: Sugestões automáticas de follow-up baseadas em contexto */}
-              {!isRecording && !replyingTo && text.length === 0 && followUpSuggestions.length > 0 && (
-                <div className="absolute bottom-full left-3 right-3 mb-2 flex flex-wrap gap-1.5 animate-smooth-in">
-                  {followUpSuggestions.map((suggestion, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setText(suggestion)}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all border ${
-                        isDarkMode
-                          ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20"
-                          : "bg-indigo-50 border-indigo-100 text-indigo-700 hover:bg-indigo-100"
-                      }`}
-                    >
-                      <Lightbulb size={12} weight="fill" />
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {!isRecording &&
+                !replyingTo &&
+                text.length === 0 &&
+                followUpSuggestions.length > 0 && (
+                  <div className="absolute bottom-full left-3 right-3 mb-2 flex flex-wrap gap-1.5 animate-smooth-in">
+                    {followUpSuggestions.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setText(suggestion)}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all border ${
+                          isDarkMode
+                            ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20"
+                            : "bg-indigo-50 border-indigo-100 text-indigo-700 hover:bg-indigo-100"
+                        }`}
+                      >
+                        <Lightbulb size={12} weight="fill" />
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
               {/* Campo de Texto Multilinha Estilo WhatsApp Web */}
               <textarea

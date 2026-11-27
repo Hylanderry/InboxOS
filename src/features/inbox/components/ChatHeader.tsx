@@ -57,7 +57,8 @@ export function ChatHeader({
   // Escape fecha e retorna foco ao trigger; clique fora fecha.
   useEffect(() => {
     if (!isMenuOpen) return;
-    const menuItems = menuRef.current?.querySelectorAll<HTMLButtonElement>("button[role='menuitem']");
+    const menuItems =
+      menuRef.current?.querySelectorAll<HTMLButtonElement>("button[role='menuitem']");
     menuItems?.[0]?.focus();
 
     const dismissOutside = (event: PointerEvent) => {
@@ -69,14 +70,14 @@ export function ChatHeader({
       setIsMenuOpen(false);
     };
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setIsMenuOpen(false);
-        menuTriggerRef.current?.focus();
-        return;
-      }
+    const dismissEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setIsMenuOpen(false);
+      menuTriggerRef.current?.focus();
+    };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (!menuItems || menuItems.length === 0) return;
       const items = Array.from(menuItems);
       const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
@@ -108,9 +109,11 @@ export function ChatHeader({
     };
 
     document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("keydown", dismissEscape);
     menuRef.current?.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("keydown", dismissEscape);
       menuRef.current?.removeEventListener("keydown", handleKeyDown);
     };
   }, [isMenuOpen]);
