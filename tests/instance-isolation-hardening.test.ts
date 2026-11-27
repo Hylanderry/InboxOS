@@ -25,8 +25,10 @@ test("S0/I5: mídia casa o caminho literalmente (sem ilike com curingas)", () =>
   assert.doesNotMatch(media, /\.ilike\("media_url"/);
   assert.match(media, /\.like\("media_url"/);
   // o escape usado precisa neutralizar % _ e a própria barra
-  const escape = (path: string) => path.replace(/[\%_]/g, "\$&");
-  assert.equal(escape("chat/a_b%c"), "chat/a\_b\%c");
+  assert.ok(media.includes('path.replace(/[\\\\%_]/g, "\\\\$&")'), "escape real na rota");
+  const escape = (path: string) => path.replace(/[\\%_]/g, "\\$&");
+  assert.equal(escape("chat/a_b%c"), "chat/a\\_b\\%c");
+  assert.notEqual(escape("a_b"), "a_b");
 });
 
 test("S0/I6: lista de conexões limpa e descarta respostas antigas ao trocar de workspace", () => {
@@ -39,10 +41,16 @@ test("S0/I6: lista de conexões limpa e descarta respostas antigas ao trocar de 
 test("S0/I1: migration trava o workspace padrão e remove o auto-membership", () => {
   const sql = read("supabase/migrations/20261125120000_lock_legacy_default_workspace.sql");
   assert.match(sql, /create trigger guard_default_workspace_membership/);
-  assert.match(sql, /before insert or update of workspace_id, user_id on public\.workspace_members/);
+  assert.match(
+    sql,
+    /before insert or update of workspace_id, user_id on public\.workspace_members/,
+  );
   assert.match(sql, /drop trigger if exists bootstrap_first_workspace_owner on auth\.users/);
   // allowlist privada e inacessível por clientes
-  assert.match(sql, /revoke all on private\.legacy_workspace_owners from public, anon, authenticated/);
+  assert.match(
+    sql,
+    /revoke all on private\.legacy_workspace_owners from public, anon, authenticated/,
+  );
   assert.match(sql, /set search_path = ''/);
   // nunca recriar o trigger de concessão automática
   assert.doesNotMatch(sql, /create trigger bootstrap_first_workspace_owner/);

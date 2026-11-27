@@ -101,7 +101,11 @@ function Verify() {
           />
         </label>
         <p className="auth-hint" role="status">
-          {error ? <span className="is-invalid">{error}</span> : "Código enviado para o seu e-mail."}
+          {error ? (
+            <span className="is-invalid">{error}</span>
+          ) : (
+            "Código enviado para o seu e-mail."
+          )}
         </p>
         <button
           className="auth-primary"
@@ -119,7 +123,11 @@ function Verify() {
           >
             {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Reenviar código"}
           </button>
-          <a href="/auth/login" className="auth-secondary" style={{ textDecoration: "none", textAlign: "center" }}>
+          <a
+            href="/auth/login"
+            className="auth-secondary"
+            style={{ textDecoration: "none", textAlign: "center" }}
+          >
             Voltar
           </a>
         </div>

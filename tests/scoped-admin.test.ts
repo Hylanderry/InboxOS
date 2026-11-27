@@ -7,12 +7,14 @@ const OTHER = "22222222-2222-4222-8222-222222222222";
 
 function fakeClient() {
   const calls: Array<{ op: string; args: unknown[]; eq: unknown[][] }> = [];
-  const builder = (op: string) => (...args: unknown[]) => {
-    const call = { op, args, eq: [] as unknown[][] };
-    calls.push(call);
-    const chain = { eq: (...e: unknown[]) => (call.eq.push(e), chain) };
-    return chain;
-  };
+  const builder =
+    (op: string) =>
+    (...args: unknown[]) => {
+      const call = { op, args, eq: [] as unknown[][] };
+      calls.push(call);
+      const chain = { eq: (...e: unknown[]) => (call.eq.push(e), chain) };
+      return chain;
+    };
   const client = {
     from: () => ({
       select: builder("select"),

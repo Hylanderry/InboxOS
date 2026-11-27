@@ -6,7 +6,8 @@ import { AuthField, AuthShell, PasswordMeter } from "@/features/auth/components/
 import { TurnstileWidget } from "@/features/auth/components/TurnstileWidget";
 import { LegalConsentDialog } from "@/features/legal/components/LegalConsentDialog";
 
-const TURNSTILE_SITE_KEY = import.meta.env["VITE_CLOUDFLARE_TURNSTILE_SITE_KEY"] as string | undefined;
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_CLOUDFLARE_TURNSTILE_SITE_KEY"] as
+  string | undefined;
 import {
   AUTH_COUNTRIES,
   evaluatePassword,

@@ -7,7 +7,8 @@ import { normalizeOtp } from "@/features/auth/auth-validation";
 import { browserDeviceToken } from "@/lib/device-token";
 import { supabase } from "@/integrations/supabase/client";
 
-const TURNSTILE_SITE_KEY = import.meta.env["VITE_CLOUDFLARE_TURNSTILE_SITE_KEY"] as string | undefined;
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_CLOUDFLARE_TURNSTILE_SITE_KEY"] as
+  string | undefined;
 
 export const Route = createFileRoute("/auth/login")({ component: Login });
 
@@ -72,7 +73,13 @@ function Login() {
           "Content-Type": "application/json",
           "x-device-token": deviceToken,
         },
-        body: JSON.stringify({ email, password, deviceToken, rememberDevice: remember, turnstileToken }),
+        body: JSON.stringify({
+          email,
+          password,
+          deviceToken,
+          rememberDevice: remember,
+          turnstileToken,
+        }),
       });
       const data = (await response.json().catch(() => ({}))) as {
         error?: string;

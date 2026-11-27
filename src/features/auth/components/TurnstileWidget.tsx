@@ -3,15 +3,18 @@ import { useEffect, useRef, useState } from "react";
 declare global {
   interface Window {
     turnstile?: {
-      render: (container: string | HTMLElement, options: {
-        sitekey: string;
-        callback?: (token: string) => void;
-        "error-callback"?: (error: unknown) => void;
-        "expired-callback"?: () => void;
-        theme?: "light" | "dark" | "auto";
-        size?: "normal" | "compact" | "invisible";
-        appearance?: "always" | "execute" | "interaction-only";
-      }) => string;
+      render: (
+        container: string | HTMLElement,
+        options: {
+          sitekey: string;
+          callback?: (token: string) => void;
+          "error-callback"?: (error: unknown) => void;
+          "expired-callback"?: () => void;
+          theme?: "light" | "dark" | "auto";
+          size?: "normal" | "compact" | "invisible";
+          appearance?: "always" | "execute" | "interaction-only";
+        },
+      ) => string;
       reset: (widgetId?: string) => void;
       remove: (widgetId?: string) => void;
       getResponse: (widgetId?: string) => string | undefined;
@@ -38,7 +41,9 @@ function ensureScript(): Promise<void> {
     const existing = document.getElementById(SCRIPT_ID);
     if (existing) {
       existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("Failed to load Turnstile script")));
+      existing.addEventListener("error", () =>
+        reject(new Error("Failed to load Turnstile script")),
+      );
       return;
     }
     const script = document.createElement("script");
@@ -111,10 +116,7 @@ export function TurnstileWidget({
   }
 
   return (
-    <div
-      className="turnstile-container"
-      style={{ minHeight: loaded ? undefined : 65 }}
-    >
+    <div className="turnstile-container" style={{ minHeight: loaded ? undefined : 65 }}>
       <div ref={containerRef} />
     </div>
   );

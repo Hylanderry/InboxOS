@@ -283,14 +283,21 @@ export function MessageTimeline({
 
         {/* Indicador de Digitação / Gravação de Áudio Flutuante (Estilo WhatsApp Web) — B7: aria-live */}
         {(typing || recording) && (
-          <div role="status" aria-live="polite" className="flex items-end gap-2.5 my-2 animate-smooth-in">
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-end gap-2.5 my-2 animate-smooth-in"
+          >
             {/* Texto acessível para leitores de tela (sr-only) */}
             <span className="sr-only">
               {recording
                 ? `${stripEmojis(activeName) || "Contato"} está gravando um áudio`
                 : `${stripEmojis(activeName) || "Contato"} está digitando`}
             </span>
-            <div className="w-8 h-8 rounded-full overflow-hidden bg-[#17171a] flex items-center justify-center shrink-0 border border-white/10 shadow-sm" aria-hidden="true">
+            <div
+              className="w-8 h-8 rounded-full overflow-hidden bg-[#17171a] flex items-center justify-center shrink-0 border border-white/10 shadow-sm"
+              aria-hidden="true"
+            >
               {activeAvatar ? (
                 <img src={activeAvatar} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -312,7 +319,11 @@ export function MessageTimeline({
             >
               {recording ? (
                 <div className="flex items-center gap-2 text-xs font-semibold">
-                  <Microphone size={14} weight="fill" className="animate-pulse text-[var(--whatsapp)]" />
+                  <Microphone
+                    size={14}
+                    weight="fill"
+                    className="animate-pulse text-[var(--whatsapp)]"
+                  />
                   <span className="animate-pulse">gravando áudio...</span>
                 </div>
               ) : (
