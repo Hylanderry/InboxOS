@@ -14,6 +14,12 @@ export function evolutionWebhookUrl(env: Record<string, string | undefined>): st
 export function assertEvolutionWebhookConfigurationAllowed(
   env: Record<string, string | undefined>,
 ): void {
+  // O dev local costuma usar credenciais reais: não reescrever o webhook remoto sem opt-in.
+  if (env["NODE_ENV"] === "development" && env["EVOLUTION_ALLOW_LOCAL_WEBHOOK_WRITE"] !== "true") {
+    throw new Error(
+      "Webhook Evolution bloqueado no ambiente local (EVOLUTION_ALLOW_LOCAL_WEBHOOK_WRITE)",
+    );
+  }
   if (isPreviewDeployment(env) && env["EVOLUTION_ALLOW_PREVIEW_WEBHOOK_WRITE"] !== "true") {
     throw new Error(
       "Webhook Evolution em preview exige instância sandbox e EVOLUTION_ALLOW_PREVIEW_WEBHOOK_WRITE=true",
