@@ -60,6 +60,7 @@ export default defineConfig({
     cssMinify: "esbuild",
     rollupOptions: {
       output: {
+        hashCharacters: "base36",
         // Hash nos filenames para dificultar mapeamento entre versões
         entryFileNames: "assets/[hash].js",
         chunkFileNames: "assets/[hash].js",

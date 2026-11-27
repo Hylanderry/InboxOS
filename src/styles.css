@@ -5475,3 +5475,33 @@ button.ux-chip:disabled {
     animation-duration: 1ms;
   }
 }
+
+/* Painéis laterais leves: sem blur no fundo (repintado a cada quadro) e deslizando só com transform. */
+.ux-drawer-overlay {
+  backdrop-filter: none;
+}
+.ux-drawer,
+.ux-drawer[role="dialog"][data-state="open"] {
+  animation: ux-sheet-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ux-drawer[role="dialog"][data-state="closed"] {
+  animation: ux-sheet-out 150ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes ux-sheet-in {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes ux-sheet-out {
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ux-drawer[role="dialog"][data-state] {
+    animation-duration: 1ms;
+  }
+}
